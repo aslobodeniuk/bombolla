@@ -5,7 +5,7 @@ enum
   SIGNAL_ON_DISPLAY,
   SIGNAL_OPEN,
   SIGNAL_CLOSE,
-  SIGNAL_REDRAW,
+  SIGNAL_REQUEST_REDRAW,
   LAST_SIGNAL
 };
 
@@ -24,18 +24,15 @@ typedef enum
 
 static GParamSpec *obj_properties[N_PROPERTIES] = { NULL, };
 
-void base_window_on_display (BaseWindow * self) {
-  /* Chain up to user */
+void base_window_notify_display (BaseWindow * self) {
   g_signal_emit (self, base_window_signals[SIGNAL_ON_DISPLAY], 0);
 }
 
 
-void base_window_redraw (BaseWindow * self) {
+static void base_window_request_redraw (BaseWindow * self) {
   BaseWindowClass *klass = BASE_WINDOW_GET_CLASS (self);
-
-  klass->redraw_start (self);
-  g_signal_emit (self, base_window_signals[SIGNAL_REDRAW], 0);
-  klass->redraw_end (self);
+  
+  klass->request_redraw (self);
 }
 
 
@@ -112,6 +109,8 @@ base_window_get_property (GObject * object,
 static void
 base_window_init (BaseWindow * self)
 {
+  g_signal_connect (self, "request-redraw",
+      G_CALLBACK (base_window_request_redraw), NULL);  
 }
 
 
@@ -192,12 +191,12 @@ base_window_class_init (BaseWindowClass * klass)
           G_STRUCT_OFFSET (BaseWindowClass, close), NULL, NULL,
           g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0, G_TYPE_NONE);
 
-  base_window_signals[SIGNAL_REDRAW] =
-      g_signal_new ("redraw", G_TYPE_FROM_CLASS (klass),
+  /* This action is not overridden directly */
+  base_window_signals[SIGNAL_REQUEST_REDRAW] =
+      g_signal_new ("request-redraw", G_TYPE_FROM_CLASS (klass),
           G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
-          G_STRUCT_OFFSET (BaseWindowClass, redraw), NULL, NULL,
-          g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0, G_TYPE_NONE);
-  
+          0, NULL, NULL,
+          g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0, G_TYPE_NONE);  
 }
 
 

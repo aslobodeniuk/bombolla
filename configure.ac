@@ -40,7 +40,7 @@ PKG_CHECK_MODULES(GMODULE, [gmodule-2.0], [
   AC_MSG_ERROR([GModule library not found])
 ])
 
-COMMON_CFLAGS="-I\$(top_srcdir)"
+COMMON_CFLAGS="-Wall -Werror -I\$(top_srcdir)"
 BASECLASS_CFLAGS="$COMMON_CFLAGS $GOBJ_CFLAGS"
 BASECLASS_LIBS="$GOBJ_LIBS"
 PLUGIN_CFLAGS="$COMMON_CFLAGS -fpic"
@@ -52,11 +52,6 @@ AC_SUBST(BASECLASS_LIBS)
 AC_SUBST(PLUGIN_LDFLAGS)
 AC_SUBST(PLUGIN_CFLAGS)
 AC_SUBST(PLUGIN_LDFLAGS)
-
-dnl check if compiler understands -Wall (if yes, add -Wall)
-AC_MSG_CHECKING([to see if compiler understands -Wall])
-save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -Wall -Werror"
 
 AC_CONFIG_FILES([
 Makefile

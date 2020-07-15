@@ -7,7 +7,9 @@
 GType base_window_get_type (void);
 
 #define G_TYPE_BASE_WINDOW (base_window_get_type ())           
-#define BASE_WINDOW_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),BASE_WINDOW,BaseWindowClass))
+#define BASE_WINDOW_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),G_TYPE_BASE_WINDOW ,BaseWindowClass))
+#define BASE_WINDOW_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASE_WINDOW ,BaseWindowClass))
+
 
 typedef struct _BaseWindow
 {
@@ -27,10 +29,6 @@ typedef struct _BaseWindow
 typedef struct _BaseWindowClass
 {
   GObjectClass parent;
-
-  /* Virtual methods for subclass to override*/
-  void (*redraw_start) (BaseWindow *);
-  void (*redraw_end) (BaseWindow *);
   
   /* Events */
   void (*on_display) (BaseWindow *);
@@ -38,12 +36,10 @@ typedef struct _BaseWindowClass
   /* Actions */
   void (*open) (BaseWindow *);
   void (*close) (BaseWindow *);
-  void (*redraw) (BaseWindow *);
+  void (*request_redraw) (BaseWindow *);
 
 } BaseWindowClass;
 
-
-
-void  base_window_on_display (BaseWindow *);
+void base_window_notify_display (BaseWindow * self);
 
 #endif

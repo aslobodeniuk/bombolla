@@ -1,4 +1,6 @@
 #include "bombolla/base/lba-basedrawable.h"
+#include "bombolla/lba-log.h"
+
 
 enum
 {
@@ -92,8 +94,6 @@ base_drawable_get_property (GObject * object,
 static void
 base_drawable_init (BaseDrawable * self)
 {
-  g_signal_connect (self, "draw",
-      G_CALLBACK (base_drawable_on_draw), NULL);
 }
 
 

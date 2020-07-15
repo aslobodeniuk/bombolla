@@ -167,7 +167,7 @@ main (int argc, char **argv)
           const gchar *_tab = "  ";
           gchar *tab = g_strdup (_tab);
           g_printf ("--- Signals:\n");
-          for (t = plugin_type; t && t != G_TYPE_OBJECT; t = g_type_parent (t)) {
+          for (t = plugin_type; t ; t = g_type_parent (t)) {
             gchar *tmptab;
 
             signals = g_signal_list_ids (t, &n_signals);

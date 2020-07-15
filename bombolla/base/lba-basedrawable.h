@@ -6,8 +6,10 @@
 
 GType base_drawable_get_type (void);
 
-#define G_TYPE_BASE_DRAWABLE (base_drawable_get_type ())           
-#define BASE_DRAWABLE_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),BASE_DRAWABLE,BaseDrawableClass))
+#define G_TYPE_BASE_DRAWABLE (base_drawable_get_type ())
+
+#define BASE_DRAWABLE_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),G_TYPE_BASE_DRAWABLE ,BaseDrawableClass))
+#define BASE_DRAWABLE_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASE_DRAWABLE ,BaseDrawableClass))
 
 typedef struct _BaseDrawable
 {

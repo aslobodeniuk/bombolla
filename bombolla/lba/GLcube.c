@@ -1,7 +1,8 @@
 #include "bombolla/base/lba-basedrawable.h"
 #include "bombolla/lba-plugin-system.h"
-#include <glib/gstdio.h>
+#include "bombolla/lba-log.h"
 #include "GL/gl.h"
+
 
 
 /* ======================= Instance */
@@ -21,13 +22,13 @@ typedef struct _GLCubeClass
 static void
 gl_cube_draw (BaseDrawable * base)
 {
-  g_print ("draw\n");
+  LBA_LOG ("draw");
 }
 
 static void
 gl_cube_init (GLCube * self)
 {
-  g_printf ("init\n");
+  LBA_LOG ("init");
 }
 
 
@@ -36,8 +37,9 @@ gl_cube_init (GLCube * self)
 static void
 gl_cube_class_init (GLCubeClass * klass)
 {
-  BaseDrawableClass *base_class = BASE_DRAWABLE_GET_CLASS (klass);
+  BaseDrawableClass *base_class = BASE_DRAWABLE_CLASS (klass);
 
+  LBA_LOG ("%p", base_class);
   base_class->draw = gl_cube_draw;
 }
 

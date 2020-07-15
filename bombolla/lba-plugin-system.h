@@ -11,7 +11,6 @@ typedef GType (*lBaPluginSystemGetGtypeFunc) (void);
 #define BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE(name)                      \
   GType BOMBOLLA_PLUGIN_SYSTEM_ENTRY_ (void)                            \
   {                                                                     \
-    g_printf ("hello from '" #name "'\n");                              \
     return name##_get_type ();                                          \
   }
 
