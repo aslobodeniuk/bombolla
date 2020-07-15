@@ -1,0 +1,20 @@
+lib_LTLIBRARIES =
+
+# GlutWindow
+lib_LTLIBRARIES += libGlutWindow.la
+libGlutWindow_la_DEPENDENCIES = $(top_builddir)/bombolla/base/liblba-basewindow.la
+libGlutWindow_la_SOURCES = GlutWindow.c
+libGlutWindow_la_CFLAGS = $(GOBJ_CFLAGS) $(PLUGIN_CFLAGS)
+libGlutWindow_la_LIBADD = $(GOBJ_LIBS) -lglut -lGL -L$(top_builddir)/bombolla/base/.libs/ -llba-basewindow
+libGlutWindow_la_LDFLAGS = $(PLUGIN_LDFLAGS)
+
+# GLcube
+lib_LTLIBRARIES += libGLcube.la
+libGLcube_la_DEPENDENCIES = $(top_builddir)/bombolla/base/liblba-basedrawable.la
+libGLcube_la_SOURCES = GLcube.c
+libGLcube_la_CFLAGS = $(GOBJ_CFLAGS) $(PLUGIN_CFLAGS)
+libGLcube_la_LIBADD = $(GOBJ_LIBS) -lGL -L$(top_builddir)/bombolla/base/.libs/ -llba-basedrawable
+libGLcube_la_LDFLAGS = $(PLUGIN_LDFLAGS)
+
+
+EXTRA_DIST = ../../autogen.sh
