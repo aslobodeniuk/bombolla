@@ -6,10 +6,10 @@
 
 #include "bombolla/base/lba-basewindow.h"
 #include "bombolla/lba-plugin-system.h"
+#include "bombolla/lba-log.h"
 #include <glib/gstdio.h>
 #include "GL/freeglut.h"
 #include "GL/gl.h"
-
 
 /* ======================= Instance */
 typedef struct _GlutWindow
@@ -51,24 +51,24 @@ glut_window_redraw_end (BaseWindow * base)
 void glut_window_on_mouse_cb (int button, int state,
                                 int x, int y)
 {
-  g_printf ("button = %d, state = %d, x = %d, y = %d\n",
+  LBA_LOG ("button = %d, state = %d, x = %d, y = %d\n",
       button, state, x, y);
 }
                                 
 
 void glut_window_on_reshape_cb(int width, int height)
 {
-  g_printf ("width = %d, height = %d\n", width, height);
+  LBA_LOG ("width = %d, height = %d\n", width, height);
 }
 
 void glut_window_on_keyboard_cb(unsigned char key, int x, int y)
 {
-  g_printf ("key = %x, x = %d, y = %d\n", key, x, y);
+  LBA_LOG ("key = %x, x = %d, y = %d\n", key, x, y);
 }
 
 void glut_window_on_special_key_cb(int key, int x, int y)
 {
-  g_printf ("special key = %d, x = %d, y = %d\n", key, x, y);
+  LBA_LOG ("special key = %d, x = %d, y = %d\n", key, x, y);
 }
 
 
@@ -225,7 +225,7 @@ glut_window_close (BaseWindow * base)
 static void
 glut_window_on_close (void)
 {
-  g_printf ("Window closed by user\n");
+  LBA_LOG ("Window closed by user\n");
 }
 
 static void
@@ -289,4 +289,4 @@ glut_window_class_init (GlutWindowClass * klass)
 
 
 G_DEFINE_TYPE (GlutWindow, glut_window, G_TYPE_BASE_WINDOW)
-MY_PLUGIN_SYSTEM_PROVIDE_GTYPE (glut_window);
+BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (glut_window);

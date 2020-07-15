@@ -43,4 +43,4 @@ gl_cube_class_init (GLCubeClass * klass)
 
 
 G_DEFINE_TYPE (GLCube, gl_cube, G_TYPE_BASE_DRAWABLE)
-    MY_PLUGIN_SYSTEM_PROVIDE_GTYPE (gl_cube);
+BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (gl_cube);

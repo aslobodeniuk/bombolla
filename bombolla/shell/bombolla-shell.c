@@ -55,7 +55,7 @@ main (int argc, char **argv)
 {
   GModule *module = NULL;
   gpointer ptr;
-  MyPluginSystemGetGtypeFunc get_type_f;
+  lBaPluginSystemGetGtypeFunc get_type_f;
   int ret = 1;
   GSList *modules_files = NULL, *l;
   GDir *dir = NULL;
@@ -108,7 +108,7 @@ main (int argc, char **argv)
       continue;
     }
 
-    if (!g_module_symbol (module, "my_plugin_system_get_gtype", &ptr)) {
+    if (!g_module_symbol (module, BOMBOLLA_PLUGIN_SYSTEM_ENTRY, &ptr)) {
       g_warning ("File '%s' is not a plugin from my system", argv[1]);
       g_module_close (module);
       module = NULL;
@@ -118,7 +118,7 @@ main (int argc, char **argv)
     /* If module is from plugin system - we don't want to unload it */
     g_module_make_resident (module);
 
-    get_type_f = (MyPluginSystemGetGtypeFunc) ptr;
+    get_type_f = (lBaPluginSystemGetGtypeFunc) ptr;
 
     {
       GTypeQuery query;

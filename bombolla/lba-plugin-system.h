@@ -1,11 +1,15 @@
-#ifndef _MY_PLUGIN_SYSTEM
-#define _MY_PLUGIN_SYSTEM
+#ifndef _BOMBOLLA_PLUGIN_SYSTEM
+#define _BOMBOLLA_PLUGIN_SYSTEM
 #include <glib-object.h>
 
-typedef GType (*MyPluginSystemGetGtypeFunc) (void);
+typedef GType (*lBaPluginSystemGetGtypeFunc) (void);
 
-#define MY_PLUGIN_SYSTEM_PROVIDE_GTYPE(name)                            \
-  GType my_plugin_system_get_gtype (void)                               \
+
+#define BOMBOLLA_PLUGIN_SYSTEM_ENTRY_   bombolla_plugin_system_get_gtype
+#define BOMBOLLA_PLUGIN_SYSTEM_ENTRY   G_STRINGIFY (BOMBOLLA_PLUGIN_SYSTEM_ENTRY_)
+
+#define BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE(name)                      \
+  GType BOMBOLLA_PLUGIN_SYSTEM_ENTRY_ (void)                            \
   {                                                                     \
     g_printf ("hello from '" #name "'\n");                              \
     return name##_get_type ();                                          \
