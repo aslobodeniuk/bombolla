@@ -98,8 +98,6 @@ main (int argc, char **argv)
 
   for (l = modules_files; l; l = l->next) {
     const gchar *module_filename = (const gchar *) l->data;
-    if (module)
-      g_module_close (module);
 
     module = g_module_open (module_filename, G_MODULE_BIND_LOCAL);
     if (!module) {
@@ -109,7 +107,7 @@ main (int argc, char **argv)
     }
 
     if (!g_module_symbol (module, BOMBOLLA_PLUGIN_SYSTEM_ENTRY, &ptr)) {
-      g_warning ("File '%s' is not a plugin from my system", argv[1]);
+      g_warning ("File '%s' is not a plugin from my system", module_filename);
       g_module_close (module);
       module = NULL;
       continue;
@@ -196,6 +194,21 @@ main (int argc, char **argv)
             g_free (tmptab);
             g_free (signals);
           }
+        }
+
+        /* Iterate interfaces */
+        {
+          guint i;
+          guint n_interfaces;
+          GType *in =
+              g_type_interfaces (plugin_type,
+                  &n_interfaces);
+
+          for (i = 0; i < n_interfaces; i++) {
+
+            g_printf ("Provides interface %s\n", g_type_name (in[i]));
+          }
+          g_free (in);
         }
 
         g_object_unref (obj);

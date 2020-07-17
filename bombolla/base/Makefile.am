@@ -15,4 +15,11 @@ liblba_basedrawable_la_SOURCES = lba-basedrawable.c
 liblba_basedrawable_la_CFLAGS = $(BASECLASS_CFLAGS)
 liblba_basedrawable_la_LIBADD = $(BASECLASS_LIBS)
 
+# BaseOpenGLInterface
+lib_LTLIBRARIES += liblba-base-opengl-interface.la
+noinst_HEADERS += lba-base-opengl-interface.h
+liblba_base_opengl_interface_la_SOURCES = lba-base-opengl-interface.c
+liblba_base_opengl_interface_la_CFLAGS = $(BASECLASS_CFLAGS)
+liblba_base_opengl_interface_la_LIBADD = $(BASECLASS_LIBS)
+
 EXTRA_DIST = ../../autogen.sh

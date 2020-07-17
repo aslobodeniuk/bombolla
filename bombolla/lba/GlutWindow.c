@@ -8,8 +8,11 @@
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 #include <glib/gstdio.h>
+
 #include "GL/freeglut.h"
 #include "GL/gl.h"
+#define LBA_OPENGL_TEST 1
+#include "bombolla/base/lba-base-opengl-interface.h"
 
 /* ======================= Instance */
 typedef struct _GlutWindow
@@ -94,14 +97,11 @@ glut_window_on_close (void)
   LBA_LOG ("Window closed by user\n");
 }
 
+/* Fixme: defaults are not set */
 static void
 glut_window_open (BaseWindow * base)
 {
-  int argc = 1;
-  char *argv[] = { "hack", NULL };
   GlutWindow *self = (GlutWindow *) base;
-
-  glutInit (&argc, argv);
 
   /* TODO: param */
   glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
@@ -134,7 +134,6 @@ glut_window_init (GlutWindow * self)
 
 
 /* =================== CLASS */
-
 static void
 glut_window_class_init (GlutWindowClass * klass)
 {
@@ -144,6 +143,47 @@ glut_window_class_init (GlutWindowClass * klass)
   base_class->close = glut_window_close;
 }
 
+static void
+glut_window_opengl_interface_init (BaseOpenGLInterface * iface)
+{
+  static gsize initialization_value = 0;
 
-G_DEFINE_TYPE (GlutWindow, glut_window, G_TYPE_BASE_WINDOW)
+  if (g_once_init_enter (&initialization_value)) {
+    /* Let glut load opengl.
+     * Glut allows us to do it only once per proccess execution */
+    int argc = 1;
+    char *argv[] = { "hack", NULL };
+    gsize setup_value = 1;
+
+    glutInit (&argc, argv);
+    g_once_init_leave (&initialization_value, setup_value);
+  }
+#define iface_set(x) iface->x = x
+#define iface_set_lba(x) iface->LBA_##x = x
+
+  iface_set_lba (GL_COLOR_BUFFER_BIT);
+  iface_set_lba (GL_STENCIL_BUFFER_BIT);
+  iface_set_lba (GL_DEPTH_BUFFER_BIT);
+  iface_set_lba (GL_TRIANGLES);
+  iface_set (glEnable);
+  iface_set (glDisable);
+  iface_set_lba (GL_DEPTH_TEST);
+  iface_set (glClearColor);
+  iface_set (glClear);
+  iface_set (glLoadIdentity);
+  iface_set (glRotatef);
+  iface_set (glBegin);
+  iface_set (glEnd);
+
+  iface_set (glColor3f);
+  iface_set (glVertex3f);
+  iface_set (glFlush);
+#undef iface_set
+}
+
+
+G_DEFINE_TYPE_WITH_CODE (GlutWindow, glut_window, G_TYPE_BASE_WINDOW,
+    G_IMPLEMENT_INTERFACE (G_TYPE_BASE_OPENGL,
+        glut_window_opengl_interface_init))
+
     BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (glut_window);
