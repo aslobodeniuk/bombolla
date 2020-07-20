@@ -2,6 +2,7 @@
 
 enum
 {
+  SIGNAL_ON_DRAW,
   SIGNAL_ON_DISPLAY,
   SIGNAL_OPEN,
   SIGNAL_CLOSE,
@@ -26,6 +27,7 @@ static GParamSpec *obj_properties[N_PROPERTIES] = { NULL, };
 
 void base_window_notify_display (BaseWindow * self) {
   g_signal_emit (self, base_window_signals[SIGNAL_ON_DISPLAY], 0);
+  g_signal_emit (self, base_window_signals[SIGNAL_ON_DRAW], 0);
 }
 
 
@@ -179,6 +181,13 @@ base_window_class_init (BaseWindowClass * klass)
       G_STRUCT_OFFSET (BaseWindowClass, on_display), NULL, NULL,
       g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0, G_TYPE_NONE);
 
+  /* TODO: new obj */
+  base_window_signals[SIGNAL_ON_DRAW] =
+      g_signal_new ("on-draw", G_TYPE_FROM_CLASS (klass),
+          G_SIGNAL_RUN_LAST,
+          0, NULL, NULL,
+          g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0, G_TYPE_NONE);
+  
   base_window_signals[SIGNAL_OPEN] =
       g_signal_new ("open", G_TYPE_FROM_CLASS (klass),
           G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,

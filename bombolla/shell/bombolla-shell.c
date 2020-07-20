@@ -18,6 +18,8 @@ const gchar *B_OS_FILE_SEPARATOR = "/";
 #endif
 
 GHashTable *objects = NULL;
+GHashTable *gtypes = NULL;
+
 
 void
 _str2uint (const GValue * src_value, GValue * dest_value)
@@ -45,8 +47,28 @@ _str2obj (const GValue * src_value, GValue * dest_value)
 
   if (!obj) {
     g_warning ("couldn't convert string %s to GObject", s);
-    g_value_set_object (dest_value, obj);
   }
+
+  g_value_set_object (dest_value, obj);
+}
+
+void
+_str2gtype (const GValue * src_value, GValue * dest_value)
+{
+  GType t = G_TYPE_NONE;
+  gpointer ptr;
+  const gchar *s = g_value_get_string (src_value);
+
+  if (s) {
+    gpointer p = g_hash_table_lookup (gtypes, (gpointer) s);
+    t = (GType)p;
+  }
+
+  if (!t || t == G_TYPE_NONE) {
+    g_warning ("couldn't convert string %s to GType", s);
+  }
+
+  g_value_set_gtype (dest_value, t);
 }
 
 
@@ -59,10 +81,10 @@ main (int argc, char **argv)
   int ret = 1;
   GSList *modules_files = NULL, *l;
   GDir *dir = NULL;
-  GHashTable *gtypes = NULL;
 
   g_value_register_transform_func (G_TYPE_STRING, G_TYPE_UINT, _str2uint);
   g_value_register_transform_func (G_TYPE_STRING, G_TYPE_OBJECT, _str2obj);
+  g_value_register_transform_func (G_TYPE_STRING, G_TYPE_GTYPE, _str2gtype);
 
   if (argc != 2) {
     g_printf ("my-plugin-system-inspect <plugin or directory>");

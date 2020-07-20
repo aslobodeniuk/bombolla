@@ -9,20 +9,10 @@ enum
 };
 
 static guint base_drawable_signals[LAST_SIGNAL] = { 0 };
+static GParamSpec *obj_properties[BASE_DRAWABLE_N_PROPERTIES] = { NULL, };
 
-/* ================= PROPERTIES */
-typedef enum
-{
-  PROP_WIDTH = 1,
-  PROP_HEIGHT,
-  PROP_X_POS,
-  PROP_Y_POS,
-  N_PROPERTIES
-} BaseDrawableProperty;
-
-static GParamSpec *obj_properties[N_PROPERTIES] = { NULL, };
-
-void base_drawable_on_draw (BaseDrawable * self)
+static void
+base_drawable_scene_on_draw_cb (GObject * scene, BaseDrawable * self)
 {
   BaseDrawableClass *klass = BASE_DRAWABLE_GET_CLASS (self);
   if (G_LIKELY (klass->draw))
@@ -30,7 +20,7 @@ void base_drawable_on_draw (BaseDrawable * self)
 }
 
 
-static void
+void
 base_drawable_set_property (GObject * object,
     guint property_id, const GValue * value, GParamSpec * pspec)
 {
@@ -51,6 +41,19 @@ base_drawable_set_property (GObject * object,
 
     case PROP_Y_POS:
       self->y_pos = g_value_get_uint (value);
+      break;
+
+    case PROP_DRAWING_SCENE:
+    {
+      GObject *scene;
+
+      scene = g_value_get_object (value);
+
+      g_signal_connect (scene, "on-draw",
+          G_CALLBACK (base_drawable_scene_on_draw_cb), self);
+
+      LBA_LOG ("drawing scene set");
+    }
       break;
 
     default:
@@ -98,7 +101,7 @@ base_drawable_init (BaseDrawable * self)
 
 
 static void
-base_drawable_dispose (GObject *gobject)
+base_drawable_dispose (GObject * gobject)
 {
 }
 
@@ -141,15 +144,31 @@ base_drawable_class_init (BaseDrawableClass * klass)
       100 /* default value */ ,
       G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE);
 
+  obj_properties[PROP_Y_POS] =
+      g_param_spec_uint ("y-pos",
+      "Drawable position Y", "Drawable position Y", 0 /* minimum value */ ,
+      G_MAXUINT /* maximum value */ ,
+      100 /* default value */ ,
+      G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE);
+
+  obj_properties[PROP_DRAWING_SCENE] =
+      g_param_spec_object ("drawing-scene",
+      "Drawing Scene", "Scene that triggers drawing of the object",
+      /* TODO: can check type here: to have a signal */
+      G_TYPE_OBJECT, G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE);
+
+
   g_object_class_install_properties (object_class,
-      N_PROPERTIES, obj_properties);
+      BASE_DRAWABLE_N_PROPERTIES, obj_properties);
 
-
+  /* Useless */
+#if 1
   base_drawable_signals[SIGNAL_DRAW] =
       g_signal_new ("draw", G_TYPE_FROM_CLASS (klass),
-          G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
-          G_STRUCT_OFFSET (BaseDrawableClass, draw), NULL, NULL,
-          g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0, G_TYPE_NONE);
+      G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+      G_STRUCT_OFFSET (BaseDrawableClass, draw), NULL, NULL,
+      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0, G_TYPE_NONE);
+#endif
 }
 
 
