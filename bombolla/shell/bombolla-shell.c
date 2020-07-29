@@ -39,6 +39,20 @@ const gchar *B_OS_FILE_SEPARATOR = "/";
 GHashTable *objects = NULL;
 GHashTable *gtypes = NULL;
 
+void
+_str2double (const GValue * src_value, GValue * dest_value)
+{
+  gdouble ret = 0;
+  const gchar *s = g_value_get_string (src_value);
+
+  if (s) {
+    ret = atof (s);
+  } else
+    g_warning ("couldn't convert string %s to double", s);
+
+  g_value_set_double (dest_value, ret);
+}
+
 
 void
 _str2uint (const GValue * src_value, GValue * dest_value)
@@ -102,6 +116,7 @@ main (int argc, char **argv)
   GDir *dir = NULL;
 
   g_value_register_transform_func (G_TYPE_STRING, G_TYPE_UINT, _str2uint);
+  g_value_register_transform_func (G_TYPE_STRING, G_TYPE_DOUBLE, _str2double);
   g_value_register_transform_func (G_TYPE_STRING, G_TYPE_OBJECT, _str2obj);
   g_value_register_transform_func (G_TYPE_STRING, G_TYPE_GTYPE, _str2gtype);
 

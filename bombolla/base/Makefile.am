@@ -15,6 +15,16 @@ liblba_basedrawable_la_SOURCES = lba-basedrawable.c
 liblba_basedrawable_la_CFLAGS = $(BASECLASS_CFLAGS)
 liblba_basedrawable_la_LIBADD = $(BASECLASS_LIBS)
 
+# Base3d
+lib_LTLIBRARIES += liblba-base3d.la
+noinst_HEADERS += lba-base3d.h
+liblba_base3d_la_DEPENDENCIES = \
+$(top_builddir)/bombolla/base/liblba-basedrawable.la
+
+liblba_base3d_la_SOURCES = lba-base3d.c
+liblba_base3d_la_CFLAGS = $(BASECLASS_CFLAGS)
+liblba_base3d_la_LIBADD = $(BASECLASS_LIBS) -llba-basedrawable
+
 # BaseOpenGLInterface
 lib_LTLIBRARIES += liblba-base-opengl-interface.la
 noinst_HEADERS += lba-base-opengl-interface.h

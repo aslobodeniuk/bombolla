@@ -18,45 +18,45 @@
  */
 
 
-#ifndef __BASE_DRAWABLE_H__
-#define __BASE_DRAWABLE_H__
+#ifndef __BASE3D_H__
+#define __BASE3D_H__
 
 #include <glib-object.h>
 #include <glib/gstdio.h>
+#include "bombolla/base/lba-basedrawable.h"
 
-GType base_drawable_get_type (void);
+GType base3d_get_type (void);
 
-#define G_TYPE_BASE_DRAWABLE (base_drawable_get_type ())
+#define G_TYPE_BASE3D (base3d_get_type ())
 
-#define BASE_DRAWABLE_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),G_TYPE_BASE_DRAWABLE ,BaseDrawableClass))
-#define BASE_DRAWABLE_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASE_DRAWABLE ,BaseDrawableClass))
+#define BASE3D_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),G_TYPE_BASE3D ,Base3dClass))
+#define BASE3D_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASE3D ,Base3dClass))
 
-typedef struct _BaseDrawable
+typedef struct _Base3d
 {
-  GObject parent;
+  BaseDrawable parent;
 
-  GObject *scene;
-} BaseDrawable;
+  double x, y, z;
+
+} Base3d;
 
 
-typedef struct _BaseDrawableClass
+typedef struct _Base3dClass
 {
-  GObjectClass parent;
-
-  /* Actions */
-  void (*draw) (BaseDrawable *);
-
-} BaseDrawableClass;
+  BaseDrawableClass parent;
+} Base3dClass;
 
 
 typedef enum
 {
-  PROP_DRAWING_SCENE = 1,
-  BASE_DRAWABLE_N_PROPERTIES
-} BaseDrawableProperty;
+  PROP_X = BASE_DRAWABLE_N_PROPERTIES,
+  PROP_Y,
+  PROP_Z,
+  BASE3D_N_PROPERTIES
+} Base3dProperty;
 
 void
-base_drawable_set_property (GObject * object,
+base3d_set_property (GObject * object,
     guint property_id, const GValue * value, GParamSpec * pspec);
 
 #endif

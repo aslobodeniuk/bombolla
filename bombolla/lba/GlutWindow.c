@@ -72,6 +72,12 @@ glut_window_on_special_key_cb (int key, int x, int y)
 
 
 static void
+glut_window_request_redraw (BaseWindow * base)
+{
+  glutPostRedisplay();
+}
+
+static void
 glut_window_on_display_cb (void)
 {
   LBA_LOG ("display cb");
@@ -154,6 +160,7 @@ glut_window_class_init (GlutWindowClass * klass)
 
   base_class->open = glut_window_open;
   base_class->close = glut_window_close;
+  base_class->request_redraw = glut_window_request_redraw;
 }
 
 static void

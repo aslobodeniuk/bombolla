@@ -53,8 +53,9 @@ void base_window_notify_display (BaseWindow * self) {
 
 static void base_window_request_redraw (BaseWindow * self) {
   BaseWindowClass *klass = BASE_WINDOW_GET_CLASS (self);
-  
-  klass->request_redraw (self);
+
+  if (klass->request_redraw)
+    klass->request_redraw (self);
 }
 
 

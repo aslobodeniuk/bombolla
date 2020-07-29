@@ -17,7 +17,7 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "bombolla/base/lba-basedrawable.h"
+#include "bombolla/base/lba-base3d.h"
 #include "bombolla/base/lba-base-opengl-interface.h"
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
@@ -29,7 +29,7 @@ GType gl_cube_get_type (void);
 /* ======================= Instance */
 typedef struct _GLCube
 {
-  BaseDrawable parent;
+  Base3d parent;
 
   BaseOpenGLInterface *i;
 } GLCube;
@@ -38,28 +38,54 @@ typedef struct _GLCube
 /* ======================= Class */
 typedef struct _GLCubeClass
 {
-  BaseDrawableClass parent;
-  guint PROP_GL_PROVIDER;
+  Base3dClass parent;
 } GLCubeClass;
+
+typedef enum
+{
+  PROP_GL_PROVIDER = BASE3D_N_PROPERTIES,
+  GLCUBE_N_PROPERTIES
+} GLCubeProperty;
 
 
 static void
 gl_cube_draw (BaseDrawable * base)
 {
   GLCube *self = (GLCube *) base;
+  Base3d *s3d = (Base3d *) base;
   BaseOpenGLInterface *i;
+  double x, y, z;
+  double size = 0.3;
 
-  /* FIXME: 2 param */
-  double x = 0.6;
-  double y = 0.6;
-  double z = 0.6;
-  /* =============== */
+  x = s3d->x;
+  y = s3d->y;
+  z = s3d->z;
 
-  LBA_LOG ("draw");
+  LBA_LOG ("draw (%f, %f, %f)", x, y, z);
 
+  /* TODO: to base class */
   if (G_UNLIKELY (!self->i)) {
-    LBA_LOG ("No OpenGL interface provided");
-    return;
+    GType t;
+    BaseOpenGLInterface * i = NULL;
+    LBA_LOG ("No OpenGL interface provided. Trying to query one from drawing scene");
+    
+    if (base->scene)
+      for (t = G_OBJECT_TYPE(base->scene); t; t = g_type_parent (t)) {
+        i = (BaseOpenGLInterface *)
+            g_type_interface_peek (g_type_class_peek (t), G_TYPE_BASE_OPENGL);
+
+        if (i) {
+          LBA_LOG ("OpenGL interface provided by %s", g_type_name (t));
+          break;
+        }
+      }
+
+    if (G_LIKELY (i)) {
+      self->i = i;
+    } else {
+      LBA_LOG ("No OpenGL interface provided. Rendering is impossible");
+      return;
+    }
   }
 
   i = self->i;
@@ -210,23 +236,21 @@ gl_cube_set_property (GObject * object,
     guint property_id, const GValue * value, GParamSpec * pspec)
 {
   GLCube *self = (GLCube *) object;
-  GLCubeClass *klass = GLCUBE_GET_CLASS (self);
 
-  if (property_id == klass->PROP_GL_PROVIDER) {
+  switch ((GLCubeProperty) property_id) {
+    case PROP_GL_PROVIDER:
+      self->i = (BaseOpenGLInterface *)
+          g_type_interface_peek (g_type_class_peek (g_value_get_gtype (value)),
+              G_TYPE_BASE_OPENGL);
 
-    self->i = (BaseOpenGLInterface *)
-        g_type_interface_peek (g_type_class_peek (g_value_get_gtype (value)),
-        G_TYPE_BASE_OPENGL);
-
-    LBA_LOG ("Interface provider %sfound", self->i ? "" : "NOT ");
-
-    /* property handled */
-    return;
+      LBA_LOG ("Interface provider %sfound", self->i ? "" : "NOT ");
+    break;
+    
+    default:
+      /* Chain up to parent class */
+      base3d_set_property (object,
+          property_id, value, pspec);
   }
-
-  /* Chain up to parent class */
-  base_drawable_set_property (object,
-      property_id, value, pspec);
 }
 
 /* =================== CLASS */
@@ -236,21 +260,15 @@ gl_cube_class_init (GLCubeClass * klass)
 {
   BaseDrawableClass *base_class = BASE_DRAWABLE_CLASS (klass);
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
-  guint base_class_n_properties;
 
   object_class->set_property = gl_cube_set_property;
 
   LBA_LOG ("%p", base_class);
   base_class->draw = gl_cube_draw;
 
-  /* Install one more property independently from base class */
-  g_free (g_object_class_list_properties (object_class,
-          &base_class_n_properties));
-
-  klass->PROP_GL_PROVIDER = base_class_n_properties++;
-
+  /* FIXME: would be nice to move it to some base class */
   g_object_class_install_property (object_class,
-      klass->PROP_GL_PROVIDER,
+      PROP_GL_PROVIDER,
       g_param_spec_gtype ("gl-provider",
           "GL provider", "Object, that provides Opengl interface",
           /* We don't know what plugin may provide us an interface yet */
@@ -258,5 +276,5 @@ gl_cube_class_init (GLCubeClass * klass)
 }
 
 
-    G_DEFINE_TYPE (GLCube, gl_cube, G_TYPE_BASE_DRAWABLE)
-    BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (gl_cube);
+G_DEFINE_TYPE (GLCube, gl_cube, G_TYPE_BASE3D)
+BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (gl_cube);
