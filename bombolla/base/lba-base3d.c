@@ -100,21 +100,21 @@ base3d_class_init (Base3dClass * klass)
       PROP_X,
       g_param_spec_double ("x",
           "X", "X coordinate",
-          G_MINDOUBLE, G_MAXDOUBLE, 0.5,
+          -G_MAXDOUBLE, G_MAXDOUBLE, 0.5,
           G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE));
 
   g_object_class_install_property (object_class,
       PROP_Y,
       g_param_spec_double ("y",
           "Y", "Y coordinate",
-          G_MINDOUBLE, G_MAXDOUBLE, 0.5,
+          -G_MAXDOUBLE, G_MAXDOUBLE, 0.5,
           G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE));
   
   g_object_class_install_property (object_class,
       PROP_Z,
       g_param_spec_double ("z",
           "Z", "Z coordinate",
-          G_MINDOUBLE, G_MAXDOUBLE, 0.5,
+          -G_MAXDOUBLE, G_MAXDOUBLE, 0.5,
           G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE));
 }
 

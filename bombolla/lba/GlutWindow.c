@@ -74,7 +74,7 @@ glut_window_on_special_key_cb (int key, int x, int y)
 static void
 glut_window_request_redraw (BaseWindow * base)
 {
-  glutPostRedisplay();
+  glutPostRedisplay ();
 }
 
 static void
@@ -85,7 +85,10 @@ glut_window_on_display_cb (void)
   glClearColor (0.4, 0.4, 0.4, 1.0);
   glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  glLoadIdentity ();
+//  glLoadIdentity ();
+  // Add an ambient light
+  GLfloat ambientColor[] = { 0.2, 0.2, 0.2, 1.0 };
+  glLightModelfv (GL_LIGHT_MODEL_AMBIENT, ambientColor);
 
   /* Now let friend objects draw something */
   base_window_notify_display ((BaseWindow *) global_self);
@@ -132,6 +135,11 @@ glut_window_open (BaseWindow * base)
 
   /* TODO: param */
   glEnable (GL_DEPTH_TEST);
+  glEnable (GL_COLOR_MATERIAL);
+  glEnable (GL_LIGHTING);
+  glEnable (GL_LIGHT0);
+  glEnable (GL_NORMALIZE);
+
 
   glutDisplayFunc (glut_window_on_display_cb);
   glutSpecialFunc (glut_window_on_special_key_cb);
@@ -185,6 +193,12 @@ glut_window_opengl_interface_init (BaseOpenGLInterface * iface)
   iface_set_lba (GL_STENCIL_BUFFER_BIT);
   iface_set_lba (GL_DEPTH_BUFFER_BIT);
   iface_set_lba (GL_TRIANGLES);
+  iface_set_lba (GL_POLYGON);
+  iface_set_lba (GL_MODELVIEW);
+  iface_set_lba (GL_LIGHT0);
+  iface_set_lba (GL_DIFFUSE);
+  iface_set_lba (GL_POSITION);
+
   iface_set (glEnable);
   iface_set (glDisable);
   iface_set_lba (GL_DEPTH_TEST);
@@ -198,6 +212,9 @@ glut_window_opengl_interface_init (BaseOpenGLInterface * iface)
   iface_set (glColor3f);
   iface_set (glVertex3f);
   iface_set (glFlush);
+  iface_set (glRotatef);
+  iface_set (glMatrixMode);
+  iface_set (glLightfv);
 #undef iface_set
 }
 

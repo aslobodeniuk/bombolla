@@ -22,40 +22,39 @@
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 
-GType gl_cube_get_type (void);
+GType gl_light_get_type (void);
 
-#define GLCUBE_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj), gl_cube_get_type , GLCubeClass))
+#define GLLIGHT_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj), gl_light_get_type , GLLightClass))
 
 /* ======================= Instance */
-typedef struct _GLCube
+typedef struct _GLLight
 {
   Base3d parent;
 
   BaseOpenGLInterface *i;
-} GLCube;
+} GLLight;
 
 
 /* ======================= Class */
-typedef struct _GLCubeClass
+typedef struct _GLLightClass
 {
   Base3dClass parent;
-} GLCubeClass;
+} GLLightClass;
 
 typedef enum
 {
   PROP_GL_PROVIDER = BASE3D_N_PROPERTIES,
-  GLCUBE_N_PROPERTIES
-} GLCubeProperty;
+  GLLIGHT_N_PROPERTIES
+} GLLightProperty;
 
 
 static void
-gl_cube_draw (BaseDrawable * base)
+gl_light_draw (BaseDrawable * base)
 {
-  GLCube *self = (GLCube *) base;
+  GLLight *self = (GLLight *) base;
   Base3d *s3d = (Base3d *) base;
   BaseOpenGLInterface *i;
   double x, y, z;
-  double size = 0.3;
 
   x = s3d->x;
   y = s3d->y;
@@ -95,82 +94,28 @@ gl_cube_draw (BaseDrawable * base)
   i->glMatrixMode(i->LBA_GL_MODELVIEW);
   i->glLoadIdentity();
 
-  /* Rotate a bit */
-  i->glRotatef(60.0, 1.0, 1.0, 1.0);
-  i->glRotatef(60.0, 1.0, 0.0, 1.0 );
-  i->glRotatef(60.0, 0.0, 1.0, 1.0 );
-  
-  // BACK
-  i->glBegin (i->LBA_GL_POLYGON);
-  i->glColor3f (0.5, 0.3, 0.2);
-  i->glVertex3f (x + size, y - size, z + size);
-  i->glVertex3f (x + size, y + size, z + size);
-  i->glVertex3f (x - size, y + size, z + size);
-  i->glVertex3f (x - size, y - size, z + size);
-  i->glEnd ();
+  // Add a positioned light
+  lba_GLfloat lightColor0[] = {0.5, 0.5, 0.5, 1.0};
+  lba_GLfloat lightPos0[] = {x, y, z, 1.0};
 
-  // FRONT
-  i->glBegin (i->LBA_GL_POLYGON);
-  i->glColor3f (0.0, 0.5, 0.0);
-  i->glVertex3f (x - size, y + size, z - size);
-  i->glVertex3f (x - size, y - size, z - size);
-  i->glVertex3f (x + size, y - size, z - size);
-  i->glVertex3f (x + size, y + size, z - size);
-  i->glEnd ();
-
-  // LEFT
-  i->glBegin (i->LBA_GL_POLYGON);
-  i->glColor3f (0.5, 0.5, 0.5);
-  i->glVertex3f (x - size, y - size, z - size);
-  i->glVertex3f (x - size, y - size, z + size);
-  i->glVertex3f (x - size, y + size, z + size);
-  i->glVertex3f (x - size, y + size, z - size);
-  i->glEnd ();
-
-
-  // RIGHT
-  i->glBegin (i->LBA_GL_POLYGON);
-  i->glColor3f (0.0, 0.0, 0.0);
-  i->glVertex3f (x + size, y - size, z - size);
-  i->glVertex3f (x + size, y - size, z + size);
-  i->glVertex3f (x + size, y + size, z + size);
-  i->glVertex3f (x + size, y + size, z - size);
-  i->glEnd ();
-
-  // TOP
-  i->glBegin (i->LBA_GL_POLYGON);
-  i->glColor3f (0.6, 0.0, 0.0);
-  i->glVertex3f (x + size, y + size, z + size);
-  i->glVertex3f (x - size, y + size, z + size);
-  i->glVertex3f (x - size, y + size, z - size);
-  i->glVertex3f (x + size, y + size, z - size);
-  i->glEnd ();
-
-
-  // BOTTOM
-  i->glBegin (i->LBA_GL_POLYGON);
-  i->glColor3f (0.3, 0.0, 0.3);
-  i->glVertex3f (x - size, y - size, z - size);
-  i->glVertex3f (x - size, y - size, z + size);
-  i->glVertex3f (x + size, y - size, z + size);
-  i->glVertex3f (x + size, y - size, z - size);
-  i->glEnd ();
+  i->glLightfv(i->LBA_GL_LIGHT0, i->LBA_GL_DIFFUSE, lightColor0);
+  i->glLightfv(i->LBA_GL_LIGHT0, i->LBA_GL_POSITION, lightPos0);
 }
 
 static void
-gl_cube_init (GLCube * self)
+gl_light_init (GLLight * self)
 {
   LBA_LOG ("init");
 }
 
 
 static void
-gl_cube_set_property (GObject * object,
+gl_light_set_property (GObject * object,
     guint property_id, const GValue * value, GParamSpec * pspec)
 {
-  GLCube *self = (GLCube *) object;
+  GLLight *self = (GLLight *) object;
 
-  switch ((GLCubeProperty) property_id) {
+  switch ((GLLightProperty) property_id) {
     case PROP_GL_PROVIDER:
       self->i = (BaseOpenGLInterface *)
           g_type_interface_peek (g_type_class_peek (g_value_get_gtype (value)),
@@ -188,15 +133,15 @@ gl_cube_set_property (GObject * object,
 /* =================== CLASS */
 
 static void
-gl_cube_class_init (GLCubeClass * klass)
+gl_light_class_init (GLLightClass * klass)
 {
   BaseDrawableClass *base_class = BASE_DRAWABLE_CLASS (klass);
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
-  object_class->set_property = gl_cube_set_property;
+  object_class->set_property = gl_light_set_property;
 
   LBA_LOG ("%p", base_class);
-  base_class->draw = gl_cube_draw;
+  base_class->draw = gl_light_draw;
 
   /* FIXME: would be nice to move it to some base class */
   g_object_class_install_property (object_class,
@@ -208,5 +153,5 @@ gl_cube_class_init (GLCubeClass * klass)
 }
 
 
-G_DEFINE_TYPE (GLCube, gl_cube, G_TYPE_BASE3D)
-    BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (gl_cube);
+G_DEFINE_TYPE (GLLight, gl_light, G_TYPE_BASE3D)
+    BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (gl_light);
