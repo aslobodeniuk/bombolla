@@ -21,7 +21,11 @@
 #include "bombolla/base/lba-basedrawable.h"
 #include "bombolla/lba-log.h"
 
-static GParamSpec *obj_properties[BASE_DRAWABLE_N_PROPERTIES] = { NULL, };
+typedef enum
+{
+  PROP_DRAWING_SCENE = 1
+} BaseDrawableProperty;
+
 
 static void
 base_drawable_scene_on_draw_cb (GObject * scene, BaseDrawable * self)
@@ -32,7 +36,7 @@ base_drawable_scene_on_draw_cb (GObject * scene, BaseDrawable * self)
 }
 
 
-void
+static void
 base_drawable_set_property (GObject * object,
     guint property_id, const GValue * value, GParamSpec * pspec)
 {
@@ -59,10 +63,14 @@ base_drawable_set_property (GObject * object,
 
 
 static void
-base_drawable_init (BaseDrawable * self) { }
+base_drawable_init (BaseDrawable * self)
+{
+}
 
 static void
-base_drawable_dispose (GObject * gobject) {}
+base_drawable_dispose (GObject * gobject)
+{
+}
 
 /* =================== CLASS */
 
@@ -74,14 +82,11 @@ base_drawable_class_init (BaseDrawableClass * klass)
   object_class->dispose = base_drawable_dispose;
   object_class->set_property = base_drawable_set_property;
 
-  obj_properties[PROP_DRAWING_SCENE] =
+  g_object_class_install_property (object_class, PROP_DRAWING_SCENE,
       g_param_spec_object ("drawing-scene",
-      "Drawing Scene", "Scene that triggers drawing of the object",
-      /* TODO: can check type here: to have a signal */
-      G_TYPE_OBJECT, G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE);
-
-  g_object_class_install_properties (object_class,
-      BASE_DRAWABLE_N_PROPERTIES, obj_properties);
+          "Drawing Scene", "Scene that triggers drawing of the object",
+          /* TODO: can check type here: to have a signal */
+          G_TYPE_OBJECT, G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE));
 }
 
 

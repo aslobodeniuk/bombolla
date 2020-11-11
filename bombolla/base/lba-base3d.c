@@ -21,7 +21,15 @@
 #include "bombolla/base/lba-base3d.h"
 #include "bombolla/lba-log.h"
 
-void
+typedef enum
+{
+  PROP_X = 1,
+  PROP_Y,
+  PROP_Z
+} Base3dProperty;
+
+
+static void
 base3d_set_property (GObject * object,
     guint property_id, const GValue * value, GParamSpec * pspec)
 {
@@ -41,9 +49,7 @@ base3d_set_property (GObject * object,
       break;
 
     default:
-      /* Chain up to parent class */
-      base_drawable_set_property (object,
-          property_id, value, pspec);
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
       break;
   }
 }
@@ -81,18 +87,10 @@ base3d_init (Base3d * self)
 
 
 static void
-base3d_dispose (GObject * gobject)
-{
-}
-
-/* =================== CLASS */
-
-static void
 base3d_class_init (Base3dClass * klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
-  object_class->dispose = base3d_dispose;
   object_class->set_property = base3d_set_property;
   object_class->get_property = base3d_get_property;
 
@@ -101,21 +99,21 @@ base3d_class_init (Base3dClass * klass)
       g_param_spec_double ("x",
           "X", "X coordinate",
           -G_MAXDOUBLE, G_MAXDOUBLE, 0.5,
-          G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE));
+          G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE | G_PARAM_CONSTRUCT));
 
   g_object_class_install_property (object_class,
       PROP_Y,
       g_param_spec_double ("y",
           "Y", "Y coordinate",
           -G_MAXDOUBLE, G_MAXDOUBLE, 0.5,
-          G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE));
+          G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE | G_PARAM_CONSTRUCT));
   
   g_object_class_install_property (object_class,
       PROP_Z,
       g_param_spec_double ("z",
           "Z", "Z coordinate",
           -G_MAXDOUBLE, G_MAXDOUBLE, 0.5,
-          G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE));
+          G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE | G_PARAM_CONSTRUCT));
 }
 
 

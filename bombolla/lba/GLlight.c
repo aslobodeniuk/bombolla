@@ -22,11 +22,6 @@
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 
-GType gl_light_get_type (void);
-
-#define GLLIGHT_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj), gl_light_get_type , GLLightClass))
-
-/* ======================= Instance */
 typedef struct _GLLight
 {
   Base3d parent;
@@ -35,16 +30,15 @@ typedef struct _GLLight
 } GLLight;
 
 
-/* ======================= Class */
 typedef struct _GLLightClass
 {
   Base3dClass parent;
 } GLLightClass;
 
+
 typedef enum
 {
-  PROP_GL_PROVIDER = BASE3D_N_PROPERTIES,
-  GLLIGHT_N_PROPERTIES
+  PROP_GL_PROVIDER = 1
 } GLLightProperty;
 
 
@@ -62,7 +56,8 @@ gl_light_draw (BaseDrawable * base)
 
   LBA_LOG ("draw (%f, %f, %f)", x, y, z);
 
-  /* TODO: to base class */
+  /* TODO: to base class.
+   * same code with GLCube */
   if (G_UNLIKELY (!self->i)) {
     GType t;
     BaseOpenGLInterface *i = NULL;
@@ -102,6 +97,7 @@ gl_light_draw (BaseDrawable * base)
   i->glLightfv(i->LBA_GL_LIGHT0, i->LBA_GL_POSITION, lightPos0);
 }
 
+
 static void
 gl_light_init (GLLight * self)
 {
@@ -125,33 +121,37 @@ gl_light_set_property (GObject * object,
       break;
 
     default:
-      /* Chain up to parent class */
-      base3d_set_property (object, property_id, value, pspec);
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
   }
 }
 
-/* =================== CLASS */
 
 static void
 gl_light_class_init (GLLightClass * klass)
 {
-  BaseDrawableClass *base_class = BASE_DRAWABLE_CLASS (klass);
-  GObjectClass *object_class = G_OBJECT_CLASS (klass);
+  BaseDrawableClass *base_class = (BaseDrawableClass *) klass;
+  GObjectClass *object_class = (GObjectClass *) klass;
 
   object_class->set_property = gl_light_set_property;
 
   LBA_LOG ("%p", base_class);
   base_class->draw = gl_light_draw;
 
-  /* FIXME: would be nice to move it to some base class */
+  /* FIXME: would be nice to move it to some base class.
+   * Lacking multiple inheiritance: it has to be base3d (that doesn't necessary
+   * have to be opengl), and opengl. Shares the same code with GLCube */
   g_object_class_install_property (object_class,
       PROP_GL_PROVIDER,
       g_param_spec_gtype ("gl-provider",
           "GL provider", "Object, that provides Opengl interface",
           /* We don't know what plugin may provide us an interface yet */
-          G_TYPE_NONE, G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE));
+          G_TYPE_NONE,
+          G_PARAM_STATIC_STRINGS |
+          G_PARAM_WRITABLE));
 }
 
 
 G_DEFINE_TYPE (GLLight, gl_light, G_TYPE_BASE3D)
+
+/* Export plugin */
     BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (gl_light);

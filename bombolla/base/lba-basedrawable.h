@@ -48,15 +48,4 @@ typedef struct _BaseDrawableClass
 
 } BaseDrawableClass;
 
-
-typedef enum
-{
-  PROP_DRAWING_SCENE = 1,
-  BASE_DRAWABLE_N_PROPERTIES
-} BaseDrawableProperty;
-
-void
-base_drawable_set_property (GObject * object,
-    guint property_id, const GValue * value, GParamSpec * pspec);
-
 #endif

@@ -22,11 +22,6 @@
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 
-GType gl_cube_get_type (void);
-
-#define GLCUBE_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj), gl_cube_get_type , GLCubeClass))
-
-/* ======================= Instance */
 typedef struct _GLCube
 {
   Base3d parent;
@@ -35,16 +30,15 @@ typedef struct _GLCube
 } GLCube;
 
 
-/* ======================= Class */
 typedef struct _GLCubeClass
 {
   Base3dClass parent;
 } GLCubeClass;
 
+
 typedef enum
 {
-  PROP_GL_PROVIDER = BASE3D_N_PROPERTIES,
-  GLCUBE_N_PROPERTIES
+  PROP_GL_PROVIDER = 1
 } GLCubeProperty;
 
 
@@ -180,18 +174,16 @@ gl_cube_set_property (GObject * object,
       break;
 
     default:
-      /* Chain up to parent class */
-      base3d_set_property (object, property_id, value, pspec);
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
   }
 }
 
-/* =================== CLASS */
 
 static void
 gl_cube_class_init (GLCubeClass * klass)
 {
-  BaseDrawableClass *base_class = BASE_DRAWABLE_CLASS (klass);
-  GObjectClass *object_class = G_OBJECT_CLASS (klass);
+  BaseDrawableClass *base_class = (BaseDrawableClass *) klass;
+  GObjectClass *object_class = (GObjectClass *) klass;
 
   object_class->set_property = gl_cube_set_property;
 
@@ -209,4 +201,6 @@ gl_cube_class_init (GLCubeClass * klass)
 
 
 G_DEFINE_TYPE (GLCube, gl_cube, G_TYPE_BASE3D)
+
+/* Export plugin */
     BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (gl_cube);

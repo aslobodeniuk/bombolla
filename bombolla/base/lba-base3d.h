@@ -47,16 +47,4 @@ typedef struct _Base3dClass
 } Base3dClass;
 
 
-typedef enum
-{
-  PROP_X = BASE_DRAWABLE_N_PROPERTIES,
-  PROP_Y,
-  PROP_Z,
-  BASE3D_N_PROPERTIES
-} Base3dProperty;
-
-void
-base3d_set_property (GObject * object,
-    guint property_id, const GValue * value, GParamSpec * pspec);
-
 #endif

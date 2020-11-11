@@ -27,7 +27,6 @@
 #define LBA_OPENGL_TEST 1
 #include "bombolla/base/lba-base-opengl-interface.h"
 
-/* ======================= Instance */
 typedef struct _GlutWindow
 {
   BaseWindow parent;
@@ -36,7 +35,6 @@ typedef struct _GlutWindow
 } GlutWindow;
 
 
-/* ======================= Class */
 typedef struct _GlutWindowClass
 {
   BaseWindowClass parent;
@@ -223,4 +221,5 @@ G_DEFINE_TYPE_WITH_CODE (GlutWindow, glut_window, G_TYPE_BASE_WINDOW,
     G_IMPLEMENT_INTERFACE (G_TYPE_BASE_OPENGL,
         glut_window_opengl_interface_init))
 
+/* Export plugin */
     BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (glut_window);
