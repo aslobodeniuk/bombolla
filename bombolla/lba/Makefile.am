@@ -14,24 +14,26 @@ libGlutWindow_la_LDFLAGS = $(PLUGIN_LDFLAGS)
 lib_LTLIBRARIES += libGLcube.la
 libGLcube_la_DEPENDENCIES = \
 $(top_builddir)/bombolla/base/liblba-base3d.la \
+$(top_builddir)/bombolla/base/liblba-basegl3d.la \
 $(top_builddir)/bombolla/base/liblba-basedrawable.la \
 $(top_builddir)/bombolla/base/liblba-base-opengl-interface.la
 
 libGLcube_la_SOURCES = GLcube.c
 libGLcube_la_CFLAGS = $(GOBJ_CFLAGS) $(PLUGIN_CFLAGS)
-libGLcube_la_LIBADD = $(GOBJ_LIBS) -L$(top_builddir)/bombolla/base/.libs/ -llba-basedrawable -llba-base-opengl-interface -llba-base3d
+libGLcube_la_LIBADD = $(GOBJ_LIBS) -L$(top_builddir)/bombolla/base/.libs/ -llba-basedrawable -llba-base-opengl-interface -llba-base3d -llba-basegl3d
 libGLcube_la_LDFLAGS = $(PLUGIN_LDFLAGS)
 
 # GLlight
 lib_LTLIBRARIES += libGLlight.la
 libGLlight_la_DEPENDENCIES = \
 $(top_builddir)/bombolla/base/liblba-base3d.la \
+$(top_builddir)/bombolla/base/liblba-basegl3d.la \
 $(top_builddir)/bombolla/base/liblba-basedrawable.la \
 $(top_builddir)/bombolla/base/liblba-base-opengl-interface.la
 
 libGLlight_la_SOURCES = GLlight.c
 libGLlight_la_CFLAGS = $(GOBJ_CFLAGS) $(PLUGIN_CFLAGS)
-libGLlight_la_LIBADD = $(GOBJ_LIBS) -L$(top_builddir)/bombolla/base/.libs/ -llba-basedrawable -llba-base-opengl-interface -llba-base3d
+libGLlight_la_LIBADD = $(GOBJ_LIBS) -L$(top_builddir)/bombolla/base/.libs/ -llba-basedrawable -llba-base-opengl-interface -llba-base3d -llba-basegl3d
 libGLlight_la_LDFLAGS = $(PLUGIN_LDFLAGS)
 
 

@@ -18,32 +18,36 @@
  */
 
 
-#ifndef __BASE_DRAWABLE_H__
-#define __BASE_DRAWABLE_H__
+#ifndef __BASEGL3D_H__
+#define __BASEGL3D_H__
 
 #include <glib-object.h>
 #include <glib/gstdio.h>
+#include "bombolla/base/lba-base3d.h"
+#include "bombolla/base/lba-base-opengl-interface.h"
 
-GType base_drawable_get_type (void);
+GType basegl3d_get_type (void);
 
-#define G_TYPE_BASE_DRAWABLE (base_drawable_get_type ())
+#define G_TYPE_BASEGL3D (basegl3d_get_type ())
 
-#define BASE_DRAWABLE_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),G_TYPE_BASE_DRAWABLE ,BaseDrawableClass))
-#define BASE_DRAWABLE_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASE_DRAWABLE ,BaseDrawableClass))
+#define BASE_GL3D_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),G_TYPE_BASEGL3D ,Basegl3dClass))
+#define BASE_GL3D_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASEGL3D ,Basegl3dClass))
 
-typedef struct _BaseDrawable
+typedef struct _Basegl3d
 {
-  GObject parent;
+  Base3d parent;
 
-  GObject *scene;
-} BaseDrawable;
+  BaseOpenGLInterface *i;
+
+} Basegl3d;
 
 
-typedef struct _BaseDrawableClass
+typedef struct _Basegl3dClass
 {
-  GObjectClass parent;
+  Base3dClass parent;
 
-  void (*draw) (BaseDrawable *);
-} BaseDrawableClass;
+  void (*draw) (Basegl3d *, BaseOpenGLInterface *);
+} Basegl3dClass;
+
 
 #endif

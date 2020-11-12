@@ -32,7 +32,6 @@ enum
 
 static guint base_window_signals[LAST_SIGNAL] = { 0 };
 
-/* ================= PROPERTIES */
 typedef enum
 {
   PROP_WIDTH = 1,
@@ -147,7 +146,6 @@ base_window_dispose (GObject *gobject)
     klass->close (self);
 }
 
-/* =================== CLASS */
 
 static void
 base_window_class_init (BaseWindowClass * klass)
@@ -162,35 +160,35 @@ base_window_class_init (BaseWindowClass * klass)
       g_param_spec_string ("title",
       "Window title",
       "Window title",
-      "Base Window", G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE);
+      "Base Window", G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
 
   obj_properties[PROP_WIDTH] =
       g_param_spec_uint ("width",
       "Window width", "Window width", 0 /* minimum value */ ,
       G_MAXUINT /* maximum value */ ,
       500 /* default value */ ,
-      G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE);
+      G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
 
   obj_properties[PROP_HEIGHT] =
       g_param_spec_uint ("height",
       "Window height", "Window height", 0 /* minimum value */ ,
       G_MAXUINT /* maximum value */ ,
       500 /* default value */ ,
-      G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE);
+      G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
 
   obj_properties[PROP_X_POS] =
       g_param_spec_uint ("x-pos",
       "Window position X", "Window position X", 0 /* minimum value */ ,
       G_MAXUINT /* maximum value */ ,
       100 /* default value */ ,
-      G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE);
+      G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
 
   obj_properties[PROP_Y_POS] =
       g_param_spec_uint ("y-pos",
       "Window position Y", "Window position Y", 0 /* minimum value */ ,
       G_MAXUINT /* maximum value */ ,
       100 /* default value */ ,
-      G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE);
+      G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
 
   g_object_class_install_properties (object_class,
       N_PROPERTIES, obj_properties);

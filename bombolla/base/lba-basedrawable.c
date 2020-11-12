@@ -67,11 +67,6 @@ base_drawable_init (BaseDrawable * self)
 {
 }
 
-static void
-base_drawable_dispose (GObject * gobject)
-{
-}
-
 /* =================== CLASS */
 
 static void
@@ -79,7 +74,6 @@ base_drawable_class_init (BaseDrawableClass * klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
-  object_class->dispose = base_drawable_dispose;
   object_class->set_property = base_drawable_set_property;
 
   g_object_class_install_property (object_class, PROP_DRAWING_SCENE,
