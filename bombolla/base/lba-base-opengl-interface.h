@@ -40,7 +40,7 @@ typedef double lba_GLclampd;    /* double precision float in [0,1] */
 
 /* When implementation is including this header, it can test if types
  * are matching the sizes */
-#ifdef LBA_OPENGL_TEST
+#ifdef LBA_OPENGL_IFACE_IMPLEMENTATION
 #define LBA_TEST_TYPE_SIZE(x)                     \
   G_STATIC_ASSERT(sizeof (x) == sizeof (lba_##x))
 
@@ -61,88 +61,142 @@ LBA_TEST_TYPE_SIZE (GLdouble);
 LBA_TEST_TYPE_SIZE (GLclampd);
 #endif
 
+struct _BaseOpenGLInterface
+{
+  GTypeInterface parent_iface;
+
+
+  lba_GLbitfield LBA_GL_COLOR_BUFFER_BIT;
+  lba_GLbitfield LBA_GL_STENCIL_BUFFER_BIT;
+  lba_GLbitfield LBA_GL_DEPTH_BUFFER_BIT;
+
+  lba_GLenum LBA_GL_TRIANGLES;
+  lba_GLenum LBA_GL_POLYGON;
+  lba_GLenum LBA_GL_QUADS;
+  void (*glBegin) (lba_GLenum mode);
+  void (*glEnd) (void);
+
+
+  lba_GLenum LBA_GL_PROJECTION;
+  lba_GLenum LBA_GL_MODELVIEW;
+  void (*glMatrixMode) (lba_GLenum mode);
+
+  void (*glEnable) (lba_GLenum cap);
+  void (*glDisable) (lba_GLenum cap);
+
+  lba_GLenum LBA_GL_DEPTH_TEST;
+
+  void (*glClearColor) (lba_GLfloat red,
+      lba_GLfloat green, lba_GLfloat blue, lba_GLfloat alpha);
+
+
+  void (*glClear) (lba_GLbitfield mask);
+
+  void (*glLoadIdentity) (void);
+
+  void (*glRotatef) (lba_GLfloat angle,
+      lba_GLfloat x, lba_GLfloat y, lba_GLfloat z);
+
+  void (*glColor3f) (lba_GLfloat red, lba_GLfloat green, lba_GLfloat blue);
+  void (*glVertex3f) (lba_GLfloat x, lba_GLfloat y, lba_GLfloat z);
+
+  void (*glFlush) (void);
+
+  lba_GLenum LBA_GL_LIGHT0;
+  lba_GLenum LBA_GL_DIFFUSE;
+  lba_GLenum LBA_GL_POSITION;
+  void (*glLightfv) (lba_GLenum light,
+      lba_GLenum pnam, const lba_GLfloat * params);
+
+
+  void (*glGenTextures) (lba_GLsizei n, lba_GLuint * textures);
+
+  lba_GLenum LBA_GL_TEXTURE_2D;
+  void (*glBindTexture) (lba_GLenum target, lba_GLuint texture);
+
+
+  lba_GLenum LBA_GL_TEXTURE_MIN_FILTER;
+  lba_GLenum LBA_GL_TEXTURE_MAG_FILTER;
+
+  lba_GLenum LBA_GL_NEAREST;
+  void (*glTexParameteri) (lba_GLenum target,
+      lba_GLenum pname, lba_GLint param);
+
+  lba_GLenum LBA_GL_RGBA;
+
+  lba_GLenum LBA_GL_UNSIGNED_BYTE;
+  void (*glTexImage2D) (lba_GLenum target,
+      lba_GLint level,
+      lba_GLint internalformat,
+      lba_GLsizei width,
+      lba_GLsizei height,
+      lba_GLint border, lba_GLenum format, lba_GLenum type, const void *data);
+
+  void (*glOrtho) (lba_GLdouble left,
+      lba_GLdouble right,
+      lba_GLdouble bottom,
+      lba_GLdouble top, lba_GLdouble nearVal, lba_GLdouble farVal);
+
+  void (*glTexCoord2i) (lba_GLint s, lba_GLint t);
+
+  void (*glVertex2i) (lba_GLint x, lba_GLint y);
+};
+
+#ifdef LBA_OPENGL_IFACE_IMPLEMENTATION
+static void
+lba_opengl_interface_init (struct _BaseOpenGLInterface * iface)
+{
+#define iface_set(x) iface->x = x
+#define iface_set_lba(x) iface->LBA_##x = x
+
+  iface_set_lba (GL_COLOR_BUFFER_BIT);
+  iface_set_lba (GL_STENCIL_BUFFER_BIT);
+  iface_set_lba (GL_DEPTH_BUFFER_BIT);
+  iface_set_lba (GL_TRIANGLES);
+  iface_set_lba (GL_POLYGON);
+  iface_set_lba (GL_MODELVIEW);
+  iface_set_lba (GL_LIGHT0);
+  iface_set_lba (GL_DIFFUSE);
+  iface_set_lba (GL_POSITION);
+
+  iface_set (glEnable);
+  iface_set (glDisable);
+  iface_set_lba (GL_DEPTH_TEST);
+  iface_set (glClearColor);
+  iface_set (glClear);
+  iface_set (glLoadIdentity);
+  iface_set (glRotatef);
+  iface_set (glBegin);
+  iface_set (glEnd);
+
+  iface_set (glColor3f);
+  iface_set (glVertex3f);
+  iface_set (glFlush);
+  iface_set (glRotatef);
+  iface_set (glMatrixMode);
+  iface_set (glLightfv);
+
+  iface_set (glGenTextures);
+  iface_set (glBindTexture);
+  iface_set (glTexParameteri);
+  iface_set (glTexImage2D);
+  iface_set (glOrtho);
+  iface_set (glTexCoord2i);
+  iface_set (glVertex2i);
+
+  iface_set_lba (GL_TEXTURE_2D);
+  iface_set_lba (GL_NEAREST);
+  iface_set_lba (GL_TEXTURE_MIN_FILTER);
+  iface_set_lba (GL_TEXTURE_MAG_FILTER);
+
+  iface_set_lba (GL_RGBA);
+  iface_set_lba (GL_UNSIGNED_BYTE);
+
+#undef iface_set
+#undef iface_set_lba
+}
+#endif
+
 #define G_TYPE_BASE_OPENGL base_opengl_get_type ()
 G_DECLARE_INTERFACE (BaseOpenGL, base_opengl, G, BASE_OPENGL, GObject)
-
-     struct _BaseOpenGLInterface
-     {
-       GTypeInterface parent_iface;
-
-       /* Constants */
-       /* -------------------------------------- */
-       /* Indicates the buffers currently enabled for color writing. */
-       lba_GLbitfield LBA_GL_COLOR_BUFFER_BIT;
-       /* Indicates the stencil buffer. */
-       lba_GLbitfield LBA_GL_STENCIL_BUFFER_BIT;
-       /* Indicates the depth buffer. */
-       lba_GLbitfield LBA_GL_DEPTH_BUFFER_BIT;
-       /* -------------------------------------- */
-
-       lba_GLenum LBA_GL_TRIANGLES;
-       lba_GLenum LBA_GL_POLYGON;
-
-
-       /* glMatrixMode — specify which matrix is the current matrix */
-       void (*glMatrixMode) (lba_GLenum mode);
-       lba_GLenum LBA_GL_MODELVIEW;
-
-       /* -------------------------------------- */
-       /* glEnable — enable or disable server-side GL capabilities */
-       void (*glEnable) (lba_GLenum cap);
-       void (*glDisable) (lba_GLenum cap);
-
-  /**
-   * @GL_DEPTH_TEST:
-   *
-   * If enabled, do depth comparisons and update the depth buffer.
-   * Note that even if the depth buffer exists and the depth mask is non-zero,
-   * the depth buffer is not updated if the depth test is disabled.
-   * See glDepthFunc and glDepthRange. */
-       lba_GLenum LBA_GL_DEPTH_TEST;
-
-       void (*glClearColor) (lba_GLfloat red,
-           lba_GLfloat green, lba_GLfloat blue, lba_GLfloat alpha);
-
-
-       void (*glClear) (lba_GLbitfield mask);
-
-       void (*glLoadIdentity) (void);
-
-       void (*glRotatef) (lba_GLfloat angle,
-           lba_GLfloat x, lba_GLfloat y, lba_GLfloat z);
-
-
-       /* glBegin — delimit the vertices of a primitive or a group of like primitives */
-       void (*glBegin) (lba_GLenum mode);
-       void (*glEnd) (void);
-
-       /* glColor — set the current color */
-       void (*glColor3f) (lba_GLfloat red, lba_GLfloat green, lba_GLfloat blue);
-
-  /** glVertex — specify a vertex
-   * glVertex commands are used within glBegin/glEnd pairs to specify point, line,
-   * and polygon vertices. The current color, normal, texture coordinates, and fog
-   * coordinate are associated with the vertex when glVertex is called.
-   *
-   * When only x and y are specified, z defaults to 0 and w defaults to 1.
-   * When x, y, and z are specified, w defaults to 1.
-   *
-   * NOTES:
-   * Invoking glVertex outside of a glBegin/glEnd pair results in undefined behavior. 
-   * */
-       void (*glVertex3f) (lba_GLfloat x, lba_GLfloat y, lba_GLfloat z);
-
-       /* glFlush — force execution of GL commands in finite time  */
-       void (*glFlush) (void);
-
-       lba_GLenum LBA_GL_LIGHT0;
-       lba_GLenum LBA_GL_DIFFUSE;
-       lba_GLenum LBA_GL_POSITION;
-
-       void (*glLightfv) (lba_GLenum light,
-           lba_GLenum pname, const lba_GLfloat * params);
-
-     };
-
-
 #endif

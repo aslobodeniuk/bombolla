@@ -24,7 +24,7 @@
 
 #include "GL/freeglut.h"
 #include "GL/gl.h"
-#define LBA_OPENGL_TEST 1
+#define LBA_OPENGL_IFACE_IMPLEMENTATION 1
 #include "bombolla/base/lba-base-opengl-interface.h"
 
 typedef struct _GlutWindow
@@ -184,36 +184,8 @@ glut_window_opengl_interface_init (BaseOpenGLInterface * iface)
     glutInit (&argc, argv);
     g_once_init_leave (&initialization_value, setup_value);
   }
-#define iface_set(x) iface->x = x
-#define iface_set_lba(x) iface->LBA_##x = x
 
-  iface_set_lba (GL_COLOR_BUFFER_BIT);
-  iface_set_lba (GL_STENCIL_BUFFER_BIT);
-  iface_set_lba (GL_DEPTH_BUFFER_BIT);
-  iface_set_lba (GL_TRIANGLES);
-  iface_set_lba (GL_POLYGON);
-  iface_set_lba (GL_MODELVIEW);
-  iface_set_lba (GL_LIGHT0);
-  iface_set_lba (GL_DIFFUSE);
-  iface_set_lba (GL_POSITION);
-
-  iface_set (glEnable);
-  iface_set (glDisable);
-  iface_set_lba (GL_DEPTH_TEST);
-  iface_set (glClearColor);
-  iface_set (glClear);
-  iface_set (glLoadIdentity);
-  iface_set (glRotatef);
-  iface_set (glBegin);
-  iface_set (glEnd);
-
-  iface_set (glColor3f);
-  iface_set (glVertex3f);
-  iface_set (glFlush);
-  iface_set (glRotatef);
-  iface_set (glMatrixMode);
-  iface_set (glLightfv);
-#undef iface_set
+  lba_opengl_interface_init (iface);
 }
 
 

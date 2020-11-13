@@ -17,13 +17,34 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define LBA_OPENGL_NO_IFACE_IMPLEMENTATION 1
-#include "bombolla/base/lba-base-opengl-interface.h"
 
-G_DEFINE_INTERFACE (BaseOpenGL, base_opengl, G_TYPE_OBJECT)
+#ifndef __BASE2D_H__
+#define __BASE2D_H__
 
-static void
-base_opengl_default_init (BaseOpenGLInterface *iface)
+#include <glib-object.h>
+#include <glib/gstdio.h>
+#include "bombolla/base/lba-basedrawable.h"
+
+GType base2d_get_type (void);
+
+#define G_TYPE_BASE2D (base2d_get_type ())
+
+#define BASE2D_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),G_TYPE_BASE2D ,Base2dClass))
+#define BASE2D_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASE2D ,Base2dClass))
+
+typedef struct _Base2d
 {
-    /* add properties and signals to the interface here */
-}
+  BaseDrawable parent;
+
+  guint x, y, width, height;
+
+} Base2d;
+
+
+typedef struct _Base2dClass
+{
+  BaseDrawableClass parent;
+} Base2dClass;
+
+
+#endif

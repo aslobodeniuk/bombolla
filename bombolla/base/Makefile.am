@@ -37,6 +37,28 @@ liblba_basegl3d_la_SOURCES = lba-basegl3d.c
 liblba_basegl3d_la_CFLAGS = $(BASECLASS_CFLAGS)
 liblba_basegl3d_la_LIBADD = $(BASECLASS_LIBS) -llba-basedrawable -llba-base-opengl-interface -llba-base3d
 
+# Base2d
+lib_LTLIBRARIES += liblba-base2d.la
+noinst_HEADERS += lba-base2d.h
+liblba_base2d_la_DEPENDENCIES = \
+$(top_builddir)/bombolla/base/liblba-basedrawable.la
+
+liblba_base2d_la_SOURCES = lba-base2d.c
+liblba_base2d_la_CFLAGS = $(BASECLASS_CFLAGS)
+liblba_base2d_la_LIBADD = $(BASECLASS_LIBS) -llba-basedrawable
+
+# Basegl2d
+lib_LTLIBRARIES += liblba-basegl2d.la
+noinst_HEADERS += lba-basegl2d.h
+liblba_basegl2d_la_DEPENDENCIES = \
+$(top_builddir)/bombolla/base/liblba-basedrawable.la \
+$(top_builddir)/bombolla/base/liblba-base2d.la \
+$(top_builddir)/bombolla/base/liblba-base-opengl-interface.la
+
+liblba_basegl2d_la_SOURCES = lba-basegl2d.c
+liblba_basegl2d_la_CFLAGS = $(BASECLASS_CFLAGS)
+liblba_basegl2d_la_LIBADD = $(BASECLASS_LIBS) -llba-basedrawable -llba-base-opengl-interface -llba-base2d
+
 # BaseOpenGLInterface
 lib_LTLIBRARIES += liblba-base-opengl-interface.la
 noinst_HEADERS += lba-base-opengl-interface.h
