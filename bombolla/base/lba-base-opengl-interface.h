@@ -123,6 +123,7 @@ struct _BaseOpenGLInterface
       lba_GLenum pname, lba_GLint param);
 
   lba_GLenum LBA_GL_RGBA;
+  lba_GLenum LBA_GL_LUMINANCE;
 
   lba_GLenum LBA_GL_UNSIGNED_BYTE;
   void (*glTexImage2D) (lba_GLenum target,
@@ -190,7 +191,9 @@ lba_opengl_interface_init (struct _BaseOpenGLInterface * iface)
   iface_set_lba (GL_TEXTURE_MAG_FILTER);
 
   iface_set_lba (GL_RGBA);
+  iface_set_lba (GL_LUMINANCE);
   iface_set_lba (GL_UNSIGNED_BYTE);
+  iface_set_lba (GL_QUADS);
 
 #undef iface_set
 #undef iface_set_lba

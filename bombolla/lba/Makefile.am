@@ -36,5 +36,18 @@ libGLlight_la_CFLAGS = $(GOBJ_CFLAGS) $(PLUGIN_CFLAGS)
 libGLlight_la_LIBADD = $(GOBJ_LIBS) -L$(top_builddir)/bombolla/base/.libs/ -llba-basedrawable -llba-base-opengl-interface -llba-base3d -llba-basegl3d
 libGLlight_la_LDFLAGS = $(PLUGIN_LDFLAGS)
 
+# GLtexture
+lib_LTLIBRARIES += libGLtexture.la
+libGLtexture_la_DEPENDENCIES = \
+$(top_builddir)/bombolla/base/liblba-base2d.la \
+$(top_builddir)/bombolla/base/liblba-basegl2d.la \
+$(top_builddir)/bombolla/base/liblba-basedrawable.la \
+$(top_builddir)/bombolla/base/liblba-base-opengl-interface.la
+
+libGLtexture_la_SOURCES = GLtexture.c
+libGLtexture_la_CFLAGS = $(GOBJ_CFLAGS) $(PLUGIN_CFLAGS)
+libGLtexture_la_LIBADD = $(GOBJ_LIBS) -L$(top_builddir)/bombolla/base/.libs/ -llba-basedrawable -llba-base-opengl-interface -llba-base2d -llba-basegl2d
+libGLtexture_la_LDFLAGS = $(PLUGIN_LDFLAGS)
+
 
 EXTRA_DIST = ../../autogen.sh

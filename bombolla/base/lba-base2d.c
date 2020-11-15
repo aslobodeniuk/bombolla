@@ -81,7 +81,7 @@ base2d_get_property (GObject * object,
     case PROP_HEIGHT:
       g_value_set_uint (value, self->height);
       break;
-      
+
     default:
       /* We don't have any other property... */
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -107,28 +107,28 @@ base2d_class_init (Base2dClass * klass)
       PROP_X,
       g_param_spec_uint ("x",
           "X", "X coordinate",
-          0, G_MAXUINT, 0,
+          0, G_MAXUINT, 10,
           G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE | G_PARAM_CONSTRUCT));
 
   g_object_class_install_property (object_class,
       PROP_Y,
       g_param_spec_uint ("y",
           "Y", "Y coordinate",
-          0, G_MAXUINT, 0,
+          0, G_MAXUINT, 10,
           G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE | G_PARAM_CONSTRUCT));
 
   g_object_class_install_property (object_class,
-      PROP_X,
+      PROP_WIDTH,
       g_param_spec_uint ("width",
           "W", "Width",
-          0, G_MAXUINT, 0,
+          0, G_MAXUINT, 100,
           G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE | G_PARAM_CONSTRUCT));
 
   g_object_class_install_property (object_class,
-      PROP_Y,
+      PROP_HEIGHT,
       g_param_spec_uint ("height",
           "H", "Height",
-          0, G_MAXUINT, 0,
+          0, G_MAXUINT, 100,
           G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE | G_PARAM_CONSTRUCT));
 
 }

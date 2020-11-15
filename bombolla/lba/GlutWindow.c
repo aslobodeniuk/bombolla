@@ -124,7 +124,7 @@ glut_window_open (BaseWindow * base)
   GlutWindow *self = (GlutWindow *) base;
 
   /* TODO: param */
-  glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+  glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
 
   glutInitWindowSize (base->width, base->height);
   glutInitWindowPosition (base->x_pos, base->y_pos);
