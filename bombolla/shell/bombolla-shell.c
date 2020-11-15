@@ -94,7 +94,7 @@ _str2gtype (const GValue * src_value, GValue * dest_value)
 
   if (s) {
     gpointer p = g_hash_table_lookup (gtypes, (gpointer) s);
-    t = (GType)p;
+    t = (GType) p;
   }
 
   if (!t || t == G_TYPE_NONE) {
@@ -102,6 +102,163 @@ _str2gtype (const GValue * src_value, GValue * dest_value)
   }
 
   g_value_set_gtype (dest_value, t);
+}
+
+
+static gboolean
+proccess_shell_string (const char *a)
+{
+  gboolean ret = TRUE;
+  char **tmp = NULL;
+  char **tokens;
+
+  g_printf ("processing '%s'\n", a);
+
+  tokens = g_strsplit (a, " ", 0);
+
+  if (!tokens) {
+    g_warning ("wrong syntax");
+    goto done;
+  }
+
+  if (tokens && tokens[0] && !g_strcmp0 (tokens[0], "q")) {
+    /* Quit */
+    ret = FALSE;
+    goto done;
+  }
+
+  if (tokens && tokens[0] && tokens[1]) {
+    /* Create */
+    if (!g_strcmp0 (tokens[0], "create")) {
+      const gchar *typename = tokens[1];
+      const gchar *varname = tokens[2];
+      const gchar *request_failure_msg = NULL;
+      GType obj_type = (GType) g_hash_table_lookup (gtypes, typename);
+
+      if (!varname) {
+        request_failure_msg = "need varname";
+      } else if (g_hash_table_lookup (objects, varname)) {
+        request_failure_msg = "variable already exists";
+      } else if (!obj_type) {
+        request_failure_msg = "type not found";
+      }
+
+      if (request_failure_msg) {
+        g_warning (request_failure_msg);
+      } else {
+        GObject *obj = g_object_new (obj_type, NULL);
+
+        if (obj) {
+          g_hash_table_insert (objects, (gpointer) g_strdup (varname), obj);
+          g_printf ("%s %s created\n", typename, varname);
+        }
+      }
+
+      goto done;
+    }
+
+    /* Destroy */
+    if (!g_strcmp0 (tokens[0], "destroy")) {
+      const gchar *varname = tokens[1];
+      GObject *obj = g_hash_table_lookup (objects, varname);
+
+      if (obj) {
+        g_hash_table_remove (objects, varname);
+        g_printf ("%s destroyed\n", varname);
+      } else
+        g_warning ("object %s not found", varname);
+
+      goto done;
+    }
+
+    /* Call */
+    if (!g_strcmp0 (tokens[0], "call")) {
+      const gchar *objname, *signal_name;
+      GObject *obj;
+
+      tmp = g_strsplit (tokens[1], ".", 2);
+
+      if (FALSE == (tmp && tmp[0] && tmp[1])) {
+        g_warning ("wrong syntax");
+        goto done;
+      }
+
+      objname = tmp[0];
+      signal_name = tmp[1];
+
+      obj = g_hash_table_lookup (objects, objname);
+
+      if (!obj) {
+        g_warning ("object %s not found", objname);
+        goto done;
+      }
+
+      g_printf ("calling %s ()\n", signal_name);
+      g_signal_emit_by_name (obj, signal_name, NULL);
+      goto done;
+    }
+
+
+    /* Set */
+    if (!g_strcmp0 (tokens[0], "set")) {
+      GValue inp = G_VALUE_INIT;
+      GValue outp = G_VALUE_INIT;
+      const gchar *prop_name, *prop_val;
+      const gchar *objname;
+      GObject *obj;
+      GParamSpec *prop;
+
+      tmp = g_strsplit (tokens[1], ".", 2);
+
+      if (FALSE == (tmp && tmp[0] && tmp[1] && tokens[2])) {
+        g_warning ("wrong syntax");
+        goto done;
+      }
+
+      objname = tmp[0];
+      prop_name = tmp[1];
+
+      obj = g_hash_table_lookup (objects, objname);
+
+      if (!obj) {
+        g_warning ("object %s not found", objname);
+        goto done;
+      }
+
+      /* Value is all the string after the second space */
+      prop_val =
+          g_strstr_len (g_strstr_len (a, sizeof (a), " ") + 1, -1, " ") + 1;
+
+      /* Now we need to find out gtype of out */
+      prop = g_object_class_find_property (G_OBJECT_GET_CLASS (obj), prop_name);
+
+      if (!prop) {
+        g_warning ("property %s not found", prop_name);
+        goto done;
+      }
+
+      g_value_init (&inp, G_TYPE_STRING);
+      g_value_set_string (&inp, prop_val);
+      g_value_init (&outp, prop->value_type);
+
+      /* Now set outp */
+      if (!g_value_transform (&inp, &outp)) {
+        g_warning ("unsupported parameter type");
+        goto done;
+      }
+
+      g_printf ("setting %s.%s to %s\n", objname, prop_name, prop_val);
+      g_object_set_property (obj, prop_name, &outp);
+      goto done;
+    }
+  }
+
+  g_warning ("unknown command");
+done:
+  if (tmp)
+    g_strfreev (tmp);
+  g_strfreev (tokens);
+  return ret;
 }
 
 
@@ -114,40 +271,79 @@ main (int argc, char **argv)
   int ret = 1;
   GSList *modules_files = NULL, *l;
   GDir *dir = NULL;
+  gchar *script_contents = NULL;
 
   g_value_register_transform_func (G_TYPE_STRING, G_TYPE_UINT, _str2uint);
   g_value_register_transform_func (G_TYPE_STRING, G_TYPE_DOUBLE, _str2double);
   g_value_register_transform_func (G_TYPE_STRING, G_TYPE_OBJECT, _str2obj);
   g_value_register_transform_func (G_TYPE_STRING, G_TYPE_GTYPE, _str2gtype);
 
-  if (argc != 2) {
-    g_printf ("my-plugin-system-inspect <plugin or directory>");
-    return 1;
-  }
 
-  if (!g_file_test (argv[1], G_FILE_TEST_EXISTS)) {
-    g_warning ("Path doesn't exist\n");
-    return 1;
-  }
+  /* Parse arguments */
+  {
+    GOptionContext *ctx;
+    GError *err = NULL;
+    char *path = NULL;
+    char *script = FALSE;
+    GOptionEntry options[] = {
+      {"script", 'i', 0, G_OPTION_ARG_STRING, &script,
+          "Proccess input file before entering shell", NULL},
+      {"path", 'p', 0, G_OPTION_ARG_STRING, &path,
+          "Path to the plugins directory", NULL},
+      {NULL}
+    };
 
-  if (g_file_test (argv[1], G_FILE_TEST_IS_DIR)) {
-    GError *err;
-    const gchar *file;
-    dir = g_dir_open (argv[1], 0, &err);
-    if (!dir) {
-      g_warning ("%s", err->message);
-      g_error_free (err);
+    ctx = g_option_context_new ("-i <script file> | -p <plugins path or file>");
+    g_option_context_add_main_entries (ctx, options, NULL);
+    if (!g_option_context_parse (ctx, &argc, &argv, &err)) {
+      g_print ("Error initializing: %s\n", err->message);
+      exit (1);
     }
+    g_option_context_free (ctx);
 
-    while ((file = g_dir_read_name (dir))) {
-      if (g_str_has_suffix (file, B_PLUGIN_EXTENSION)) {
-        modules_files = g_slist_append (modules_files,
-            g_strjoin (B_OS_FILE_SEPARATOR, argv[1], file, NULL));
+    if (path) {
+      if (!g_file_test (path, G_FILE_TEST_EXISTS)) {
+        g_warning ("Path doesn't exist\n");
+        return 1;
       }
+
+      if (g_file_test (path, G_FILE_TEST_IS_DIR)) {
+        GError *err;
+        const gchar *file;
+        dir = g_dir_open (path, 0, &err);
+        if (!dir) {
+          g_warning ("%s", err->message);
+          g_error_free (err);
+        }
+
+        while ((file = g_dir_read_name (dir))) {
+          if (g_str_has_suffix (file, B_PLUGIN_EXTENSION)) {
+            modules_files = g_slist_append (modules_files,
+                g_strjoin (B_OS_FILE_SEPARATOR, path, file, NULL));
+          }
+        }
+      } else {
+        modules_files = g_slist_append (modules_files, g_strdup (path));
+      }
+      g_free (path);
     }
-  } else {
-    modules_files = g_slist_append (modules_files, g_strdup (argv[1]));
+
+    if (script) {
+      gsize length = 0;
+      if (!g_file_test (script, G_FILE_TEST_EXISTS)) {
+        g_warning ("Script file doesn't exist\n");
+        return 1;
+      }
+
+      if (g_file_get_contents (script, &script_contents, &length, NULL)
+          && length) {
+        script_contents[length - 1] = 0;
+      }
+
+      g_free (script);
+    }
   }
+
 
   /* Hash table "type name"/GType */
   gtypes = g_hash_table_new (g_str_hash, g_str_equal);
@@ -221,7 +417,7 @@ main (int argc, char **argv)
           const gchar *_tab = "  ";
           gchar *tab = g_strdup (_tab);
           g_printf ("--- Signals:\n");
-          for (t = plugin_type; t ; t = g_type_parent (t)) {
+          for (t = plugin_type; t; t = g_type_parent (t)) {
             gchar *tmptab;
 
             signals = g_signal_list_ids (t, &n_signals);
@@ -256,9 +452,8 @@ main (int argc, char **argv)
         {
           guint i;
           guint n_interfaces;
-          GType *in =
-              g_type_interfaces (plugin_type,
-                  &n_interfaces);
+          GType *in = g_type_interfaces (plugin_type,
+              &n_interfaces);
 
           for (i = 0; i < n_interfaces; i++) {
 
@@ -287,177 +482,35 @@ main (int argc, char **argv)
   objects =
       g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
 
+  /* Proccessing script */
+  if (script_contents) {
+    char **lines;
+    int i;
+
+    lines = g_strsplit (script_contents, "\n", 0);
+
+    for (i = 0; lines[i]; i++) {
+      if (!proccess_shell_string (lines[i]))
+        break;
+    }
+
+    g_strfreev (lines);
+    g_free (script_contents);
+  }
+
+  /* Shell */
   for (;;) {
     char a[512];
-    char **tokens;
+
+    /* Stdin input. */
     g_printf ("\n\t# ");
     fgets (a, sizeof (a), stdin);
     a[strlen (a) - 1] = 0;
 
-    g_printf ("processing '%s'\n", a);
-
-    tokens = g_strsplit (a, " ", 0);
-
-    if (tokens && tokens[0] && !g_strcmp0 (tokens[0], "q"))
+    if (!proccess_shell_string (a))
       break;
 
-    if (!tokens[1]) {
-      g_warning ("wrong syntax");
-      g_strfreev (tokens);
-      continue;
-    }
-
-    if (tokens && tokens[0] && tokens[1]) {
-      /* Create */
-      if (!g_strcmp0 (tokens[0], "create")) {
-        const gchar *typename = tokens[1];
-        const gchar *varname = tokens[2];
-        const gchar *request_failure_msg = NULL;
-        GType obj_type = (GType) g_hash_table_lookup (gtypes, typename);
-
-        if (!varname) {
-          request_failure_msg = "need varname";
-        } else if (g_hash_table_lookup (objects, varname)) {
-          request_failure_msg = "variable already exists";
-        } else if (!obj_type) {
-          request_failure_msg = "type not found";
-        }
-
-        if (request_failure_msg) {
-          g_warning (request_failure_msg);
-        } else {
-          GObject *obj = g_object_new (obj_type, NULL);
-
-          if (obj) {
-            g_hash_table_insert (objects, (gpointer) g_strdup (varname), obj);
-            g_printf ("%s %s created\n", typename, varname);
-          }
-        }
-
-        g_strfreev (tokens);
-        continue;
-      }
-
-      /* Destroy */
-      if (!g_strcmp0 (tokens[0], "destroy")) {
-        const gchar *varname = tokens[1];
-        GObject *obj = g_hash_table_lookup (objects, varname);
-
-        if (obj) {
-          g_hash_table_remove (objects, varname);
-          g_printf ("%s destroyed\n", varname);
-        } else
-          g_warning ("object %s not found", varname);
-
-        g_strfreev (tokens);
-        continue;
-      }
-
-      /* Call */
-      if (!g_strcmp0 (tokens[0], "call")) {
-        const gchar *objname, *signal_name;
-        GObject *obj;
-        gchar **tmp;
-
-        tmp = g_strsplit (tokens[1], ".", 2);
-
-        if (FALSE == (tmp && tmp[0] && tmp[1])) {
-          g_warning ("wrong syntax");
-          g_strfreev (tmp);
-          g_strfreev (tokens);
-          continue;
-        }
-
-        objname = tmp[0];
-        signal_name = tmp[1];
-
-        obj = g_hash_table_lookup (objects, objname);
-
-        if (!obj) {
-          g_warning ("object %s not found", objname);
-          g_strfreev (tmp);
-          g_strfreev (tokens);
-          continue;
-        }
-
-        g_printf ("calling %s ()\n", signal_name);
-        g_signal_emit_by_name (obj, signal_name, NULL);
-        g_strfreev (tmp);
-        g_strfreev (tokens);
-        continue;
-      }
-
-
-      /* Set */
-      if (!g_strcmp0 (tokens[0], "set")) {
-        GValue inp = G_VALUE_INIT;
-        GValue outp = G_VALUE_INIT;
-        const gchar *prop_name, *prop_val;
-        const gchar *objname;
-        gchar **tmp;
-        GObject *obj;
-        GParamSpec *prop;
-
-        tmp = g_strsplit (tokens[1], ".", 2);
-
-        if (FALSE == (tmp && tmp[0] && tmp[1] && tokens[2])) {
-          g_warning ("wrong syntax");
-          g_strfreev (tmp);
-          g_strfreev (tokens);
-          continue;
-        }
-
-        objname = tmp[0];
-        prop_name = tmp[1];
-
-        obj = g_hash_table_lookup (objects, objname);
-
-        if (!obj) {
-          g_warning ("object %s not found", objname);
-          g_strfreev (tmp);
-          g_strfreev (tokens);
-          continue;
-        }
-
-        /* Value is all the string after the second space */
-        prop_val =
-            g_strstr_len (g_strstr_len (a, sizeof (a), " ") + 1, -1, " ") + 1;
-
-        /* Now we need to find out gtype of out */
-        prop =
-            g_object_class_find_property (G_OBJECT_GET_CLASS (obj), prop_name);
-
-        if (!prop) {
-          g_warning ("property %s not found", prop_name);
-          g_strfreev (tmp);
-          g_strfreev (tokens);
-          continue;
-        }
-
-        g_value_init (&inp, G_TYPE_STRING);
-        g_value_set_string (&inp, prop_val);
-        g_value_init (&outp, prop->value_type);
-
-        /* Now set outp */
-        if (!g_value_transform (&inp, &outp)) {
-          g_warning ("unsupported parameter type");
-          g_strfreev (tmp);
-          g_strfreev (tokens);
-          continue;
-        }
-
-        g_printf ("setting %s.%s to %s\n", objname, prop_name, prop_val);
-        g_object_set_property (obj, prop_name, &outp);
-        g_strfreev (tmp);
-        g_strfreev (tokens);
-        continue;
-      }
-
-      g_warning ("unknown command");
-      g_strfreev (tokens);
-    }
   }
-
 
   ret = 0;
   if (module)
