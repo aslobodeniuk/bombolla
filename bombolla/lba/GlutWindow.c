@@ -22,6 +22,7 @@
 #include "bombolla/lba-log.h"
 #include <glib/gstdio.h>
 
+#include <GL/glew.h>
 #include "GL/freeglut.h"
 #include "GL/gl.h"
 #define LBA_OPENGL_IFACE_IMPLEMENTATION 1
@@ -123,9 +124,6 @@ glut_window_open (BaseWindow * base)
 {
   GlutWindow *self = (GlutWindow *) base;
 
-  /* TODO: param */
-  glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
-
   glutInitWindowSize (base->width, base->height);
   glutInitWindowPosition (base->x_pos, base->y_pos);
 
@@ -180,8 +178,25 @@ glut_window_opengl_interface_init (BaseOpenGLInterface * iface)
     int argc = 1;
     char *argv[] = { "hack", NULL };
     gsize setup_value = 1;
+    lba_GLenum err;
 
+    glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
     glutInit (&argc, argv);
+
+    glutInitWindowSize (100,100);
+    glutInitWindowPosition (0, 0);
+    
+    glutCreateWindow ("");
+    
+    
+    err = glewInit();
+    if (GLEW_OK != err)
+    {
+      /* Problem: glewInit failed, something is seriously wrong. */
+      fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
+      g_abort ();
+    }
+    
     g_once_init_leave (&initialization_value, setup_value);
   }
 

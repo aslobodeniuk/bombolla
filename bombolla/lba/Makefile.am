@@ -7,7 +7,7 @@ $(top_builddir)/bombolla/base/liblba-basewindow.la \
 $(top_builddir)/bombolla/base/liblba-base-opengl-interface.la
 libGlutWindow_la_SOURCES = GlutWindow.c
 libGlutWindow_la_CFLAGS = $(GOBJ_CFLAGS) $(PLUGIN_CFLAGS)
-libGlutWindow_la_LIBADD = $(GOBJ_LIBS) -lglut -lGL -L$(top_builddir)/bombolla/base/.libs/ -llba-basewindow -llba-base-opengl-interface
+libGlutWindow_la_LIBADD = $(GOBJ_LIBS) -lGLU -lGLEW -lglut -lGL -L$(top_builddir)/bombolla/base/.libs/ -llba-basewindow -llba-base-opengl-interface
 libGlutWindow_la_LDFLAGS = $(PLUGIN_LDFLAGS)
 
 # GLcube

@@ -27,6 +27,8 @@ typedef struct _GLTexture
 
   lba_GLuint tex;
   gboolean tex_uploaded;
+
+  lba_GLuint shader_program;
 } GLTexture;
 
 
@@ -34,6 +36,86 @@ typedef struct _GLTextureClass
 {
   Basegl2dClass parent;
 } GLTextureClass;
+
+
+static gboolean
+gl_texture_compile_shader (BaseOpenGLInterface *i, const gchar * src, lba_GLenum shader_type,
+    lba_GLuint * res)
+{
+  *res = i->glCreateShader (shader_type);
+
+  i->glShaderSource (*res, 1, &src, NULL);
+  i->glCompileShader (*res);
+  {
+    lba_GLint success;
+    lba_GLchar log[512];
+    i->glGetShaderiv (*res, i->LBA_GL_COMPILE_STATUS, &success);
+    if (!success) {
+      i->glGetShaderInfoLog (*res, 512, NULL, log);
+      LBA_LOG ("Shader compilation failed: %s", log);
+      return FALSE;
+    }
+  }
+
+  return TRUE;
+}
+
+
+static void
+gl_texture_build_program (GLTexture * self)
+{
+  lba_GLuint shader_program;
+  lba_GLuint vertex_shader;
+  lba_GLuint fragment_shader;
+
+  const char *vertex_shader_source = "#version 320 es\n"
+      "layout (location = 0) in vec3 aPos;\n"
+      "void main()" "{  gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0); }";
+
+  const char *fragment_shader_source =
+      "#version 320 es\n"
+      "precision mediump float;"
+      "out mediump vec4 FragColor;\n"
+      "void main()" "{ FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f); }";
+
+  Basegl2d *base = (Basegl2d *) self;
+  BaseOpenGLInterface *i = base->i;
+  
+  if (!gl_texture_compile_shader (i, vertex_shader_source, i->LBA_GL_VERTEX_SHADER,
+          &vertex_shader)) {
+    LBA_LOG ("FAIL");
+    return;
+  }
+
+  if (!gl_texture_compile_shader (i, fragment_shader_source, i->LBA_GL_FRAGMENT_SHADER,
+          &fragment_shader)) {
+    LBA_LOG ("FAIL"); // leaks
+    return;
+  }
+
+  shader_program = i->glCreateProgram ();
+
+  i->glAttachShader (shader_program, vertex_shader);
+  i->glAttachShader (shader_program, fragment_shader);
+  i->glLinkProgram (shader_program);
+
+  {
+    lba_GLint success;
+    lba_GLchar log[512];
+
+    i->glGetProgramiv (shader_program, i->LBA_GL_LINK_STATUS, &success);
+    if (!success) {
+      i->glGetProgramInfoLog (shader_program, 512, NULL, log);
+      LBA_LOG ("Program linkage failed: %s", log);
+      return;
+    }
+  }
+
+  i->glDeleteShader(vertex_shader);
+  i->glDeleteShader(fragment_shader);
+
+  self->shader_program = shader_program;
+}
 
 
 static void
@@ -72,16 +154,15 @@ gl_texture_upload (GLTexture * self)
   i->glTexImage2D (i->LBA_GL_TEXTURE_2D, 0, i->LBA_GL_RGBA, 8, 8, 0,
       i->LBA_GL_RGBA, i->LBA_GL_UNSIGNED_BYTE, texDat);
 
+  i->glGenerateMipmap (i->LBA_GL_TEXTURE_2D);
+
   i->glBindTexture (i->LBA_GL_TEXTURE_2D, 0);
 
   self->tex_uploaded = TRUE;
   LBA_LOG ("Texture %d uploaded", self->tex);
 
-  /* FIXME */
-  //match projection to window resolution (could be in reshape callback)
-  i->glMatrixMode (i->LBA_GL_PROJECTION);
-  i->glOrtho (0, 800, 0, 600, -1, 1);
-  i->glMatrixMode (i->LBA_GL_MODELVIEW);
+
+  gl_texture_build_program (self);
 }
 
 
@@ -104,13 +185,11 @@ gl_texture_draw (Basegl2d * base, BaseOpenGLInterface * i)
   LBA_LOG ("draw (%d, %d) : (%d, %d)", x, y, width, height);
 
   /* Reset transformations */
-  i->glMatrixMode(i->LBA_GL_MODELVIEW);
-  i->glLoadIdentity();
-  //match projection to window resolution (could be in reshape callback)
-  i->glMatrixMode (i->LBA_GL_PROJECTION);
-  i->glOrtho (0, 800, 0, 600, -1, 1);   // needs scene size
   i->glMatrixMode (i->LBA_GL_MODELVIEW);
+  i->glLoadIdentity ();
 
+  i->glUseProgram(self->shader_program);
+  
   //clear and draw quad with texture (could be in display callback)
   i->glBindTexture (i->LBA_GL_TEXTURE_2D, self->tex);
   i->glEnable (i->LBA_GL_TEXTURE_2D);
@@ -130,6 +209,7 @@ gl_texture_draw (Basegl2d * base, BaseOpenGLInterface * i)
 
   i->glEnd ();
   i->glDisable (i->LBA_GL_TEXTURE_2D);
+
   i->glBindTexture (i->LBA_GL_TEXTURE_2D, 0);
 }
 

@@ -15,6 +15,13 @@ liblba_basedrawable_la_SOURCES = lba-basedrawable.c
 liblba_basedrawable_la_CFLAGS = $(BASECLASS_CFLAGS)
 liblba_basedrawable_la_LIBADD = $(BASECLASS_LIBS)
 
+# BaseOpenGLInterface
+lib_LTLIBRARIES += liblba-base-opengl-interface.la
+noinst_HEADERS += lba-base-opengl-interface.h
+liblba_base_opengl_interface_la_SOURCES = lba-base-opengl-interface.c
+liblba_base_opengl_interface_la_CFLAGS = $(BASECLASS_CFLAGS)
+liblba_base_opengl_interface_la_LIBADD = $(BASECLASS_LIBS)
+
 # Base3d
 lib_LTLIBRARIES += liblba-base3d.la
 noinst_HEADERS += lba-base3d.h
@@ -58,12 +65,5 @@ $(top_builddir)/bombolla/base/liblba-base-opengl-interface.la
 liblba_basegl2d_la_SOURCES = lba-basegl2d.c
 liblba_basegl2d_la_CFLAGS = $(BASECLASS_CFLAGS)
 liblba_basegl2d_la_LIBADD = $(BASECLASS_LIBS) -llba-basedrawable -llba-base-opengl-interface -llba-base2d
-
-# BaseOpenGLInterface
-lib_LTLIBRARIES += liblba-base-opengl-interface.la
-noinst_HEADERS += lba-base-opengl-interface.h
-liblba_base_opengl_interface_la_SOURCES = lba-base-opengl-interface.c
-liblba_base_opengl_interface_la_CFLAGS = $(BASECLASS_CFLAGS)
-liblba_base_opengl_interface_la_LIBADD = $(BASECLASS_LIBS)
 
 EXTRA_DIST = ../../autogen.sh

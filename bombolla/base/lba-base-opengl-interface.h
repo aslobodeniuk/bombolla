@@ -22,6 +22,7 @@
 
 #include <glib-object.h>
 
+typedef char lba_GLchar;
 typedef unsigned int lba_GLenum;
 typedef unsigned char lba_GLboolean;
 typedef unsigned int lba_GLbitfield;
@@ -44,6 +45,7 @@ typedef double lba_GLclampd;    /* double precision float in [0,1] */
 #define LBA_TEST_TYPE_SIZE(x)                     \
   G_STATIC_ASSERT(sizeof (x) == sizeof (lba_##x))
 
+LBA_TEST_TYPE_SIZE (GLchar);
 LBA_TEST_TYPE_SIZE (GLenum);
 LBA_TEST_TYPE_SIZE (GLboolean);
 LBA_TEST_TYPE_SIZE (GLbitfield);
@@ -141,6 +143,54 @@ struct _BaseOpenGLInterface
   void (*glTexCoord2i) (lba_GLint s, lba_GLint t);
 
   void (*glVertex2i) (lba_GLint x, lba_GLint y);
+  
+  lba_GLuint (*glCreateShader) (lba_GLenum shaderType);
+  
+  void (*glShaderSource) (lba_GLuint shader,
+      lba_GLsizei count,
+      const lba_GLchar * const *string,
+      const lba_GLint *length);
+  
+  void (*glCompileShader) (lba_GLuint shader);
+
+  void (*glGetShaderiv) (lba_GLuint shader,
+      lba_GLenum pname,
+      lba_GLint *params);
+
+  lba_GLenum LBA_GL_COMPILE_STATUS;
+
+  void (*glGetShaderInfoLog) (lba_GLuint shader,
+      lba_GLsizei maxLength,
+      lba_GLsizei *length,
+      lba_GLchar *infoLog);
+
+  lba_GLenum LBA_GL_VERTEX_SHADER;
+  lba_GLenum LBA_GL_FRAGMENT_SHADER;
+
+  lba_GLuint (*glCreateProgram) (void);
+
+  void (*glAttachShader) (lba_GLuint program,
+      lba_GLuint shader);
+
+  
+  void (*glLinkProgram) (lba_GLuint program);
+
+  void (*glGetProgramiv) (lba_GLuint program,
+      lba_GLenum pname,
+      lba_GLint *params);
+
+  lba_GLenum LBA_GL_LINK_STATUS;
+
+  void (*glGetProgramInfoLog) (lba_GLuint program,
+      lba_GLsizei maxLength,
+      lba_GLsizei *length,
+      lba_GLchar *infoLog);
+
+  void (*glDeleteShader) (lba_GLuint shader);
+
+  void (*glGenerateMipmap) (lba_GLenum target);
+  
+  void (*glUseProgram) (lba_GLuint program);
 };
 
 #ifdef LBA_OPENGL_IFACE_IMPLEMENTATION
@@ -195,6 +245,27 @@ lba_opengl_interface_init (struct _BaseOpenGLInterface * iface)
   iface_set_lba (GL_UNSIGNED_BYTE);
   iface_set_lba (GL_QUADS);
 
+  iface_set (glCreateShader);
+  iface_set (glShaderSource);
+  iface_set (glCompileShader);
+  iface_set (glGetShaderiv);
+  iface_set_lba (GL_COMPILE_STATUS);
+  iface_set (glGetShaderInfoLog);
+
+  iface_set_lba (GL_VERTEX_SHADER);
+  iface_set_lba (GL_FRAGMENT_SHADER);
+
+  iface_set (glCreateProgram);
+  iface_set (glAttachShader);
+  iface_set (glLinkProgram);
+  iface_set (glGetProgramiv);
+  iface_set_lba (GL_LINK_STATUS);
+  iface_set (glGetProgramInfoLog);
+  iface_set (glDeleteShader);
+  iface_set (glGenerateMipmap);
+  iface_set (glUseProgram);
+  
+  
 #undef iface_set
 #undef iface_set_lba
 }
