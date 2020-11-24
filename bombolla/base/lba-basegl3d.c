@@ -27,13 +27,12 @@ typedef enum
 } Basegl3dProperty;
 
 
-static void
-basegl3d_draw (BaseDrawable * base)
+BaseOpenGLInterface *
+basegl3d_get_iface (Basegl3d * self)
 {
-  Basegl3d *self = (Basegl3d *) base;
-  Basegl3dClass *klass = BASE_GL3D_GET_CLASS (self);
+  BaseDrawable *base = (BaseDrawable *) self;
 
-  if (G_UNLIKELY (!self->i)) {
+  if (!self->i) {
     GType t;
     BaseOpenGLInterface *i = NULL;
     LBA_LOG
@@ -54,13 +53,24 @@ basegl3d_draw (BaseDrawable * base)
       self->i = i;
     } else {
       LBA_LOG ("No OpenGL interface provided. Rendering is impossible");
-      return;
     }
   }
 
+  return self->i;
+}
+
+static void
+basegl3d_draw (BaseDrawable * base)
+{
+  Basegl3d *self = (Basegl3d *) base;
+  Basegl3dClass *klass = BASE_GL3D_GET_CLASS (self);
+  BaseOpenGLInterface *i;
+
+  i = basegl3d_get_iface (self);
+
   /* Now let the child draw */
-  if (G_LIKELY (klass->draw))
-    klass->draw (self, self->i);
+  if (i && klass->draw)
+    klass->draw (self, i);
 }
 
 

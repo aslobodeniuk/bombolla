@@ -84,11 +84,6 @@ glut_window_on_display_cb (void)
   glClearColor (0.4, 0.4, 0.4, 1.0);
   glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-//  glLoadIdentity ();
-  // Add an ambient light
-  GLfloat ambientColor[] = { 0.2, 0.2, 0.2, 1.0 };
-  glLightModelfv (GL_LIGHT_MODEL_AMBIENT, ambientColor);
-
   /* Now let friend objects draw something */
   base_window_notify_display ((BaseWindow *) global_self);
 
@@ -122,6 +117,7 @@ glut_window_on_close (void)
 static void
 glut_window_open (BaseWindow * base)
 {
+  GLfloat ambientColor[] = { 0.2, 0.2, 0.2, 1.0 };
   GlutWindow *self = (GlutWindow *) base;
 
   glutInitWindowSize (base->width, base->height);
@@ -133,8 +129,9 @@ glut_window_open (BaseWindow * base)
   glEnable (GL_DEPTH_TEST);
   glEnable (GL_COLOR_MATERIAL);
   glEnable (GL_LIGHTING);
-  glEnable (GL_LIGHT0);
   glEnable (GL_NORMALIZE);
+  // Add an ambient light
+  glLightModelfv (GL_LIGHT_MODEL_AMBIENT, ambientColor);
 
 
   glutDisplayFunc (glut_window_on_display_cb);

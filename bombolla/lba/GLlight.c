@@ -33,43 +33,53 @@ typedef struct _GLLightClass
 } GLLightClass;
 
 
-static void
-gl_light_draw (Basegl3d * base, BaseOpenGLInterface * i)
+void
+gl_light_enabled (GObject * gobject, GParamSpec * pspec, gpointer user_data)
 {
-  Base3d *s3d = (Base3d *) base;
-  double x, y, z;
+  BaseOpenGLInterface *i;
+  Basegl3d *gl3d = (Basegl3d *) gobject;
+  BaseDrawable *drawable = (BaseDrawable *) gobject;
 
-  x = s3d->x;
-  y = s3d->y;
-  z = s3d->z;
+  /* OpenGL interface is available only if drawing scene is set */
+  i = basegl3d_get_iface (gl3d);
 
-  LBA_LOG ("draw (%f, %f, %f)", x, y, z);
+  if (i) {
+    if (drawable->enabled) {
+      lba_GLfloat lightColor0[] = { 0.5, 0.5, 0.5, 1.0 };
+      lba_GLfloat lightPos0[] = { 0.5, 0.5, 0.5, 1.0 };
 
-  /* Reset transformations */
-  i->glMatrixMode(i->LBA_GL_MODELVIEW);
-  i->glLoadIdentity();
+      i->glEnable (i->LBA_GL_LIGHT0);
+      /* Reset transformations */
+      i->glMatrixMode (i->LBA_GL_MODELVIEW);
+      i->glLoadIdentity ();
 
-  // Add a positioned light
-  lba_GLfloat lightColor0[] = {0.5, 0.5, 0.5, 1.0};
-  lba_GLfloat lightPos0[] = {x, y, z, 1.0};
+      /* Add a positioned light */
+      i->glLightfv (i->LBA_GL_LIGHT0, i->LBA_GL_DIFFUSE, lightColor0);
+      i->glLightfv (i->LBA_GL_LIGHT0, i->LBA_GL_POSITION, lightPos0);
+    } else {
+      i->glDisable (i->LBA_GL_LIGHT0);
+    }
 
-  i->glLightfv(i->LBA_GL_LIGHT0, i->LBA_GL_DIFFUSE, lightColor0);
-  i->glLightfv(i->LBA_GL_LIGHT0, i->LBA_GL_POSITION, lightPos0);
+    /* We have changed the light, so request redraw on window */
+    g_signal_emit_by_name (drawable->scene, "request-redraw", NULL);
+  }
 }
-
 
 static void
 gl_light_init (GLLight * self)
 {
+  g_signal_connect (self, "notify::enabled", G_CALLBACK (gl_light_enabled),
+      self);
+  g_signal_connect (self, "notify::drawing-scene",
+      G_CALLBACK (gl_light_enabled), self);
 }
 
 
 static void
 gl_light_class_init (GLLightClass * klass)
 {
-  Basegl3dClass *base_gl3d_class = (Basegl3dClass *) klass;
-
-  base_gl3d_class->draw = gl_light_draw;
+  /* Light is drawable, but it doesn't need to be redrawn on every
+   * frame: with opengl it's set once, so we only enable or disable it */
 }
 
 

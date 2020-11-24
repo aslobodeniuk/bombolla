@@ -39,8 +39,8 @@ typedef struct _GLTextureClass
 
 
 static gboolean
-gl_texture_compile_shader (BaseOpenGLInterface *i, const gchar * src, lba_GLenum shader_type,
-    lba_GLuint * res)
+gl_texture_compile_shader (BaseOpenGLInterface * i, const gchar * src,
+    lba_GLenum shader_type, lba_GLuint * res)
 {
   *res = i->glCreateShader (shader_type);
 
@@ -68,28 +68,36 @@ gl_texture_build_program (GLTexture * self)
   lba_GLuint vertex_shader;
   lba_GLuint fragment_shader;
 
-  const char *vertex_shader_source = "#version 320 es\n"
-      "layout (location = 0) in vec3 aPos;\n"
-      "void main()" "{  gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0); }";
+  const char *vertex_shader_source =
+      "#version 320 es\n"
+      "in vec2 pos;"
+      "out vec2 texCoord;"
+      "void main() {"
+      "texCoord = pos*0.5f + 0.5f;"
+      "gl_Position = vec4(pos.x, pos.y, 0.0, 1.0);" "}";
 
   const char *fragment_shader_source =
       "#version 320 es\n"
       "precision mediump float;"
-      "out mediump vec4 FragColor;\n"
-      "void main()" "{ FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f); }";
+      "uniform sampler2D srcTex;"
+      "in mediump vec2 texCoord;"
+      "out mediump vec4 color;"
+      "void main() {"
+      "float c = texture(srcTex, texCoord).x;"
+      "color = vec4(c, 1.0, 1.0, 1.0);" "}";
 
   Basegl2d *base = (Basegl2d *) self;
   BaseOpenGLInterface *i = base->i;
-  
-  if (!gl_texture_compile_shader (i, vertex_shader_source, i->LBA_GL_VERTEX_SHADER,
-          &vertex_shader)) {
+
+  if (!gl_texture_compile_shader (i, vertex_shader_source,
+          i->LBA_GL_VERTEX_SHADER, &vertex_shader)) {
     LBA_LOG ("FAIL");
     return;
   }
 
-  if (!gl_texture_compile_shader (i, fragment_shader_source, i->LBA_GL_FRAGMENT_SHADER,
-          &fragment_shader)) {
-    LBA_LOG ("FAIL"); // leaks
+  if (!gl_texture_compile_shader (i, fragment_shader_source,
+          i->LBA_GL_FRAGMENT_SHADER, &fragment_shader)) {
+    LBA_LOG ("FAIL");           // leaks
     return;
   }
 
@@ -111,10 +119,59 @@ gl_texture_build_program (GLTexture * self)
     }
   }
 
-  i->glDeleteShader(vertex_shader);
-  i->glDeleteShader(fragment_shader);
+  i->glDeleteShader (vertex_shader);
+  i->glDeleteShader (fragment_shader);
 
   self->shader_program = shader_program;
+
+#if 0
+  {
+    // We create a single float channel 512^2 texture
+    lba_GLuint texHandle;
+    i->glGenTextures (1, &texHandle);
+
+    i->glActiveTexture (i->GL_TEXTURE0);
+    i->glBindTexture (i->GL_TEXTURE_2D, texHandle);
+    i->glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D (GL_TEXTURE_2D, 0, GL_R32F, 512, 512, 0, GL_RED, GL_FLOAT,
+        NULL);
+
+    // Because we're also using this tex as an image (in order to write to it),
+    // we bind it to an image unit as well
+    glBindImageTexture (0, texHandle, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);
+    checkErrors ("Gen texture");
+    i->glUniform1i (i->glGetUniformLocation (shader_program, "srcTex"), 0);
+  }
+#endif
+  
+  {
+    lba_GLuint vertArray;
+    i->glGenVertexArrays (1, &vertArray);
+    i->glBindVertexArray (vertArray);
+  }
+
+  {
+    float data[] = {
+      -1.0f, -1.0f,
+      -1.0f, 1.0f,
+      1.0f, -1.0f,
+      1.0f, 1.0f
+    };
+
+    lba_GLint posPtr;
+    lba_GLuint posBuf;
+
+    i->glGenBuffers (1, &posBuf);
+    i->glBindBuffer (i->LBA_GL_ARRAY_BUFFER, posBuf);
+    i->glBufferData (i->LBA_GL_ARRAY_BUFFER, sizeof (float) * 8, data,
+        i->LBA_GL_STREAM_DRAW);
+
+    posPtr = i->glGetAttribLocation (shader_program, "pos");
+    i->glVertexAttribPointer (posPtr, 2, i->LBA_GL_FLOAT, i->LBA_GL_FALSE, 0,
+        0);
+    i->glEnableVertexAttribArray (posPtr);
+  }
 }
 
 
@@ -188,29 +245,10 @@ gl_texture_draw (Basegl2d * base, BaseOpenGLInterface * i)
   i->glMatrixMode (i->LBA_GL_MODELVIEW);
   i->glLoadIdentity ();
 
-  i->glUseProgram(self->shader_program);
-  
-  //clear and draw quad with texture (could be in display callback)
-  i->glBindTexture (i->LBA_GL_TEXTURE_2D, self->tex);
-  i->glEnable (i->LBA_GL_TEXTURE_2D);
-  i->glBegin (i->LBA_GL_QUADS);
+  i->glUseProgram (self->shader_program);
 
-  i->glTexCoord2i (0, 0);
-  i->glVertex2i (x, y);
-
-  i->glTexCoord2i (0, 1);
-  i->glVertex2i (x, y + height);
-
-  i->glTexCoord2i (1, 1);
-  i->glVertex2i (x + width, y + height);
-
-  i->glTexCoord2i (1, 0);
-  i->glVertex2i (x + width, y);
-
-  i->glEnd ();
-  i->glDisable (i->LBA_GL_TEXTURE_2D);
-
-  i->glBindTexture (i->LBA_GL_TEXTURE_2D, 0);
+  i->glDrawArrays (i->LBA_GL_TRIANGLE_STRIP, 0, 4);
+  // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);  
 }
 
 

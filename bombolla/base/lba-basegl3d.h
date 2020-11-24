@@ -30,8 +30,8 @@ GType basegl3d_get_type (void);
 
 #define G_TYPE_BASEGL3D (basegl3d_get_type ())
 
-#define BASE_GL3D_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),G_TYPE_BASEGL3D ,Basegl3dClass))
-#define BASE_GL3D_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASEGL3D ,Basegl3dClass))
+#define BASE_GL3D_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj), G_TYPE_BASEGL3D, Basegl3dClass))
+#define BASE_GL3D_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASEGL3D, Basegl3dClass))
 
 typedef struct _Basegl3d
 {
@@ -50,4 +50,6 @@ typedef struct _Basegl3dClass
 } Basegl3dClass;
 
 
+BaseOpenGLInterface *
+basegl3d_get_iface (Basegl3d *self);
 #endif

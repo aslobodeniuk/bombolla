@@ -39,6 +39,8 @@ typedef float lba_GLclampf;     /* single precision float in [0,1] */
 typedef double lba_GLdouble;    /* double precision float */
 typedef double lba_GLclampd;    /* double precision float in [0,1] */
 
+typedef gintptr lba_GLsizeiptr;
+
 /* When implementation is including this header, it can test if types
  * are matching the sizes */
 #ifdef LBA_OPENGL_IFACE_IMPLEMENTATION
@@ -61,6 +63,7 @@ LBA_TEST_TYPE_SIZE (GLfloat);
 LBA_TEST_TYPE_SIZE (GLclampf);
 LBA_TEST_TYPE_SIZE (GLdouble);
 LBA_TEST_TYPE_SIZE (GLclampd);
+LBA_TEST_TYPE_SIZE (GLsizeiptr);
 #endif
 
 struct _BaseOpenGLInterface
@@ -143,59 +146,84 @@ struct _BaseOpenGLInterface
   void (*glTexCoord2i) (lba_GLint s, lba_GLint t);
 
   void (*glVertex2i) (lba_GLint x, lba_GLint y);
-  
-  lba_GLuint (*glCreateShader) (lba_GLenum shaderType);
-  
+
+    lba_GLuint (*glCreateShader) (lba_GLenum shaderType);
+
   void (*glShaderSource) (lba_GLuint shader,
       lba_GLsizei count,
-      const lba_GLchar * const *string,
-      const lba_GLint *length);
-  
+      const lba_GLchar * const *string, const lba_GLint * length);
+
   void (*glCompileShader) (lba_GLuint shader);
 
   void (*glGetShaderiv) (lba_GLuint shader,
-      lba_GLenum pname,
-      lba_GLint *params);
+      lba_GLenum pname, lba_GLint * params);
 
   lba_GLenum LBA_GL_COMPILE_STATUS;
 
   void (*glGetShaderInfoLog) (lba_GLuint shader,
-      lba_GLsizei maxLength,
-      lba_GLsizei *length,
-      lba_GLchar *infoLog);
+      lba_GLsizei maxLength, lba_GLsizei * length, lba_GLchar * infoLog);
 
   lba_GLenum LBA_GL_VERTEX_SHADER;
   lba_GLenum LBA_GL_FRAGMENT_SHADER;
 
-  lba_GLuint (*glCreateProgram) (void);
+    lba_GLuint (*glCreateProgram) (void);
 
-  void (*glAttachShader) (lba_GLuint program,
-      lba_GLuint shader);
+  void (*glAttachShader) (lba_GLuint program, lba_GLuint shader);
 
-  
+
   void (*glLinkProgram) (lba_GLuint program);
 
   void (*glGetProgramiv) (lba_GLuint program,
-      lba_GLenum pname,
-      lba_GLint *params);
+      lba_GLenum pname, lba_GLint * params);
 
   lba_GLenum LBA_GL_LINK_STATUS;
 
   void (*glGetProgramInfoLog) (lba_GLuint program,
-      lba_GLsizei maxLength,
-      lba_GLsizei *length,
-      lba_GLchar *infoLog);
+      lba_GLsizei maxLength, lba_GLsizei * length, lba_GLchar * infoLog);
 
   void (*glDeleteShader) (lba_GLuint shader);
 
   void (*glGenerateMipmap) (lba_GLenum target);
-  
+
   void (*glUseProgram) (lba_GLuint program);
+
+  void (*glDrawArrays) (lba_GLenum mode, lba_GLint first, lba_GLsizei count);
+
+  lba_GLenum LBA_GL_TRIANGLE_STRIP;
+
+  void (*glGenVertexArrays) (lba_GLsizei n, lba_GLuint * arrays);
+
+  void (*glBindVertexArray) (lba_GLuint array);
+
+  void (*glGenBuffers) (lba_GLsizei n, lba_GLuint * buffers);
+
+  void (*glBindBuffer) (lba_GLenum target, lba_GLuint buffer);
+
+  lba_GLenum LBA_GL_ARRAY_BUFFER;
+
+  void (*glBufferData) (lba_GLenum target,
+      lba_GLsizeiptr size, const void *data, lba_GLenum usage);
+
+  lba_GLenum LBA_GL_STREAM_DRAW;
+
+    lba_GLint (*glGetAttribLocation) (lba_GLuint program,
+      const lba_GLchar * name);
+
+  void (*glVertexAttribPointer) (lba_GLuint index,
+      lba_GLint size,
+      lba_GLenum type,
+      lba_GLboolean normalized, lba_GLsizei stride, const void *pointer);
+
+  lba_GLenum LBA_GL_FLOAT;
+  lba_GLboolean LBA_GL_FALSE;
+
+
+  void (*glEnableVertexAttribArray) (lba_GLuint index);
 };
 
 #ifdef LBA_OPENGL_IFACE_IMPLEMENTATION
 static void
-lba_opengl_interface_init (struct _BaseOpenGLInterface * iface)
+lba_opengl_interface_init (struct _BaseOpenGLInterface *iface)
 {
 #define iface_set(x) iface->x = x
 #define iface_set_lba(x) iface->LBA_##x = x
@@ -264,8 +292,25 @@ lba_opengl_interface_init (struct _BaseOpenGLInterface * iface)
   iface_set (glDeleteShader);
   iface_set (glGenerateMipmap);
   iface_set (glUseProgram);
-  
-  
+
+  iface_set (glDrawArrays);
+  iface_set_lba (GL_TRIANGLE_STRIP);
+
+  iface_set (glGenVertexArrays);
+  iface_set (glBindVertexArray);
+  iface_set (glGenBuffers);
+  iface_set (glBindBuffer);
+  iface_set_lba (GL_ARRAY_BUFFER);
+
+  iface_set (glBufferData);
+  iface_set_lba (GL_STREAM_DRAW);
+  iface_set (glGetAttribLocation);
+  iface_set (glVertexAttribPointer);
+
+  iface_set_lba (GL_FLOAT);
+  iface_set_lba (GL_FALSE);
+  iface_set (glEnableVertexAttribArray);
+
 #undef iface_set
 #undef iface_set_lba
 }

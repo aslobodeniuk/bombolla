@@ -53,6 +53,20 @@ _str2double (const GValue * src_value, GValue * dest_value)
   g_value_set_double (dest_value, ret);
 }
 
+void
+_str2bool (const GValue * src_value, GValue * dest_value)
+{
+  guint ret = 0;
+  const gchar *s = g_value_get_string (src_value);
+
+  if (s) {
+    ret = !g_strcmp0 (s, "true");
+  } else
+    g_warning ("couldn't convert string %s to uint", s);
+
+  g_value_set_boolean (dest_value, ret);
+}
+
 
 void
 _str2uint (const GValue * src_value, GValue * dest_value)
@@ -112,22 +126,21 @@ proccess_shell_string (const char *a)
   char **tmp = NULL;
   char **tokens;
 
-  g_printf ("processing '%s'\n", a);
-
   tokens = g_strsplit (a, " ", 0);
 
-  if (!tokens) {
-    g_warning ("wrong syntax");
+  if (!tokens || !tokens[0]) {
     goto done;
   }
 
-  if (tokens && tokens[0] && !g_strcmp0 (tokens[0], "q")) {
+  g_printf ("processing '%s'\n", a);
+
+  if (!g_strcmp0 (tokens[0], "q")) {
     /* Quit */
     ret = FALSE;
     goto done;
   }
 
-  if (tokens && tokens[0] && tokens[1]) {
+  if (tokens[1]) {
     /* Create */
     if (!g_strcmp0 (tokens[0], "create")) {
       const gchar *typename = tokens[1];
@@ -273,11 +286,11 @@ main (int argc, char **argv)
   GDir *dir = NULL;
   gchar *script_contents = NULL;
 
+  g_value_register_transform_func (G_TYPE_STRING, G_TYPE_BOOLEAN, _str2bool);
   g_value_register_transform_func (G_TYPE_STRING, G_TYPE_UINT, _str2uint);
   g_value_register_transform_func (G_TYPE_STRING, G_TYPE_DOUBLE, _str2double);
   g_value_register_transform_func (G_TYPE_STRING, G_TYPE_OBJECT, _str2obj);
   g_value_register_transform_func (G_TYPE_STRING, G_TYPE_GTYPE, _str2gtype);
-
 
   /* Parse arguments */
   {

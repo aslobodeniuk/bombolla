@@ -36,6 +36,7 @@ typedef struct _BaseDrawable
   GObject parent;
 
   GObject *scene;
+  gboolean enabled;
 } BaseDrawable;
 
 

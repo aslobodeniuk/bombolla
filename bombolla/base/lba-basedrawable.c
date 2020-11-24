@@ -23,7 +23,8 @@
 
 typedef enum
 {
-  PROP_DRAWING_SCENE = 1
+  PROP_DRAWING_SCENE = 1,
+  PROP_ENABLED
 } BaseDrawableProperty;
 
 
@@ -31,7 +32,7 @@ static void
 base_drawable_scene_on_draw_cb (GObject * scene, BaseDrawable * self)
 {
   BaseDrawableClass *klass = BASE_DRAWABLE_GET_CLASS (self);
-  if (G_LIKELY (klass->draw))
+  if (self->enabled)
     klass->draw (self);
 }
 
@@ -45,12 +46,34 @@ base_drawable_set_property (GObject * object,
   switch ((BaseDrawableProperty) property_id) {
     case PROP_DRAWING_SCENE:
     {
+      BaseDrawableClass *klass = BASE_DRAWABLE_GET_CLASS (self);
+
       self->scene = g_value_get_object (value);
 
-      g_signal_connect (self->scene, "on-draw",
-          G_CALLBACK (base_drawable_scene_on_draw_cb), self);
+      if (klass->draw) {
+        g_signal_connect (self->scene, "on-draw",
+            G_CALLBACK (base_drawable_scene_on_draw_cb), self);
+      }
 
       LBA_LOG ("drawing scene set");
+    }
+      break;
+
+    case PROP_ENABLED:
+    {
+      gboolean prev_enabled = self->enabled;
+
+      self->enabled = g_value_get_boolean (value);
+      LBA_LOG ("enabled = %s", self->enabled ? "TRUE" : "FALSE");
+
+      /* We have registered this property as G_PARAM_EXPLICIT_NOTIFY,
+       * to make it emit "notify" signal only when we call
+       * g_object_notify () or g_object_notify_by_pspec().
+       *
+       * This way we emit "notify" signal only if self->enabled have
+       * really changed. */
+      if (prev_enabled != self->enabled)
+        g_object_notify_by_pspec (object, pspec);
     }
       break;
 
@@ -61,13 +84,17 @@ base_drawable_set_property (GObject * object,
   }
 }
 
+static void
+base_drawable_get_property (GObject * object,
+    guint property_id, GValue * value, GParamSpec * pspec)
+{
+}
 
 static void
 base_drawable_init (BaseDrawable * self)
 {
 }
 
-/* =================== CLASS */
 
 static void
 base_drawable_class_init (BaseDrawableClass * klass)
@@ -75,12 +102,21 @@ base_drawable_class_init (BaseDrawableClass * klass)
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
   object_class->set_property = base_drawable_set_property;
+  object_class->get_property = base_drawable_get_property;
+
+  /* NOTE: notify:: signal works only if parameter is readable */
 
   g_object_class_install_property (object_class, PROP_DRAWING_SCENE,
       g_param_spec_object ("drawing-scene",
           "Drawing Scene", "Scene that triggers drawing of the object",
           /* TODO: can check type here: to have a signal */
-          G_TYPE_OBJECT, G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE));
+          G_TYPE_OBJECT, G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE));
+
+  g_object_class_install_property (object_class, PROP_ENABLED,
+      g_param_spec_boolean ("enabled",
+          "Enabled", "On/Off",
+          TRUE, G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE
+          | G_PARAM_CONSTRUCT | G_PARAM_EXPLICIT_NOTIFY));
 }
 
 
