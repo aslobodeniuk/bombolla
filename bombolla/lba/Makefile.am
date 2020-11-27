@@ -49,5 +49,12 @@ libGLtexture_la_CFLAGS = $(GOBJ_CFLAGS) $(PLUGIN_CFLAGS)
 libGLtexture_la_LIBADD = $(GOBJ_LIBS) -L$(top_builddir)/bombolla/base/.libs/ -llba-basedrawable -llba-base-opengl-interface -llba-base2d -llba-basegl2d
 libGLtexture_la_LDFLAGS = $(PLUGIN_LDFLAGS)
 
+# HTTPServer
+lib_LTLIBRARIES += libhttpserver.la
+libhttpserver_la_SOURCES = httpserver.c
+libhttpserver_la_CFLAGS = $(GOBJ_CFLAGS) $(PLUGIN_CFLAGS) $(SOUP_CFLAGS)
+libhttpserver_la_LIBADD = $(GOBJ_LIBS) $(SOUP_LIBS)
+libhttpserver_la_LDFLAGS = $(PLUGIN_LDFLAGS)
+
 
 EXTRA_DIST = ../../autogen.sh

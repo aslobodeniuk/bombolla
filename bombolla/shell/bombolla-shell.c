@@ -366,13 +366,14 @@ main (int argc, char **argv)
 
     module = g_module_open (module_filename, G_MODULE_BIND_LOCAL);
     if (!module) {
-      g_warning ("Failed to load plugin '%s': %s", module_filename,
-          g_module_error ());
+      // too noisy
+//      g_warning ("Failed to load plugin '%s': %s", module_filename,
+//          g_module_error ());
       continue;
     }
 
     if (!g_module_symbol (module, BOMBOLLA_PLUGIN_SYSTEM_ENTRY, &ptr)) {
-      g_warning ("File '%s' is not a plugin from my system", module_filename);
+//      g_warning ("File '%s' is not a plugin from my system", module_filename);
       g_module_close (module);
       module = NULL;
       continue;
@@ -442,14 +443,17 @@ main (int argc, char **argv)
               g_signal_query (signals[s], &query);
               g_type_query (t, &t_query);
 
-              g_printf ("%s%s:: (* %s) ", tab, t_query.type_name,
-                  query.signal_name);
+              if (t_query.type == 0) {
+                g_warning ("Error quering type");
+                break;
+              }
+
+              g_printf ("%s%s:: %s (* %s) ", tab, t_query.type_name,
+                  g_type_name (query.return_type), query.signal_name);
 
               g_printf ("(");
               for (p = 0; p < query.n_params; p++) {
-                GTypeQuery pquery;
-                g_type_query (query.param_types[p], &pquery);
-                g_printf ("%s%s", p ? ", " : "", pquery.type_name);
+                g_printf ("%s%s", p ? ", " : "", g_type_name (query.param_types[p]));
               }
               g_printf (");\n");
             }

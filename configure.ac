@@ -40,6 +40,13 @@ PKG_CHECK_MODULES(GMODULE, [gmodule-2.0], [
   AC_MSG_ERROR([GModule library not found])
 ])
 
+PKG_CHECK_MODULES(SOUP, [libsoup-2.4], [
+  AC_SUBST(SOUP_CFLAGS)
+  AC_SUBST(SOUP_LIBS)
+], [
+  AC_MSG_ERROR([Soup library not found])
+])
+
 COMMON_CFLAGS="-Wall -Werror -I\$(top_srcdir)"
 BASECLASS_CFLAGS="$COMMON_CFLAGS $GOBJ_CFLAGS"
 BASECLASS_LIBS="$GOBJ_LIBS"
