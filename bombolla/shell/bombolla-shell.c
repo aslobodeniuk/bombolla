@@ -37,7 +37,6 @@ const gchar *B_OS_FILE_SEPARATOR = "/";
 #endif
 
 GHashTable *objects = NULL;
-GHashTable *gtypes = NULL;
 
 void
 _str2double (const GValue * src_value, GValue * dest_value)
@@ -107,8 +106,7 @@ _str2gtype (const GValue * src_value, GValue * dest_value)
   const gchar *s = g_value_get_string (src_value);
 
   if (s) {
-    gpointer p = g_hash_table_lookup (gtypes, (gpointer) s);
-    t = (GType) p;
+    t = g_type_from_name (s);
   }
 
   if (!t || t == G_TYPE_NONE) {
@@ -146,7 +144,7 @@ proccess_shell_string (const char *a)
       const gchar *typename = tokens[1];
       const gchar *varname = tokens[2];
       const gchar *request_failure_msg = NULL;
-      GType obj_type = (GType) g_hash_table_lookup (gtypes, typename);
+      GType obj_type = g_type_from_name (typename);
 
       if (!varname) {
         request_failure_msg = "need varname";
@@ -358,9 +356,6 @@ main (int argc, char **argv)
   }
 
 
-  /* Hash table "type name"/GType */
-  gtypes = g_hash_table_new (g_str_hash, g_str_equal);
-
   for (l = modules_files; l; l = l->next) {
     const gchar *module_filename = (const gchar *) l->data;
 
@@ -391,8 +386,6 @@ main (int argc, char **argv)
       g_printf ("======\nPlugin file %s:\n", module_filename);
       g_type_query (plugin_type, &query);
       g_printf ("GType name = '%s'\n", query.type_name);
-      g_hash_table_insert (gtypes, (gpointer) query.type_name,
-          GINT_TO_POINTER (plugin_type));
 
       if (G_TYPE_IS_OBJECT (plugin_type)) {
         GObject *obj;
