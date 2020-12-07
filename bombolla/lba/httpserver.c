@@ -273,7 +273,7 @@ http_server_class_init (HTTPServerClass * klass)
       g_signal_new ("message", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
           0, // no default handler is set
           NULL, NULL,   // <-- for THIS parameters (GSignalAccumulator) we are too young 
-      lba_cclosure_marshal_ENUM__STRING,
+          NULL,//      lba_cclosure_marshal_ENUM__STRING,
       /* Returns enum, has one string parameter */
       G_TYPE_INT, 1, G_TYPE_STRING, G_TYPE_NONE);
 

@@ -56,5 +56,11 @@ libhttpserver_la_CFLAGS = $(GOBJ_CFLAGS) $(PLUGIN_CFLAGS) $(SOUP_CFLAGS)
 libhttpserver_la_LIBADD = $(GOBJ_LIBS) $(SOUP_LIBS)
 libhttpserver_la_LDFLAGS = $(PLUGIN_LDFLAGS)
 
+# FooBarParser
+lib_LTLIBRARIES += libFooBarParser.la
+libFooBarParser_la_SOURCES = FooBarParser.c
+libFooBarParser_la_CFLAGS = $(GOBJ_CFLAGS) $(PLUGIN_CFLAGS)
+libFooBarParser_la_LIBADD = $(GOBJ_LIBS)
+libFooBarParser_la_LDFLAGS = $(PLUGIN_LDFLAGS)
 
 EXTRA_DIST = ../../autogen.sh
