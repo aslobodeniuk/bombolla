@@ -116,9 +116,76 @@ _str2gtype (const GValue * src_value, GValue * dest_value)
   g_value_set_gtype (dest_value, t);
 }
 
+static gboolean proccess_shell_string (const gchar * a);
+
+/* Callback for "on" command. It's designed to use parameters
+ * of the signal, but for now we just ignore them.
+ * So, it executes the commands, stored for that "on" instance. */
+static void
+lba_on_cb (GClosure * closure,
+    GValue * return_value,
+    guint n_param_values,
+    const GValue * param_values,
+    gpointer invocation_hint, gpointer marshal_data)
+{
+  gpointer user_data;
+  GSList *commands, *l;
+  /* Execute stored commands */
+  g_printf ("on something of %d parameters\n", n_param_values);
+
+  /* Closure data is our pointer to the list */
+  user_data = closure->data;
+
+  /* take user_data param, and execute it as a list of strings */
+  commands = *((GSList **) user_data);
+
+  /* Now execute line by line everything */
+  for (l = commands; l; l = l->next) {
+    proccess_shell_string ((const gchar *) l->data);
+  }
+}
+
+
+static void
+lba_on_marshal (GClosure * closure,
+    GValue * return_value,
+    guint n_param_values,
+    const GValue * param_values,
+    gpointer invocation_hint, gpointer marshal_data)
+{
+  /* this is our "passthrough" marshaller. We could also just omit
+   * the closure's callback and do what we want here, given that it's passthrough, but
+   * that is a hack */
+
+  GClosureMarshal callback;
+  GCClosure *cc = (GCClosure *) closure;
+
+  callback = (GClosureMarshal) (marshal_data ? marshal_data : cc->callback);
+
+  callback (closure,
+      return_value,
+      n_param_values, param_values, invocation_hint, marshal_data);
+}
+
+
+static void
+on_commands_list_free (gpointer data, GClosure * closure)
+{
+  GSList *commands;
+
+  if (!data)
+    return;
+
+  commands = *((GSList **) data);
+
+  g_slist_free_full (commands, g_free);
+  g_free (data);
+}
+
+gpointer *on_commands_list;
 
 static gboolean
-proccess_shell_string (const char *a)
+proccess_shell_string (const gchar * a)
 {
   gboolean ret = TRUE;
   char **tmp = NULL;
@@ -135,6 +202,24 @@ proccess_shell_string (const char *a)
   if (!g_strcmp0 (tokens[0], "q")) {
     /* Quit */
     ret = FALSE;
+    goto done;
+  }
+
+  /* On ... commands */
+  if (on_commands_list) {
+    if (!g_strcmp0 (tokens[0], "on")) {
+      g_warning ("forbidden to call on from on");
+      goto done;
+    }
+    /* TODO: syntax check */
+    if (!g_strcmp0 (tokens[0], "end")) {
+      /* We're done with this ptr. Now it's the closure who takes care of it */
+      on_commands_list = NULL;
+      goto done;
+    }
+
+    /* appending command */
+    *on_commands_list = g_slist_append (*on_commands_list, g_strdup (a));
     goto done;
   }
 
@@ -206,6 +291,63 @@ proccess_shell_string (const char *a)
 
       g_printf ("calling %s ()\n", signal_name);
       g_signal_emit_by_name (obj, signal_name, NULL);
+      goto done;
+    }
+
+
+    /* On */
+    if (!g_strcmp0 (tokens[0], "on")) {
+      const gchar *objname, *signal_name;
+      GObject *obj;
+
+      tmp = g_strsplit (tokens[1], ".", 2);
+
+      if (FALSE == (tmp && tmp[0] && tmp[1])) {
+        g_warning ("wrong syntax");
+        goto done;
+      }
+
+      objname = tmp[0];
+      signal_name = tmp[1];
+
+      obj = g_hash_table_lookup (objects, objname);
+
+      if (!obj) {
+        g_warning ("object %s not found", objname);
+        goto done;
+      }
+
+      {
+        GClosure *closure;
+
+        g_printf ("on %s.%s () ...\n", objname, signal_name);
+
+        /* allocate pointer to a pointer where we'll store commands */
+        on_commands_list = g_new0 (gpointer, 1);
+
+        /* User data are the lines we will execute. */
+        closure =
+            g_cclosure_new (G_CALLBACK (lba_on_cb), on_commands_list,
+            on_commands_list_free);
+        /* Set our custom passthrough marshaller */
+        g_closure_set_marshal (closure, lba_on_marshal);
+        /* memory management: alive while object is alive,
+         * invalidated if object is freed */
+        g_object_watch_closure (obj, closure);
+
+        /* Connect our super closure. */
+        g_signal_connect_closure (obj, signal_name, closure,
+            /* execute after default handler = TRUE */
+            TRUE);
+
+        /* unref closure ?? */
+      }
+
+      /* All the next wishes until "end" must be stored */
+
+      /* Now read all the wishes */
+
+
       goto done;
     }
 
@@ -446,7 +588,8 @@ main (int argc, char **argv)
 
               g_printf ("(");
               for (p = 0; p < query.n_params; p++) {
-                g_printf ("%s%s", p ? ", " : "", g_type_name (query.param_types[p]));
+                g_printf ("%s%s", p ? ", " : "",
+                    g_type_name (query.param_types[p]));
               }
               g_printf (");\n");
             }
@@ -484,9 +627,7 @@ main (int argc, char **argv)
       "destroy <var name>\n"
       "set <var name>.<property> <value>\n"
       "call <var name>.<signal> (params are not supported yet)\n"
-      "bind <var name>.<property> <var name>.<property>\n"
-      "connect <var name>.<signal> <var name>.<signal>\n"
-      "q (quit)\n------------\n");
+      "on <var name>.<signal>\n" "q (quit)\n------------\n");
 
   /* HT for variables "var name"/obj */
   objects =
