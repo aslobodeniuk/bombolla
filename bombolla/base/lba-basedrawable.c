@@ -32,7 +32,7 @@ static void
 base_drawable_scene_on_draw_cb (GObject * scene, BaseDrawable * self)
 {
   BaseDrawableClass *klass = BASE_DRAWABLE_GET_CLASS (self);
-  if (self->enabled)
+  if (1 || self->enabled)
     klass->draw (self);
 }
 

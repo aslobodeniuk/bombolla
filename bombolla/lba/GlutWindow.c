@@ -73,7 +73,10 @@ glut_window_on_special_key_cb (int key, int x, int y)
 static void
 glut_window_request_redraw (BaseWindow * base)
 {
-  glutPostRedisplay ();
+  GlutWindow *self = (GlutWindow *) base;
+
+  if (self->mainloop_thr)
+    glutPostRedisplay ();
 }
 
 static void
@@ -128,11 +131,10 @@ glut_window_open (BaseWindow * base)
   /* TODO: param */
   glEnable (GL_DEPTH_TEST);
   glEnable (GL_COLOR_MATERIAL);
-  glEnable (GL_LIGHTING);
   glEnable (GL_NORMALIZE);
   // Add an ambient light
+  glEnable (GL_LIGHTING);
   glLightModelfv (GL_LIGHT_MODEL_AMBIENT, ambientColor);
-
 
   glutDisplayFunc (glut_window_on_display_cb);
   glutSpecialFunc (glut_window_on_special_key_cb);
@@ -183,11 +185,10 @@ glut_window_opengl_interface_init (BaseOpenGLInterface * iface)
     glutInitWindowSize (100,100);
     glutInitWindowPosition (0, 0);
     
-    glutCreateWindow ("");
+//    glutCreateWindow ("");
     
-    
-    err = glewInit();
-    if (GLEW_OK != err)
+//    err = glewInit();
+    if (0 && GLEW_OK != err)
     {
       /* Problem: glewInit failed, something is seriously wrong. */
       fprintf(stderr, "Error: %s\n", glewGetErrorString(err));

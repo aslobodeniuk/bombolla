@@ -24,6 +24,7 @@
 typedef struct _GLLight
 {
   Basegl3d parent;
+  gboolean enabled_update;
 } GLLight;
 
 
@@ -33,21 +34,18 @@ typedef struct _GLLightClass
 } GLLightClass;
 
 
-void
-gl_light_enabled (GObject * gobject, GParamSpec * pspec, gpointer user_data)
+static void
+gl_light_draw (Basegl3d * base, BaseOpenGLInterface * i)
 {
-  BaseOpenGLInterface *i;
-  Basegl3d *gl3d = (Basegl3d *) gobject;
-  BaseDrawable *drawable = (BaseDrawable *) gobject;
+  GLLight *self = (GLLight *)base;
+  BaseDrawable *drawable = (BaseDrawable *) base;
 
-  /* OpenGL interface is available only if drawing scene is set */
-  i = basegl3d_get_iface (gl3d);
-
-  if (i) {
+  if (self->enabled_update) {
     if (drawable->enabled) {
       lba_GLfloat lightColor0[] = { 0.5, 0.5, 0.5, 1.0 };
       lba_GLfloat lightPos0[] = { 0.5, 0.5, 0.5, 1.0 };
 
+      LBA_LOG ("Enabling light..");
       i->glEnable (i->LBA_GL_LIGHT0);
       /* Reset transformations */
       i->glMatrixMode (i->LBA_GL_MODELVIEW);
@@ -57,9 +55,22 @@ gl_light_enabled (GObject * gobject, GParamSpec * pspec, gpointer user_data)
       i->glLightfv (i->LBA_GL_LIGHT0, i->LBA_GL_DIFFUSE, lightColor0);
       i->glLightfv (i->LBA_GL_LIGHT0, i->LBA_GL_POSITION, lightPos0);
     } else {
+      LBA_LOG ("Disabling light..");
       i->glDisable (i->LBA_GL_LIGHT0);
     }
+    self->enabled_update = FALSE;
+  }
+}
 
+void
+gl_light_enabled (GObject * gobject, GParamSpec * pspec, gpointer user_data)
+{
+  BaseDrawable *drawable = (BaseDrawable *) gobject;
+  GLLight *self = (GLLight *)gobject;
+
+  if (drawable->scene) {
+    LBA_LOG ("update..");
+    self->enabled_update = TRUE;
     /* We have changed the light, so request redraw on window */
     g_signal_emit_by_name (drawable->scene, "request-redraw", NULL);
   }
@@ -78,8 +89,9 @@ gl_light_init (GLLight * self)
 static void
 gl_light_class_init (GLLightClass * klass)
 {
-  /* Light is drawable, but it doesn't need to be redrawn on every
-   * frame: with opengl it's set once, so we only enable or disable it */
+  Basegl3dClass *base_gl3d_class = (Basegl3dClass *) klass;
+
+  base_gl3d_class->draw = gl_light_draw;
 }
 
 
