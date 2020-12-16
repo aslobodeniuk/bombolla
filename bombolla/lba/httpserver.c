@@ -20,6 +20,7 @@
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 #include <libsoup/soup.h>
+#include <string.h>
 
 enum
 {
@@ -68,21 +69,23 @@ http_server_soup_cb (SoupServer * server, SoupMessage * msg,
     SoupClientContext * context, gpointer data)
 {
   HTTPServer *self = (HTTPServer *) data;
-#define LBA_HTTP_SERVER_OK_RESPONSE "OK MATE"
   int response;
+  const gchar *resp_str;
 
   LBA_LOG ("%s %s HTTP/1.%d\n", msg->method, path,
       soup_message_get_http_version (msg));
 
   /* Now finally upstream the message text to the client */
   g_signal_emit_by_name (self, "message", path, &response);
-
   LBA_LOG ("callback returned %d", response);
+
+  resp_str =
+      response ==
+      888 ? "Happily handled" : "No parser for this unknown request";
 
   /* Set ok-ish response */
   soup_message_set_response (msg, "text/html",
-      SOUP_MEMORY_STATIC,
-      LBA_HTTP_SERVER_OK_RESPONSE, sizeof (LBA_HTTP_SERVER_OK_RESPONSE));
+      SOUP_MEMORY_STATIC, resp_str, strlen (resp_str) + 1);
   soup_message_set_status (msg, SOUP_STATUS_OK);
 }
 
@@ -217,6 +220,35 @@ http_server_dispose (GObject * gobject)
 }
 
 
+/* This is a signal accumulator: it is executed after every handler returns some
+ * value, and is needed to make decisions:
+ * 1) is other signal handlers should be called
+ * 2) what to return from signal emission */
+static gboolean
+http_server_message_signal_accum
+(GSignalInvocationHint * ihint,
+    GValue * return_accu, const GValue * handler_return, gpointer data)
+{
+  /* if handler returns 1234, it means "not handled". Otherwise handled.
+   * so we'll return 888. */
+  int ret;
+
+  ret = g_value_get_int (handler_return);
+  if (ret == 1234) {
+    /* Not handled, continue emission.
+     * We must set the return value here, otherwise it will be 0 */
+    g_value_set_int (return_accu, 1234);
+    return TRUE;
+  }
+
+  /* handled, set 888 return and stop emission */
+  g_value_set_int (return_accu, 888);
+  return FALSE;
+}
+
+
+/* Not used, only for presentation, how marshaller can look like */
+#if 0
 /* Marshaller for signal of type "int (*myfunc) (GObject * obj, gchar * param, gpointer data)" */
 void
 lba_cclosure_marshal_ENUM__STRING (GClosure * closure,
@@ -255,7 +287,7 @@ lba_cclosure_marshal_ENUM__STRING (GClosure * closure,
   /* Set return GValue */
   g_value_set_int (return_value, v_return);
 }
-
+#endif
 
 static void
 http_server_class_init (HTTPServerClass * klass)
@@ -269,11 +301,12 @@ http_server_class_init (HTTPServerClass * klass)
   object_class->get_property = http_server_get_property;
   object_class->dispose = http_server_dispose;
 
-  http_server_signals[SIGNAL_MESSAGE] =
-      g_signal_new ("message", G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
-          0, // no default handler is set
-          NULL, NULL,   // <-- for THIS parameters (GSignalAccumulator) we are too young 
-          NULL,//      lba_cclosure_marshal_ENUM__STRING,
+  http_server_signals[SIGNAL_MESSAGE] = g_signal_new ("message",
+      G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
+      0,       // no default handler is set
+      http_server_message_signal_accum, // <-- accumulator function for return values
+      NULL,                     // user data for accumulator
+      NULL,                     // marshaller, could be lba_cclosure_marshal_ENUM__STRING
       /* Returns enum, has one string parameter */
       G_TYPE_INT, 1, G_TYPE_STRING, G_TYPE_NONE);
 
