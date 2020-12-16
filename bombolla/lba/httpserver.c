@@ -62,6 +62,7 @@ typedef struct _HTTPServerClass
 
 } HTTPServerClass;
 
+GEnumClass *http_server_message_response_class;
 
 static void
 http_server_soup_cb (SoupServer * server, SoupMessage * msg,
@@ -77,7 +78,16 @@ http_server_soup_cb (SoupServer * server, SoupMessage * msg,
 
   /* Now finally upstream the message text to the client */
   g_signal_emit_by_name (self, "message", path, &response);
-  LBA_LOG ("callback returned %d", response);
+
+  {
+    /* Now use our own enum !!! */
+    GEnumValue *enum_value;
+    enum_value =
+        g_enum_get_value (http_server_message_response_class, response);
+
+    LBA_LOG ("callback returned %d (%s)", response,
+        enum_value ? enum_value->value_name : "unknown");
+  }
 
   resp_str =
       response ==
@@ -226,23 +236,23 @@ http_server_dispose (GObject * gobject)
  * 2) what to return from signal emission */
 static gboolean
 http_server_message_signal_accum
-(GSignalInvocationHint * ihint,
+    (GSignalInvocationHint * ihint,
     GValue * return_accu, const GValue * handler_return, gpointer data)
 {
   /* if handler returns 1234, it means "not handled". Otherwise handled.
    * so we'll return 888. */
   int ret;
 
-  ret = g_value_get_int (handler_return);
+  ret = g_value_get_enum (handler_return);
   if (ret == 1234) {
     /* Not handled, continue emission.
      * We must set the return value here, otherwise it will be 0 */
-    g_value_set_int (return_accu, 1234);
+    g_value_set_enum (return_accu, 1234);
     return TRUE;
   }
 
   /* handled, set 888 return and stop emission */
-  g_value_set_int (return_accu, 888);
+  g_value_set_enum (return_accu, 888);
   return FALSE;
 }
 
@@ -289,6 +299,8 @@ lba_cclosure_marshal_ENUM__STRING (GClosure * closure,
 }
 #endif
 
+static GType http_server_message_response;
+
 static void
 http_server_class_init (HTTPServerClass * klass)
 {
@@ -302,38 +314,78 @@ http_server_class_init (HTTPServerClass * klass)
   object_class->dispose = http_server_dispose;
 
   http_server_signals[SIGNAL_MESSAGE] = g_signal_new ("message",
-      G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST,
-      0,       // no default handler is set
+      G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST, 0,       // no default handler is set
       http_server_message_signal_accum, // <-- accumulator function for return values
       NULL,                     // user data for accumulator
       NULL,                     // marshaller, could be lba_cclosure_marshal_ENUM__STRING
       /* Returns enum, has one string parameter */
-      G_TYPE_INT, 1, G_TYPE_STRING, G_TYPE_NONE);
+      http_server_message_response,               /* return type is our own enum */
+      1, G_TYPE_STRING, G_TYPE_NONE);
 
   http_server_signals[SIGNAL_START] =
       g_signal_new ("start", G_TYPE_FROM_CLASS (klass),
       G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
       G_STRUCT_OFFSET (HTTPServerClass, start), NULL, NULL,
-      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0, G_TYPE_NONE);
+      NULL, G_TYPE_NONE, 0, G_TYPE_NONE);
 
   http_server_signals[SIGNAL_STOP] =
       g_signal_new ("stop", G_TYPE_FROM_CLASS (klass),
       G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
       G_STRUCT_OFFSET (HTTPServerClass, stop), NULL, NULL,
-      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0, G_TYPE_NONE);
-
+      NULL, G_TYPE_NONE, 0, G_TYPE_NONE);
 
   g_object_class_install_property (object_class,
       PROP_PORT,
       g_param_spec_int ("port",
-          "PORT", "Port !!!",
+          "PORT", "Port",
           G_MININT, G_MAXINT, 8000,
           G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
 
+  /* If class was created, cache emum class too */
+  http_server_message_response_class =
+      g_type_class_ref (http_server_message_response);
+}
+
+/* Now our custom boilerplate: we also want to register our enums */
+GType
+http_server_get_type (void)
+{
+  /* FIXME: better use g_once_init_enter */
+  static GType http_server_type = 0;
+
+  if (!http_server_type) {
+    static const GTypeInfo http_server_info = {
+      sizeof (HTTPServerClass),
+      NULL,
+      NULL,
+      (GClassInitFunc) http_server_class_init,
+      NULL,
+      NULL,
+      sizeof (HTTPServer),
+      0,
+      (GInstanceInitFunc) http_server_init,
+    };
+
+    /* register enum: why we wanted to write a custom boilerplate */
+    {
+      /* This variable MUST be static following the documentation */
+      static const GEnumValue enm[] = {
+        {1234, "NOT_HANDLED_YET", "not_handled_yet"},
+        {888, "HAPPILY_HANDLED", "happily_handled"},
+        {0, NULL, NULL}
+      };
+
+      http_server_message_response =
+          g_enum_register_static ("HTTPServerMessageResponse", enm);
+    }
+
+    http_server_type = g_type_register_static (G_TYPE_OBJECT,
+        "HTTPServer", &http_server_info, 0);
+  }
+
+  return http_server_type;
 }
 
 
-G_DEFINE_TYPE (HTTPServer, http_server, G_TYPE_OBJECT)
-
 /* Export plugin */
-    BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (http_server);
+BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (http_server);
