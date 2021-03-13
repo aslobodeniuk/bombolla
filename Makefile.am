@@ -1,1 +1,1 @@
-SUBDIRS = bombolla
+SUBDIRS = cogl bombolla

@@ -51,7 +51,7 @@ COMMON_CFLAGS="-Wall -Werror -I\$(top_srcdir)"
 BASECLASS_CFLAGS="$COMMON_CFLAGS $GOBJ_CFLAGS"
 BASECLASS_LIBS="$GOBJ_LIBS"
 PLUGIN_CFLAGS="$COMMON_CFLAGS -fpic"
-PLUGIN_LDFLAGS="-shared -module -avoid-version -no-undefined"
+PLUGIN_LDFLAGS="-module -avoid-version -no-undefined"
 
 AC_SUBST(BASECLASS_CFLAGS)
 AC_SUBST(BASECLASS_LIBS)
@@ -59,6 +59,9 @@ AC_SUBST(BASECLASS_LIBS)
 AC_SUBST(PLUGIN_LDFLAGS)
 AC_SUBST(PLUGIN_CFLAGS)
 AC_SUBST(PLUGIN_LDFLAGS)
+
+dnl call cogl/configure recursively
+AC_CONFIG_SUBDIRS([cogl])
 
 AC_CONFIG_FILES([
 Makefile

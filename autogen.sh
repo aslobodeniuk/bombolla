@@ -3,6 +3,14 @@
 # ACLOCAL, AUTOPOINT and/or LIBTOOLIZE to the right versions, or leave them
 # unset and get the defaults
 
+if test ! -f cogl/autogen.sh;
+then
+  echo "+ Setting up COGL submodule"
+  git submodule update --init
+fi
+
+cd cogl && NOCONFIGURE=1 ./autogen.sh && cd ..
+
 autoreconf --force --install || {
  echo 'autogen.sh failed';
  exit 1;

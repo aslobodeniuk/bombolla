@@ -1,0 +1,3 @@
+[submodule "cogl"]
+	path = cogl
+	url = git@github.com:GNOME/cogl.git
