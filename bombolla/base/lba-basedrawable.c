@@ -32,7 +32,7 @@ static void
 base_drawable_scene_on_draw_cb (GObject * scene, BaseDrawable * self)
 {
   BaseDrawableClass *klass = BASE_DRAWABLE_GET_CLASS (self);
-  if (1 || self->enabled)
+  if (self->enabled)
     klass->draw (self);
 }
 
@@ -72,8 +72,13 @@ base_drawable_set_property (GObject * object,
        *
        * This way we emit "notify" signal only if self->enabled have
        * really changed. */
-      if (prev_enabled != self->enabled)
+      if (prev_enabled != self->enabled) {
         g_object_notify_by_pspec (object, pspec);
+
+        if (self->scene) {
+          g_signal_emit_by_name (self->scene, "request-redraw", NULL);
+        }
+      }
     }
       break;
 
