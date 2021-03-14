@@ -1,5 +1,14 @@
 lib_LTLIBRARIES =
 
+# lbaCoglWindow
+lib_LTLIBRARIES += liblbaCoglWindow.la
+liblbaCoglWindow_la_DEPENDENCIES = \
+$(top_builddir)/bombolla/base/liblba-basewindow.la
+liblbaCoglWindow_la_SOURCES = lbaCoglWindow.c
+liblbaCoglWindow_la_CFLAGS = -DCOGL_ENABLE_EXPERIMENTAL_2_0_API -I$(top_srcdir)/cogl $(GOBJ_CFLAGS) $(PLUGIN_CFLAGS)
+liblbaCoglWindow_la_LIBADD = $(GOBJ_LIBS) $(COGL_DEP_LIBS) -lcogl -L$(top_builddir)/bombolla/base/.libs/ -llba-basewindow
+liblbaCoglWindow_la_LDFLAGS = $(PLUGIN_LDFLAGS)
+
 # GlutWindow
 lib_LTLIBRARIES += libGlutWindow.la
 libGlutWindow_la_DEPENDENCIES = \
