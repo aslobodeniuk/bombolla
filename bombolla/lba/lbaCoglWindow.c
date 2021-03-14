@@ -55,7 +55,7 @@ lba_cogl_window_paint_cb (void *user_data)
   self->is_dirty = FALSE;
   self->draw_ready = FALSE;
 
-  cogl_framebuffer_clear4f (self->fb, COGL_BUFFER_BIT_COLOR, 0, 0, 0, 1);
+  cogl_framebuffer_clear4f (self->fb, COGL_BUFFER_BIT_COLOR | COGL_BUFFER_BIT_DEPTH, 0, 0, 0, 1);
 
   /* Now let friend objects draw something */
   base_window_notify_display ((BaseWindow *) self);
@@ -150,14 +150,75 @@ lba_cogl_window_open (BaseWindow * base)
 
   cogl_source = cogl_glib_source_new (self->ctx, G_PRIORITY_DEFAULT);
 
+  /* TODO/base: x_pos, y_pos, title */
+
+  /* FIXME: this is a 3d-only thing: */
+  {
+    int framebuffer_width;
+    int framebuffer_height;
+    float fovy, aspect, z_near, z_far, z_2d;
+
+    framebuffer_width = cogl_framebuffer_get_width (self->fb);
+    framebuffer_height = cogl_framebuffer_get_height (self->fb);
+
+    LBA_LOG ("framebuffer_width = %d, framebuffer_height = %d", framebuffer_width,
+        framebuffer_height);
+
+    cogl_framebuffer_set_viewport (self->fb, 0, 0,
+        framebuffer_width, framebuffer_height);
+
+    fovy = 60; /* y-axis field of view */
+    aspect = (float)framebuffer_width/(float)framebuffer_height;
+    z_near = 0.1; /* distance to near clipping plane */
+    z_2d = 1000; /* position to 2d plane */
+    z_far = 2000; /* distance to far clipping plane */
+
+    cogl_framebuffer_perspective (self->fb, fovy, aspect, z_near, z_far);
+
+    /* FIXME: pango + 3d thing */
+    {
+      CoglMatrix view;
+
+      /* Since the pango renderer emits geometry in pixel/device coordinates
+       * and the anti aliasing is implemented with the assumption that the
+       * geometry *really* does end up pixel aligned, we setup a modelview
+       * matrix so that for geometry in the plane z = 0 we exactly map x
+       * coordinates in the range [0,stage_width] and y coordinates in the
+       * range [0,stage_height] to the framebuffer extents with (0,0) being
+       * the top left.
+       *
+       * This is roughly what Clutter does for a ClutterStage, but this
+       * demonstrates how it is done manually using Cogl.
+       */
+      cogl_matrix_init_identity (&view);
+      cogl_matrix_view_2d_in_perspective (&view, fovy, aspect, z_near, z_2d,
+          framebuffer_width,
+          framebuffer_height);
+      cogl_framebuffer_set_modelview_matrix (self->fb, &view);
+
+    }
+
+    /* FIXME: rectangle thing */
+    {
+      CoglDepthState depth_state;
+
+      /* Since the box is made of multiple triangles that will overlap
+       * when drawn and we don't control the order they are drawn in, we
+       * enable depth testing to make sure that triangles that shouldn't
+       * be visible get culled by the GPU. */
+      cogl_depth_state_init (&depth_state);
+      cogl_depth_state_set_test_enabled (&depth_state, TRUE);
+      
+      cogl_pipeline_set_depth_state (self->pipeline, &depth_state, NULL);
+    }
+  }
+
   g_source_attach (cogl_source, NULL);
 
   cogl_onscreen_add_frame_callback (self->fb, lba_cogl_window_frame_event_cb,
       self, NULL);
   cogl_onscreen_add_dirty_callback (self->fb, lba_cogl_window_dirty_cb, self,
       NULL);
-
-  /* TODO/base: x_pos, y_pos, title */
 }
 
 
@@ -166,15 +227,66 @@ lba_cogl_window_init (LbaCoglWindow * self)
 {
 }
 
-/* =================== CLASS */
+typedef enum
+{
+  PROP_COGL_FRAMEBUFFER = 1,
+  PROP_COGL_PIPELINE,
+  PROP_COGL_CTX,
+  N_PROPERTIES
+} LbaCoglWindowProperty;
+
+static void
+lba_cogl_window_get_property (GObject * object,
+    guint property_id, GValue * value, GParamSpec * pspec)
+{
+  LbaCoglWindow *self = (LbaCoglWindow *) object;
+
+  switch ((LbaCoglWindowProperty) property_id) {
+    case PROP_COGL_FRAMEBUFFER:
+      g_value_set_pointer (value, self->fb);
+      break;
+
+    case PROP_COGL_PIPELINE:
+      g_value_set_pointer (value, self->pipeline);
+      break;
+
+    case PROP_COGL_CTX:
+      g_value_set_pointer (value, self->ctx);
+      break;
+      
+    default:
+      /* We don't have any other property... */
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+      break;
+  }
+}
+
 static void
 lba_cogl_window_class_init (LbaCoglWindowClass * klass)
 {
+  GObjectClass *gobj_class = G_OBJECT_CLASS (klass);
   BaseWindowClass *base_class = BASE_WINDOW_CLASS (klass);
 
   base_class->open = lba_cogl_window_open;
   base_class->close = lba_cogl_window_close;
   base_class->request_redraw = lba_cogl_window_request_redraw;
+
+  gobj_class->get_property = lba_cogl_window_get_property;
+
+  g_object_class_install_property (gobj_class,
+      PROP_COGL_FRAMEBUFFER,
+      g_param_spec_pointer ("cogl-framebuffer", "Cogl Framebuffer",
+          "Cogl Framebuffer", G_PARAM_STATIC_STRINGS | G_PARAM_READABLE));
+
+  g_object_class_install_property (gobj_class,
+      PROP_COGL_PIPELINE,
+      g_param_spec_pointer ("cogl-pipeline", "Cogl Pipeline", "Cogl Pipeline",
+          G_PARAM_STATIC_STRINGS | G_PARAM_READABLE));
+
+  g_object_class_install_property (gobj_class,
+      PROP_COGL_CTX,
+      g_param_spec_pointer ("cogl-ctx", "Cogl Ctx", "Cogl Context",
+          G_PARAM_STATIC_STRINGS | G_PARAM_READABLE));
 }
 
 

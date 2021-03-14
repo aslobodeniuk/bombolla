@@ -32,6 +32,18 @@ liblba_base3d_la_SOURCES = lba-base3d.c
 liblba_base3d_la_CFLAGS = $(BASECLASS_CFLAGS)
 liblba_base3d_la_LIBADD = $(BASECLASS_LIBS) -llba-basedrawable
 
+# BaseCogl3d
+lib_LTLIBRARIES += liblba-base-cogl3d.la
+noinst_HEADERS += lba-base-cogl3d.h
+liblba_base_cogl3d_la_DEPENDENCIES = \
+$(top_builddir)/bombolla/base/liblba-basedrawable.la \
+$(top_builddir)/bombolla/base/liblba-base3d.la
+
+liblba_base_cogl3d_la_SOURCES = lba-base-cogl3d.c
+liblba_base_cogl3d_la_CFLAGS = -DCOGL_ENABLE_EXPERIMENTAL_2_0_API -I$(top_srcdir)/cogl \
+    $(BASECLASS_CFLAGS)
+liblba_base_cogl3d_la_LIBADD = $(BASECLASS_LIBS) -llba-basedrawable -llba-base3d
+
 # Basegl3d
 lib_LTLIBRARIES += liblba-basegl3d.la
 noinst_HEADERS += lba-basegl3d.h

@@ -19,6 +19,18 @@ libGlutWindow_la_CFLAGS = $(GOBJ_CFLAGS) $(PLUGIN_CFLAGS)
 libGlutWindow_la_LIBADD = $(GOBJ_LIBS) -lGLU -lGLEW -lglut -lGL -L$(top_builddir)/bombolla/base/.libs/ -llba-basewindow -llba-base-opengl-interface
 libGlutWindow_la_LDFLAGS = $(PLUGIN_LDFLAGS)
 
+# lbaCoglCube
+lib_LTLIBRARIES += liblbaCoglCube.la
+liblbaCoglCube_la_DEPENDENCIES = \
+$(top_builddir)/bombolla/base/liblba-base3d.la \
+$(top_builddir)/bombolla/base/liblba-base-cogl3d.la \
+$(top_builddir)/bombolla/base/liblba-basedrawable.la
+
+liblbaCoglCube_la_SOURCES = lbaCoglCube.c
+liblbaCoglCube_la_CFLAGS = -DCOGL_ENABLE_EXPERIMENTAL_2_0_API -I$(top_srcdir)/cogl $(GOBJ_CFLAGS) $(PLUGIN_CFLAGS)
+liblbaCoglCube_la_LIBADD = $(COGL_DEP_LIBS) -lcogl $(GOBJ_LIBS) -L$(top_builddir)/bombolla/base/.libs/ -llba-basedrawable -llba-base3d -llba-base-cogl3d
+liblbaCoglCube_la_LDFLAGS = $(PLUGIN_LDFLAGS)
+
 # GLcube
 lib_LTLIBRARIES += libGLcube.la
 libGLcube_la_DEPENDENCIES = \
