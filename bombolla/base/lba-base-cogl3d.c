@@ -82,6 +82,9 @@ base_cogl3d_has_drawing_scene (GObject * gobject, GParamSpec * pspec,
 
     /* Update also at this moment */
     base_cogl3d_scene_reopen (G_OBJECT (drawable->scene), self);
+
+    /* Request redraw: if we've just added something new */
+    g_signal_emit_by_name (G_OBJECT (drawable->scene), "request-redraw", NULL);
   }
 }
 
