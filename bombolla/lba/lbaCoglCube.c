@@ -134,26 +134,6 @@ lba_cogl_cube_reopen (BaseCogl3d * base, CoglFramebuffer * fb,
     { /* pos = */ -1.0f, 1.0f, -1.0f, /* tex coords = */ 0.0f, 1.0f}
   };
 
-  static const uint8_t rgba_tex[4 * 4 * 4] =
-  {
-    0xff, 0, 0, 0xff,           /* RGBA pixel 1 */
-    0xff, 0xff, 0, 0xff,           /* RGBA pixel 2 */
-    0xff, 0, 0xff, 0xff,           /* RGBA pixel 3 */
-    0, 0, 0xff, 0xff,           /* RGBA pixel 4 */
-    0, 0, 0, 0xff,           /* RGBA pixel 5 */
-    0, 0xff, 0, 0xff,           /* RGBA pixel 6 */
-    0xff, 0, 0, 0xff,           /* RGBA pixel 7 */
-    0xff, 0, 0, 0xff,           /* RGBA pixel 8 */
-    0xff, 0, 0xff, 0xff,           /* RGBA pixel 9 */
-    0xff, 0, 0, 0xff,           /* RGBA pixel 10 */
-    0xff, 0xff, 0, 0xff,           /* RGBA pixel 11 */
-    0, 0xff, 0xff, 0xff,           /* RGBA pixel 12 */
-    0, 0, 0, 0xff,           /* RGBA pixel 13 */
-    0xff, 0xff, 0, 0xff,           /* RGBA pixel 14 */
-    0xff, 0, 0xff, 0xff,           /* RGBA pixel 15 */
-    0xff, 0, 0, 0xff,           /* RGBA pixel 16 */
-  };
-
   LBA_LOG ("reopening");
   
   /* rectangle indices allow the GPU to interpret a list of quads (the
@@ -169,18 +149,6 @@ lba_cogl_cube_reopen (BaseCogl3d * base, CoglFramebuffer * fb,
 
   /* Each face will have 6 indices so we have 6 * 6 indices in total... */
   cogl_primitive_set_indices (self->prim, self->indices, 6 * 6);
-
-  self->texture =
-      cogl_texture_2d_new_from_data (ctx,
-          4,
-          4,
-          COGL_PIXEL_FORMAT_RGBA_8888,
-          0,
-          rgba_tex,
-          NULL);
-  
-
-  cogl_pipeline_set_layer_texture (pipeline, 0, self->texture);
 }
 
 

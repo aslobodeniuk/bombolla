@@ -29,6 +29,7 @@
 GType base_cogl3d_get_type (void);
 
 #define G_TYPE_BASE_COGL3D (base_cogl3d_get_type ())
+#define G_OBJECT_IS_COGL3D(obj)               (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_TYPE_BASE_COGL3D))
 
 #define BASE_COGL3D_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj), G_TYPE_BASE_COGL3D, BaseCogl3dClass))
 #define BASE_COGL3D_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASE_COGL3D, BaseCogl3dClass))

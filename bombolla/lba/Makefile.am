@@ -1,3 +1,5 @@
+MAINTAINERCLEANFILES = Makefile.in
+
 lib_LTLIBRARIES =
 
 # lbaCoglWindow
@@ -30,6 +32,18 @@ liblbaCoglLabel_la_SOURCES = lbaCoglLabel.c
 liblbaCoglLabel_la_CFLAGS = -DCOGL_ENABLE_EXPERIMENTAL_2_0_API -I$(top_srcdir)/cogl $(GOBJ_CFLAGS) $(PLUGIN_CFLAGS) $(COGL_PANGO_DEP_CFLAGS)
 liblbaCoglLabel_la_LIBADD = $(COGL_PANGO_DEP_LIBS) $(COGL_DEP_LIBS) -lcogl -lcogl-pango $(GOBJ_LIBS) -L$(top_builddir)/bombolla/base/.libs/ -llba-basedrawable -llba-base3d -llba-base-cogl3d
 liblbaCoglLabel_la_LDFLAGS = $(PLUGIN_LDFLAGS)
+
+# lbaCoglTexture
+lib_LTLIBRARIES += liblbaCoglTexture.la
+liblbaCoglTexture_la_DEPENDENCIES = \
+$(top_builddir)/bombolla/base/liblba-base3d.la \
+$(top_builddir)/bombolla/base/liblba-base-cogl3d.la \
+$(top_builddir)/bombolla/base/liblba-basedrawable.la
+
+liblbaCoglTexture_la_SOURCES = lbaCoglTexture.c
+liblbaCoglTexture_la_CFLAGS = -DCOGL_ENABLE_EXPERIMENTAL_2_0_API -I$(top_srcdir)/cogl $(GOBJ_CFLAGS) $(PLUGIN_CFLAGS)
+liblbaCoglTexture_la_LIBADD = $(COGL_DEP_LIBS) -lcogl $(GOBJ_LIBS) -L$(top_builddir)/bombolla/base/.libs/ -llba-basedrawable -llba-base3d -llba-base-cogl3d
+liblbaCoglTexture_la_LDFLAGS = $(PLUGIN_LDFLAGS)
 
 # lbaCoglCube
 lib_LTLIBRARIES += liblbaCoglCube.la

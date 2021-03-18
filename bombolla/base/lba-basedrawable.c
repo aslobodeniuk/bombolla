@@ -24,7 +24,8 @@
 typedef enum
 {
   PROP_DRAWING_SCENE = 1,
-  PROP_ENABLED
+  PROP_ENABLED,
+  PROP_TEXTURE
 } BaseDrawableProperty;
 
 
@@ -32,8 +33,14 @@ static void
 base_drawable_scene_on_draw_cb (GObject * scene, BaseDrawable * self)
 {
   BaseDrawableClass *klass = BASE_DRAWABLE_GET_CLASS (self);
-  if (self->enabled)
+
+  if (self->enabled) {
+    if (self->texture) {
+      g_signal_emit_by_name (self->texture, "set", G_OBJECT (self));
+    }
+
     klass->draw (self);
+  }
 }
 
 
@@ -44,6 +51,19 @@ base_drawable_set_property (GObject * object,
   BaseDrawable *self = (BaseDrawable *) object;
 
   switch ((BaseDrawableProperty) property_id) {
+    case PROP_TEXTURE:
+      if (self->texture) {
+        g_object_unref (self->texture);
+      }
+
+      self->texture = g_value_get_object (value);
+      /* Update if new texture is set */
+      if (self->enabled && self->scene) {
+        g_signal_emit_by_name (self->texture, "set", NULL);
+        g_signal_emit_by_name (self->scene, "request-redraw", NULL);
+      }
+      break;
+
     case PROP_DRAWING_SCENE:
     {
       BaseDrawableClass *klass = BASE_DRAWABLE_GET_CLASS (self);
@@ -109,8 +129,12 @@ base_drawable_class_init (BaseDrawableClass * klass)
   object_class->set_property = base_drawable_set_property;
   object_class->get_property = base_drawable_get_property;
 
-  /* NOTE: notify:: signal works only if parameter is readable */
+  g_object_class_install_property (object_class, PROP_TEXTURE,
+      g_param_spec_object ("texture",
+          "Texture", "Texture that will be used for this object",
+          G_TYPE_OBJECT, G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE));
 
+  /* NOTE: notify:: signal works only if parameter is readable */
   g_object_class_install_property (object_class, PROP_DRAWING_SCENE,
       g_param_spec_object ("drawing-scene",
           "Drawing Scene", "Scene that triggers drawing of the object",

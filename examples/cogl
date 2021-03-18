@@ -5,6 +5,9 @@ create LbaCoglWindow w
 create LbaCoglCube c
 create LbaCoglLabel l
 
+create LbaCoglTexture t
+set c.texture t
+
 set c.drawing-scene w
 set l.drawing-scene w
 
