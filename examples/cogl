@@ -15,7 +15,7 @@ set l.x 0.1
 set l.y 0.1
 set l.text Bombolla
 set l.font-size 40
-set l.font-name UKIJ Qolyazma Tez
+set l.font-name Chilanka
 
 create LbaCoglLabel l2
 set l2.drawing-scene w
@@ -23,6 +23,6 @@ set l2.x 0.1
 set l2.y 0.3
 set l2.text is the best shell
 set l2.font-size 30
-set l2.font-name UKIJ Kufi Tar
+set l2.font-name Ani
 
 call w.open
