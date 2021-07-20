@@ -68,8 +68,8 @@ AC_SUBST(PLUGIN_LDFLAGS)
 dnl call cogl/configure recursively
 AC_CONFIG_SUBDIRS([cogl])
 
-LBA_COGL_CFLAGS="-DCOGL_ENABLE_EXPERIMENTAL_2_0_API -I${top_srcdir}/cogl ${COGL_PANGO_DEP_CFLAGS}"
-LBA_COGL_LIBS="${COGL_PANGO_DEP_LIBS} ${COGL_DEP_LIBS} -L${top_builddir}/cogl/cogl/.libs/ -lcogl -L${top_builddir}/cogl/cogl-pango/.libs/ -lcogl-pango"
+LBA_COGL_CFLAGS="-DCOGL_ENABLE_EXPERIMENTAL_2_0_API -I\$(top_srcdir)/cogl ${COGL_PANGO_DEP_CFLAGS}"
+LBA_COGL_LIBS="${COGL_PANGO_DEP_LIBS} ${COGL_DEP_LIBS} -L\$(top_srcdir)/cogl/cogl/.libs/ -lcogl -L\$(top_srcdir)/cogl/cogl-pango/.libs/ -lcogl-pango"
 AC_SUBST(LBA_COGL_CFLAGS)
 AC_SUBST(LBA_COGL_LIBS)
 

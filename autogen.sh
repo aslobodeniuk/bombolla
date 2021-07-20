@@ -9,7 +9,11 @@ then
   git submodule update --init
 fi
 
-cd cogl && NOCONFIGURE=1 ./autogen.sh && cd ..
+cd cogl
+echo "patching cogl to build on Ubuntu focal.."
+git apply ../patches/0001-fix-build-on-Ubuntu-focal.patch 2>/dev/null && echo "ok"
+NOCONFIGURE=1 ./autogen.sh
+cd ..
 
 autoreconf --force --install || {
  echo 'autogen.sh failed';
