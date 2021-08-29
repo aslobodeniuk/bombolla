@@ -1,4 +1,5 @@
 MAINTAINERCLEANFILES = Makefile.in
+SUBDIRS = remote-object
 
 lib_LTLIBRARIES =
 

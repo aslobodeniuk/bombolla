@@ -82,6 +82,7 @@ tests/Makefile
 bombolla/Makefile
 bombolla/core/Makefile
 bombolla/lba/Makefile
+bombolla/lba/remote-object/Makefile
 bombolla/shell/Makefile
 bombolla/base/Makefile
 ])
