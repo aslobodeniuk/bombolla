@@ -1,15 +1,16 @@
 dnl required version of autoconf
-AC_PREREQ([2.53])
+AC_PREREQ([2.63])
 
 strictness="foreign"
 
 AC_INIT([Bombolla-GObj-shell],[0.0.0])
 
 AC_CONFIG_SRCDIR([.])
+AC_CONFIG_MACRO_DIR([.])
 AC_CONFIG_HEADERS([config.h])
 
 dnl required version of automake
-AM_INIT_AUTOMAKE([1.10 foreign])
+AM_INIT_AUTOMAKE([1.11 foreign])
 AM_SILENT_RULES([yes])
 dnl enable mainainer mode by default
 AM_MAINTAINER_MODE([enable])
@@ -65,6 +66,8 @@ AC_SUBST(PLUGIN_LDFLAGS)
 AC_SUBST(PLUGIN_CFLAGS)
 AC_SUBST(PLUGIN_LDFLAGS)
 
+GLIB_TESTS
+
 dnl call cogl/configure recursively
 AC_CONFIG_SUBDIRS([cogl])
 
@@ -75,7 +78,9 @@ AC_SUBST(LBA_COGL_LIBS)
 
 AC_CONFIG_FILES([
 Makefile
+tests/Makefile
 bombolla/Makefile
+bombolla/core/Makefile
 bombolla/lba/Makefile
 bombolla/shell/Makefile
 bombolla/base/Makefile

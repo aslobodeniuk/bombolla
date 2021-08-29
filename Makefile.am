@@ -1,1 +1,1 @@
-SUBDIRS = cogl bombolla
+SUBDIRS = tests cogl bombolla

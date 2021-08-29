@@ -18,7 +18,7 @@
  */
 
 #include "bombolla/lba-log.h"
-#include "bombolla/shell/commands/bombolla-commands.h"
+#include "bombolla/core/bombolla-commands.h"
 
 static gboolean
 lba_command_create (BombollaContext *ctx, gchar **tokens)
@@ -27,7 +27,7 @@ lba_command_create (BombollaContext *ctx, gchar **tokens)
   const gchar *varname = tokens[2];
   const gchar *request_failure_msg = NULL;
   GType obj_type;
-
+  
   obj_type = g_type_from_name (typename);
 
   if (!varname) {
@@ -45,12 +45,7 @@ lba_command_create (BombollaContext *ctx, gchar **tokens)
   } else {
     GObject *obj = g_object_new (obj_type, NULL);
     
-    if (obj) {
-      if (!ctx->objects) {
-        ctx->objects =
-            g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
-      }
-      
+    if (obj) {      
       g_hash_table_insert (ctx->objects, (gpointer) g_strdup (varname), obj);
 
       /* FIXME: LBA_LOG */

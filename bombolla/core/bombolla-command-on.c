@@ -18,7 +18,7 @@
  */
 
 #include "bombolla/lba-log.h"
-#include "bombolla/shell/commands/bombolla-commands.h"
+#include "bombolla/core/bombolla-commands.h"
 
 typedef struct {
   GSList *commands_list;

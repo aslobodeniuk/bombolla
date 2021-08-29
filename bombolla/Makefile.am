@@ -4,5 +4,5 @@ lba-plugin-system.h \
 lba-log.h
 
 # lba-ext is not added yet
-SUBDIRS = base shell lba
+SUBDIRS = core base shell lba
 

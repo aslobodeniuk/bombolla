@@ -19,7 +19,7 @@
 
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
-#include "bombolla/shell/commands/bombolla-commands.h"
+#include "bombolla/core/bombolla-commands.h"
 #include <glib/gstdio.h>
 #include <gmodule.h>
 #include <string.h>
@@ -151,6 +151,8 @@ lba_core_proccess_command (GObject *obj, const gchar * str)
     /* ref ?? */
     self->ctx->self = (GObject *)self;
     self->ctx->proccess_command = NULL; // <---------- FIXME
+    self->ctx->objects =
+        g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
   }
 
   for (command = commands; command->name != NULL; command ++)
@@ -167,11 +169,13 @@ lba_core_proccess_command (GObject *obj, const gchar * str)
         /* Bad syntax. FIXME: should we stop proccessing?? */
         goto done;
       }
+
+      ret = TRUE;
+      goto done;
     }
   }
- 
+
   g_warning ("unknown command");
-  ret = TRUE;
 done:
   g_strfreev (tokens);
   return ret;
@@ -184,7 +188,7 @@ lba_core_dump_type (GType plugin_type)
   GTypeQuery query;
 
   g_type_query (plugin_type, &query);
-  LBA_LOG ("GType name = '%s'\n", query.type_name);
+  g_printf ("GType name = '%s'\n", query.type_name);
 
   if (G_TYPE_IS_OBJECT (plugin_type)) {
     GObject *obj;
@@ -192,7 +196,7 @@ lba_core_dump_type (GType plugin_type)
     guint n_properties, p;
     guint *signals, s, n_signals;
 
-    LBA_LOG ("GType is a GObject.\n");
+    g_printf ("GType is a GObject.");
 
     obj = g_object_new (plugin_type, NULL);
 
@@ -207,11 +211,11 @@ lba_core_dump_type (GType plugin_type)
       def_val =
           g_strdup_value_contents (g_param_spec_get_default_value (prop));
 
-      LBA_LOG ("- Property: (%s) %s = %s\n",
+      g_printf ("- Property: (%s) %s = %s\n",
           G_PARAM_SPEC_TYPE_NAME (prop),
           g_param_spec_get_name (prop), def_val);
 
-      LBA_LOG ("\tnick = '%s', %s\n\n",
+      g_printf ("\tnick = '%s', %s\n\n",
           g_param_spec_get_nick (prop), g_param_spec_get_blurb (prop));
       g_free (def_val);
     }
@@ -222,7 +226,7 @@ lba_core_dump_type (GType plugin_type)
       GType t;
       const gchar *_tab = "  ";
       gchar *tab = g_strdup (_tab);
-      LBA_LOG ("--- Signals:\n");
+      g_printf ("--- Signals:\n");
       for (t = plugin_type; t; t = g_type_parent (t)) {
         gchar *tmptab;
 
@@ -240,15 +244,15 @@ lba_core_dump_type (GType plugin_type)
             break;
           }
 
-          LBA_LOG ("%s%s:: %s (* %s) ", tab, t_query.type_name,
+          g_printf ("%s%s:: %s (* %s) ", tab, t_query.type_name,
               g_type_name (query.return_type), query.signal_name);
 
-          LBA_LOG ("(");
+          g_printf ("(");
           for (p = 0; p < query.n_params; p++) {
-            LBA_LOG ("%s%s", p ? ", " : "",
+            g_printf ("%s%s", p ? ", " : "",
                 g_type_name (query.param_types[p]));
           }
-          LBA_LOG (");\n");
+          g_printf (");\n");
         }
 
         tmptab = tab;
@@ -267,7 +271,7 @@ lba_core_dump_type (GType plugin_type)
 
       for (i = 0; i < n_interfaces; i++) {
 
-        LBA_LOG ("Provides interface %s\n", g_type_name (in[i]));
+        g_printf ("Provides interface %s\n", g_type_name (in[i]));
       }
       g_free (in);
     }
@@ -372,7 +376,6 @@ lba_core_execute (LbaCore * self, const gchar *commands)
           self->plugins_path = g_build_filename (cur_dir, "build", "lib", NULL);
           g_free (cur_dir);
         }
-        return;
       }
 
       LBA_LOG ("Scan %s", self->plugins_path);

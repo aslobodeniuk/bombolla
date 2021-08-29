@@ -17,6 +17,9 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _BOMBOLLA_COMMANDS
+#define _BOMBOLLA_COMMANDS
+
 typedef struct {
   GHashTable *objects;
   gpointer capturing_on_command;
@@ -38,3 +41,5 @@ gboolean lba_command_on (BombollaContext *ctx, gchar **tokens);
 
 /* bombolla-command-set.c */
 gboolean lba_command_set (BombollaContext *ctx, gchar **tokens);
+
+#endif

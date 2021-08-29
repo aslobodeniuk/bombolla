@@ -27,3 +27,13 @@ build
 Makefile
 Makefile.in
 
+/tests/test-suite.log
+/tests/bombolla-core-test.trs
+/tests/bombolla-core-test.log
+/tests/bombolla-core-test
+/test-driver
+/libtool.m4
+/ltoptions.m4
+/ltsugar.m4
+/ltversion.m4
+/lt~obsolete.m4

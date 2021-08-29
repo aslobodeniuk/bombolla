@@ -38,7 +38,7 @@ main (int argc, char **argv)
     GOptionContext *ctx;
     GError *err = NULL;
     gchar *path = NULL;
-    gchar *script = FALSE;
+    gchar *script = NULL;
     GOptionEntry options[] = {
       {"script", 'i', 0, G_OPTION_ARG_STRING, &script,
           "Proccess input file before entering shell", NULL},
@@ -61,6 +61,9 @@ main (int argc, char **argv)
 
     if (script) {
       gsize length = 0;
+
+      g_printf ("Opening script %s\n", script);
+      
       if (!g_file_test (script, G_FILE_TEST_EXISTS)) {
         g_warning ("Script file doesn't exist\n");
         return 1;
