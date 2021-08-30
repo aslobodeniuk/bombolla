@@ -54,6 +54,7 @@ lba_python_scanner_init (LbaPythonScanner * self)
   Py_Initialize ();
 
   PyRun_SimpleString ("print('Hello from Bombolla home python')");
+  PyRun_SimpleString ("from gi.repository import GObject");
   // TODO: scan path for files
   {
     // As you can see, my friend, as you can see...
@@ -66,6 +67,9 @@ lba_python_scanner_init (LbaPythonScanner * self)
        * But how to get names of the types registered ?? */
       PyRun_SimpleFile (fp, filename);
       fclose (fp);
+
+      // Now extract that string to the C code!!
+      PyRun_SimpleString ("print ('loaded class: %s' % GObject.GType(lba_plugin).name)");
     }
   }
 }

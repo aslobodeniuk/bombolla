@@ -17,8 +17,6 @@
 #   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from gi.repository import GObject
-
 class MyFooClass(GObject.GObject):
     # FIXME: __name__ is set without read understanding about what we're doing
     __name__ = 'myfooclass'
@@ -64,8 +62,9 @@ class MyFooClass(GObject.GObject):
         print ('Hello my friend, Im a super MyFooClass.\nIm {} percent angry.\nMy secret is "{}"'.format(self.angryness, self.secret))
       
 
-gtype = GObject.type_register(Car)
-# FIXME: Yeah, that's a weak point here,
-# and the name... __main__+MyFooClass ??
+# "lba_plugin" is a magic variable, please always set it
+lba_plugin = GObject.type_register(MyFooClass)
+
+# FIXME: Yeah, weak point here is
+# the name... __main__+MyFooClass ??
 # Would you call your dog this way ? We don't think so..
-print ('new class: %s' % GObject.GType(gtype).name)
