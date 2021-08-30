@@ -10,7 +10,7 @@ lib_LTLIBRARIES = libLbaPythonScanner.la
 
 libLbaPythonScanner_la_SOURCES = LbaPythonScanner.c
 libLbaPythonScanner_la_CFLAGS = $(GOBJ_CFLAGS) $(PLUGIN_CFLAGS) $(PYTHON_CFLAGS)
-libLbaPythonScanner_la_LIBADD = $(GOBJ_LIBS)
+libLbaPythonScanner_la_LIBADD = $(GOBJ_LIBS) $(GMODULE_LIBS)
 libLbaPythonScanner_la_LDFLAGS = $(PLUGIN_LDFLAGS) $(PYTHON_LIBS)
 
 EXTRA_DIST = ../../autogen.sh

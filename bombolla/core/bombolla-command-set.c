@@ -22,6 +22,21 @@
 
 
 static void
+_str2float (const GValue * src_value, GValue * dest_value)
+{
+  gfloat ret = 0;
+  const gchar *s = g_value_get_string (src_value);
+
+  if (s) {
+    ret = atof (s);
+  } else
+    g_warning ("couldn't convert string %s to float", s);
+
+  g_value_set_float (dest_value, ret);
+}
+
+
+static void
 _str2double (const GValue * src_value, GValue * dest_value)
 {
   gdouble ret = 0;
@@ -144,6 +159,7 @@ lba_command_set (BombollaContext *ctx, gchar **tokens)
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_BOOLEAN, _str2bool);
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_UINT, _str2uint);
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_DOUBLE, _str2double);
+    g_value_register_transform_func (G_TYPE_STRING, G_TYPE_FLOAT, _str2float);
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_GTYPE, _str2gtype);
 
     once = 1;
