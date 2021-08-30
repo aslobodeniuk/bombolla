@@ -89,15 +89,15 @@ lba_remote_object_set_property (GObject * object,
         // (optionally) [name of GType of the return value: size / string]
         // [name of GType of the parameter: size / string]
 
-        write (output, "KlassDump0000000", 16);
-        for (;;) {
-          write (output, "Signal0000000000", 16);
-          write (output, &num_params, 2);
-          for (;;) {
-            write (output, &string_size, 2);
-            write (output, string, string_size);
-          }
-        }
+        // write (output, "KlassDump0000000", 16);
+        // for (;;) {
+        //  write (output, "Signal0000000000", 16);
+        //  write (output, &num_params, 2);
+        //  for (;;) {
+        //    write (output, &string_size, 2);
+        //    write (output, string, string_size);
+        //  }
+        // }
 
         // How do we write?
         // We have some objects of type LbaStream: output-stream, input-stream

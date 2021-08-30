@@ -1,5 +1,5 @@
 MAINTAINERCLEANFILES = Makefile.in
-SUBDIRS = remote-object
+SUBDIRS = remote-object python
 
 lib_LTLIBRARIES =
 

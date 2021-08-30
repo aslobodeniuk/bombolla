@@ -191,17 +191,16 @@ lba_core_dump_type (GType plugin_type)
   g_printf ("GType name = '%s'\n", query.type_name);
 
   if (G_TYPE_IS_OBJECT (plugin_type)) {
-    GObject *obj;
     GParamSpec **properties;
     guint n_properties, p;
     guint *signals, s, n_signals;
+    GObjectClass *klass;
 
     g_printf ("GType is a GObject.");
-
-    obj = g_object_new (plugin_type, NULL);
+    klass = (GObjectClass *)g_type_class_ref (plugin_type);
 
     properties =
-        g_object_class_list_properties (G_OBJECT_GET_CLASS (obj),
+        g_object_class_list_properties (klass,
             &n_properties);
 
     for (p = 0; p < n_properties; p++) {
@@ -276,7 +275,7 @@ lba_core_dump_type (GType plugin_type)
       g_free (in);
     }
 
-    g_object_unref (obj);
+    g_type_class_unref (klass);
     g_free (properties);
   }
 }
