@@ -67,5 +67,5 @@ class MyFooClass(GObject.GObject):
 gtype = GObject.type_register(Car)
 # FIXME: Yeah, that's a weak point here,
 # and the name... __main__+MyFooClass ??
-# Would you call your dog this way ?
+# Would you call your dog this way ? We don't think so..
 print ('new class: %s' % GObject.GType(gtype).name)
