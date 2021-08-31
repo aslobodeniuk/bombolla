@@ -45,7 +45,14 @@ PKG_CHECK_MODULES(SOUP, [libsoup-2.4], [
   AC_SUBST(SOUP_CFLAGS)
   AC_SUBST(SOUP_LIBS)
 ], [
-  AC_MSG_ERROR([Soup library not found])
+  AC_MSG_ERROR([Soup library not found (e.g. libsoup2.4-dev in Ubuntu)])
+])
+
+PKG_CHECK_MODULES(GJS, [gjs-1.0], [
+  AC_SUBST(GJS_CFLAGS)
+  AC_SUBST(GJS_LIBS)
+], [
+  AC_MSG_ERROR([Gjs package not found (e.g. libgjs-dev in Ubuntu)])
 ])
 
 dnl FIXME: ugly copy
@@ -84,6 +91,7 @@ bombolla/core/Makefile
 bombolla/lba/Makefile
 bombolla/lba/remote-object/Makefile
 bombolla/lba/python/Makefile
+bombolla/lba/js/Makefile
 bombolla/shell/Makefile
 bombolla/base/Makefile
 ])
