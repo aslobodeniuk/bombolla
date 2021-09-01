@@ -44,13 +44,17 @@ typedef enum
 
 static GParamSpec *obj_properties[N_PROPERTIES] = { NULL, };
 
-void base_window_notify_display (BaseWindow * self) {
+void
+base_window_notify_display (BaseWindow * self)
+{
   g_signal_emit (self, base_window_signals[SIGNAL_ON_DISPLAY], 0);
   g_signal_emit (self, base_window_signals[SIGNAL_ON_DRAW], 0);
 }
 
 
-static void base_window_request_redraw (BaseWindow * self) {
+static void
+base_window_request_redraw (BaseWindow * self)
+{
   BaseWindowClass *klass = BASE_WINDOW_GET_CLASS (self);
 
   if (klass->request_redraw)
@@ -132,12 +136,12 @@ static void
 base_window_init (BaseWindow * self)
 {
   g_signal_connect (self, "request-redraw",
-      G_CALLBACK (base_window_request_redraw), NULL);  
+      G_CALLBACK (base_window_request_redraw), NULL);
 }
 
 
 static void
-base_window_dispose (GObject *gobject)
+base_window_dispose (GObject * gobject)
 {
   BaseWindow *self = (BaseWindow *) gobject;
   BaseWindowClass *klass = BASE_WINDOW_GET_CLASS (self);
@@ -160,7 +164,8 @@ base_window_class_init (BaseWindowClass * klass)
       g_param_spec_string ("title",
       "Window title",
       "Window title",
-      "Base Window", G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
+      "Base Window",
+      G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
 
   obj_properties[PROP_WIDTH] =
       g_param_spec_uint ("width",
@@ -193,38 +198,35 @@ base_window_class_init (BaseWindowClass * klass)
   g_object_class_install_properties (object_class,
       N_PROPERTIES, obj_properties);
 
-
   base_window_signals[SIGNAL_ON_DISPLAY] =
       g_signal_new ("on-display", G_TYPE_FROM_CLASS (klass),
       G_SIGNAL_RUN_LAST,
       G_STRUCT_OFFSET (BaseWindowClass, on_display), NULL, NULL,
-      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0, G_TYPE_NONE);
+      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
   /* TODO: new obj */
   base_window_signals[SIGNAL_ON_DRAW] =
       g_signal_new ("on-draw", G_TYPE_FROM_CLASS (klass),
-          G_SIGNAL_RUN_LAST,
-          0, NULL, NULL,
-          g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0, G_TYPE_NONE);
-  
+      G_SIGNAL_RUN_LAST,
+      0, NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+
   base_window_signals[SIGNAL_OPEN] =
       g_signal_new ("open", G_TYPE_FROM_CLASS (klass),
-          G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
-          G_STRUCT_OFFSET (BaseWindowClass, open), NULL, NULL,
-          g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0, G_TYPE_NONE);
+      G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+      G_STRUCT_OFFSET (BaseWindowClass, open), NULL, NULL,
+      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
   base_window_signals[SIGNAL_CLOSE] =
       g_signal_new ("close", G_TYPE_FROM_CLASS (klass),
-          G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
-          G_STRUCT_OFFSET (BaseWindowClass, close), NULL, NULL,
-          g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0, G_TYPE_NONE);
+      G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+      G_STRUCT_OFFSET (BaseWindowClass, close), NULL, NULL,
+      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
   /* This action is not overridden directly */
   base_window_signals[SIGNAL_REQUEST_REDRAW] =
       g_signal_new ("request-redraw", G_TYPE_FROM_CLASS (klass),
-          G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
-          0, NULL, NULL,
-          g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0, G_TYPE_NONE);  
+      G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+      0, NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 }
 
 

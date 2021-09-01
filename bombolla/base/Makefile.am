@@ -1,6 +1,13 @@
 noinst_HEADERS =
 lib_LTLIBRARIES =
 
+# LbaByteStream
+lib_LTLIBRARIES += liblba-byte-stream.la
+noinst_HEADERS += lba-byte-stream.h
+liblba_byte_stream_la_SOURCES = lba-byte-stream.c
+liblba_byte_stream_la_CFLAGS = $(BASECLASS_CFLAGS)
+liblba_byte_stream_la_LIBADD = $(BASECLASS_LIBS)
+
 # BaseWindow
 lib_LTLIBRARIES += liblba-basewindow.la
 noinst_HEADERS += lba-basewindow.h
