@@ -21,27 +21,22 @@
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 
-typedef struct _GLTexture
-{
+typedef struct _GLTexture {
   Basegl2d parent;
 
   lba_GLuint tex;
   gboolean tex_uploaded;
 
-  lba_GLuint shader_program;
+  lba_GLuint             shader_program;
 } GLTexture;
 
-
-typedef struct _GLTextureClass
-{
+typedef struct _GLTextureClass {
   Basegl2dClass parent;
 } GLTextureClass;
 
-
 static gboolean
 gl_texture_compile_shader (BaseOpenGLInterface * i, const gchar * src,
-    lba_GLenum shader_type, lba_GLuint * res)
-{
+                           lba_GLenum shader_type, lba_GLuint * res) {
   *res = i->glCreateShader (shader_type);
 
   i->glShaderSource (*res, 1, &src, NULL);
@@ -49,6 +44,7 @@ gl_texture_compile_shader (BaseOpenGLInterface * i, const gchar * src,
   {
     lba_GLint success;
     lba_GLchar log[512];
+
     i->glGetShaderiv (*res, i->LBA_GL_COMPILE_STATUS, &success);
     if (!success) {
       i->glGetShaderInfoLog (*res, 512, NULL, log);
@@ -60,10 +56,8 @@ gl_texture_compile_shader (BaseOpenGLInterface * i, const gchar * src,
   return TRUE;
 }
 
-
 static void
-gl_texture_build_program (GLTexture * self)
-{
+gl_texture_build_program (GLTexture * self) {
   lba_GLuint shader_program;
   lba_GLuint vertex_shader;
   lba_GLuint fragment_shader;
@@ -83,20 +77,19 @@ gl_texture_build_program (GLTexture * self)
       "in mediump vec2 texCoord;"
       "out mediump vec4 color;"
       "void main() {"
-      "float c = texture(srcTex, texCoord).x;"
-      "color = vec4(c, 1.0, 1.0, 1.0);" "}";
+      "float c = texture(srcTex, texCoord).x;" "color = vec4(c, 1.0, 1.0, 1.0);" "}";
 
   Basegl2d *base = (Basegl2d *) self;
   BaseOpenGLInterface *i = base->i;
 
   if (!gl_texture_compile_shader (i, vertex_shader_source,
-          i->LBA_GL_VERTEX_SHADER, &vertex_shader)) {
+                                  i->LBA_GL_VERTEX_SHADER, &vertex_shader)) {
     LBA_LOG ("FAIL");
     return;
   }
 
   if (!gl_texture_compile_shader (i, fragment_shader_source,
-          i->LBA_GL_FRAGMENT_SHADER, &fragment_shader)) {
+                                  i->LBA_GL_FRAGMENT_SHADER, &fragment_shader)) {
     LBA_LOG ("FAIL");           // leaks
     return;
   }
@@ -128,14 +121,14 @@ gl_texture_build_program (GLTexture * self)
   {
     // We create a single float channel 512^2 texture
     lba_GLuint texHandle;
+
     i->glGenTextures (1, &texHandle);
 
     i->glActiveTexture (i->GL_TEXTURE0);
     i->glBindTexture (i->GL_TEXTURE_2D, texHandle);
     i->glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D (GL_TEXTURE_2D, 0, GL_R32F, 512, 512, 0, GL_RED, GL_FLOAT,
-        NULL);
+    glTexImage2D (GL_TEXTURE_2D, 0, GL_R32F, 512, 512, 0, GL_RED, GL_FLOAT, NULL);
 
     // Because we're also using this tex as an image (in order to write to it),
     // we bind it to an image unit as well
@@ -144,9 +137,10 @@ gl_texture_build_program (GLTexture * self)
     i->glUniform1i (i->glGetUniformLocation (shader_program, "srcTex"), 0);
   }
 #endif
-  
+
   {
     lba_GLuint vertArray;
+
     i->glGenVertexArrays (1, &vertArray);
     i->glBindVertexArray (vertArray);
   }
@@ -165,19 +159,16 @@ gl_texture_build_program (GLTexture * self)
     i->glGenBuffers (1, &posBuf);
     i->glBindBuffer (i->LBA_GL_ARRAY_BUFFER, posBuf);
     i->glBufferData (i->LBA_GL_ARRAY_BUFFER, sizeof (float) * 8, data,
-        i->LBA_GL_STREAM_DRAW);
+                     i->LBA_GL_STREAM_DRAW);
 
     posPtr = i->glGetAttribLocation (shader_program, "pos");
-    i->glVertexAttribPointer (posPtr, 2, i->LBA_GL_FLOAT, i->LBA_GL_FALSE, 0,
-        0);
+    i->glVertexAttribPointer (posPtr, 2, i->LBA_GL_FLOAT, i->LBA_GL_FALSE, 0, 0);
     i->glEnableVertexAttribArray (posPtr);
   }
 }
 
-
 static void
-gl_texture_upload (GLTexture * self)
-{
+gl_texture_upload (GLTexture * self) {
   Basegl2d *base = (Basegl2d *) self;
   BaseOpenGLInterface *i = base->i;
   gint j = 0;
@@ -204,12 +195,12 @@ gl_texture_upload (GLTexture * self)
   i->glBindTexture (i->LBA_GL_TEXTURE_2D, self->tex);
 
   i->glTexParameteri (i->LBA_GL_TEXTURE_2D, i->LBA_GL_TEXTURE_MIN_FILTER,
-      i->LBA_GL_NEAREST);
+                      i->LBA_GL_NEAREST);
   i->glTexParameteri (i->LBA_GL_TEXTURE_2D, i->LBA_GL_TEXTURE_MAG_FILTER,
-      i->LBA_GL_NEAREST);
+                      i->LBA_GL_NEAREST);
 
   i->glTexImage2D (i->LBA_GL_TEXTURE_2D, 0, i->LBA_GL_RGBA, 8, 8, 0,
-      i->LBA_GL_RGBA, i->LBA_GL_UNSIGNED_BYTE, texDat);
+                   i->LBA_GL_RGBA, i->LBA_GL_UNSIGNED_BYTE, texDat);
 
   i->glGenerateMipmap (i->LBA_GL_TEXTURE_2D);
 
@@ -218,17 +209,17 @@ gl_texture_upload (GLTexture * self)
   self->tex_uploaded = TRUE;
   LBA_LOG ("Texture %d uploaded", self->tex);
 
-
   gl_texture_build_program (self);
 }
 
-
 static void
-gl_texture_draw (Basegl2d * base, BaseOpenGLInterface * i)
-{
+gl_texture_draw (Basegl2d * base, BaseOpenGLInterface * i) {
   GLTexture *self = (GLTexture *) base;
   Base2d *s2d = (Base2d *) base;
-  guint x, y, width, height;
+  guint x,
+    y,
+    width,
+    height;
 
   if (!self->tex_uploaded) {
     gl_texture_upload (self);
@@ -251,24 +242,18 @@ gl_texture_draw (Basegl2d * base, BaseOpenGLInterface * i)
   // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);  
 }
 
-
 static void
-gl_texture_init (GLTexture * self)
-{
+gl_texture_init (GLTexture * self) {
 
 }
 
-
 static void
-gl_texture_class_init (GLTextureClass * klass)
-{
+gl_texture_class_init (GLTextureClass * klass) {
   Basegl2dClass *base_gl2d_class = (Basegl2dClass *) klass;
 
   base_gl2d_class->draw = gl_texture_draw;
 }
 
-
 G_DEFINE_TYPE (GLTexture, gl_texture, G_TYPE_BASEGL2D)
-
 /* Export plugin */
     BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (gl_texture);

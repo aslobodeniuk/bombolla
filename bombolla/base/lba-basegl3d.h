@@ -17,39 +17,33 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef __BASEGL3D_H__
-#define __BASEGL3D_H__
+#  define __BASEGL3D_H__
 
-#include <glib-object.h>
-#include <glib/gstdio.h>
-#include "bombolla/base/lba-base3d.h"
-#include "bombolla/base/lba-base-opengl-interface.h"
+#  include <glib-object.h>
+#  include <glib/gstdio.h>
+#  include "bombolla/base/lba-base3d.h"
+#  include "bombolla/base/lba-base-opengl-interface.h"
 
 GType basegl3d_get_type (void);
 
-#define G_TYPE_BASEGL3D (basegl3d_get_type ())
+#  define G_TYPE_BASEGL3D (basegl3d_get_type ())
 
-#define BASE_GL3D_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj), G_TYPE_BASEGL3D, Basegl3dClass))
-#define BASE_GL3D_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASEGL3D, Basegl3dClass))
+#  define BASE_GL3D_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj), G_TYPE_BASEGL3D, Basegl3dClass))
+#  define BASE_GL3D_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASEGL3D, Basegl3dClass))
 
-typedef struct _Basegl3d
-{
+typedef struct _Basegl3d {
   Base3d parent;
 
   BaseOpenGLInterface *i;
 
 } Basegl3d;
 
-
-typedef struct _Basegl3dClass
-{
+typedef struct _Basegl3dClass {
   Base3dClass parent;
 
   void (*draw) (Basegl3d *, BaseOpenGLInterface *);
 } Basegl3dClass;
 
-
-BaseOpenGLInterface *
-basegl3d_get_iface (Basegl3d *self);
+BaseOpenGLInterface *basegl3d_get_iface (Basegl3d * self);
 #endif

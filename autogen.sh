@@ -25,6 +25,9 @@ autoreconf --force --install || {
  exit 1;
 }
 
+cp jihn .git/hooks/pre-commit
+echo "BACK=\$PWD && cd $(pwd)/bombolla && make check && cd ../tests && make check && cd \$BACK" >> .git/hooks/pre-commit
+
 echo
 echo "Now type 'make' to compile this module."
 echo

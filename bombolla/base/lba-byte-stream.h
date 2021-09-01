@@ -17,45 +17,39 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef __LBA_BYTE_STREAM_H__
-#define __LBA_BYTE_STREAM_H__
+#  define __LBA_BYTE_STREAM_H__
 
-#include <glib-object.h>
-#include <glib/gstdio.h>
+#  include <glib-object.h>
+#  include <glib/gstdio.h>
 
 GType lba_byte_stream_get_type (void);
 
-#define G_TYPE_LBA_BYTE_STREAM (lba_byte_stream_get_type ())           
-#define LBA_BYTE_STREAM_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),G_TYPE_LBA_BYTE_STREAM ,LbaByteStreamClass))
-#define LBA_BYTE_STREAM_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_LBA_BYTE_STREAM ,LbaByteStreamClass))
+#  define G_TYPE_LBA_BYTE_STREAM (lba_byte_stream_get_type ())
+#  define LBA_BYTE_STREAM_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),G_TYPE_LBA_BYTE_STREAM ,LbaByteStreamClass))
+#  define LBA_BYTE_STREAM_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_LBA_BYTE_STREAM ,LbaByteStreamClass))
 
-
-typedef struct _LbaByteStream
-{
+typedef struct _LbaByteStream {
   GObject parent;
   gboolean opened;
 } LbaByteStream;
 
-
-typedef struct _LbaByteStreamClass
-{
+typedef struct _LbaByteStreamClass {
   GObjectClass parent;
-  
+
   /* Actions */
-  gboolean (*write) (LbaByteStream *, GBytes *data, GError **err);
-  gboolean (*open) (LbaByteStream *, GError **err);
+    gboolean (*write) (LbaByteStream *, GBytes * data, GError ** err);
+    gboolean (*open) (LbaByteStream *, GError ** err);
   void (*close) (LbaByteStream *);
 } LbaByteStreamClass;
 
 gboolean
-lba_byte_stream_write_gbytes (LbaByteStream *, GBytes *data, GError **err);
+lba_byte_stream_write_gbytes (LbaByteStream *, GBytes * data, GError ** err);
 
 /* This calls are unneccessary: stream can open on first writing, and close
  * on object's destruction */
-gboolean
-lba_byte_stream_open (LbaByteStream *, GError **err);
+gboolean lba_byte_stream_open (LbaByteStream *, GError ** err);
 void
-lba_byte_stream_close (LbaByteStream *);
+  lba_byte_stream_close (LbaByteStream *);
 
 #endif

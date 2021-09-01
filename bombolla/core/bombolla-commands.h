@@ -18,28 +18,28 @@
  */
 
 #ifndef _BOMBOLLA_COMMANDS
-#define _BOMBOLLA_COMMANDS
+#  define _BOMBOLLA_COMMANDS
 
 typedef struct {
   GHashTable *objects;
   gpointer capturing_on_command;
   GObject *self;
-  gboolean (*proccess_command) (GObject *obj, const gchar * str);
+    gboolean (*proccess_command) (GObject * obj, const gchar * str);
 
 } BombollaContext;
 
 typedef struct {
   const gchar *name;
-  gboolean (*parse) (BombollaContext *ctx, gchar **tokens);
+    gboolean (*parse) (BombollaContext * ctx, gchar ** tokens);
 } BombollaCommand;
 
 extern const BombollaCommand commands[];
 
 /* bombolla-command-on.c */
-gboolean lba_command_on_append (gpointer ctx_ptr, const gchar *command);
-gboolean lba_command_on (BombollaContext *ctx, gchar **tokens);
+gboolean lba_command_on_append (gpointer ctx_ptr, const gchar * command);
+gboolean lba_command_on (BombollaContext * ctx, gchar ** tokens);
 
 /* bombolla-command-set.c */
-gboolean lba_command_set (BombollaContext *ctx, gchar **tokens);
+gboolean lba_command_set (BombollaContext * ctx, gchar ** tokens);
 
 #endif

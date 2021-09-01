@@ -25,21 +25,18 @@
 #include <string.h>
 #include <stdlib.h>
 
-enum
-{
+enum {
   SIGNAL_EXECUTE,
   LAST_SIGNAL
 };
 
-typedef enum
-{
+typedef enum {
   PROP_PLUGINS_PATH = 1
 } LbaCoreProperty;
 
 static guint lba_core_signals[LAST_SIGNAL] = { 0 };
 
-typedef struct _LbaCore
-{
+typedef struct _LbaCore {
   GObject parent;
 
   gchar *plugins_path;
@@ -51,19 +48,15 @@ typedef struct _LbaCore
   GMainLoop *mainloop;
 } LbaCore;
 
-
-typedef struct _LbaCoreClass
-{
+typedef struct _LbaCoreClass {
   GObjectClass parent;
 
   void (*execute) (LbaCore *, const gchar *);
 
 } LbaCoreClass;
 
-
 static gpointer
-lba_core_mainloop (gpointer data)
-{
+lba_core_mainloop (gpointer data) {
   LbaCore *self = (LbaCore *) data;
 
   LBA_LOG ("starting the mainloop");
@@ -80,22 +73,18 @@ lba_core_mainloop (gpointer data)
   return NULL;
 }
 
-
 /* Callback proccessed in the main loop.
  * Simply makes it quit. */
 gboolean
-lba_core_quit_msg (gpointer data)
-{
+lba_core_quit_msg (gpointer data) {
   LbaCore *self = (LbaCore *) data;
 
   g_main_loop_quit (self->mainloop);
   return G_SOURCE_REMOVE;
 }
 
-
 static void
-lba_core_stop (LbaCore * self)
-{
+lba_core_stop (LbaCore * self) {
   GSource *s;
 
   /* Send quit message to the main loop */
@@ -110,16 +99,12 @@ lba_core_stop (LbaCore * self)
   g_source_destroy (s);
 }
 
-
 static void
-lba_core_init (LbaCore * self)
-{
+lba_core_init (LbaCore * self) {
 }
 
-
 static void
-lba_core_dispose (GObject * gobject)
-{
+lba_core_dispose (GObject * gobject) {
   LbaCore *self = (LbaCore *) gobject;
 
   /* Probably here objects may need to perform some preparations for
@@ -133,11 +118,8 @@ lba_core_dispose (GObject * gobject)
   g_free (self->plugins_path);
 }
 
-
-
 static gboolean
-lba_core_proccess_command (GObject * obj, const gchar * str)
-{
+lba_core_proccess_command (GObject * obj, const gchar * str) {
   gboolean ret = TRUE;
   char **tokens;
   const BombollaCommand *command;
@@ -185,10 +167,8 @@ done:
   return ret;
 }
 
-
 static void
-lba_core_dump_type (GType plugin_type)
-{
+lba_core_dump_type (GType plugin_type) {
   GTypeQuery query;
 
   g_type_query (plugin_type, &query);
@@ -196,8 +176,11 @@ lba_core_dump_type (GType plugin_type)
 
   if (G_TYPE_IS_OBJECT (plugin_type)) {
     GParamSpec **properties;
-    guint n_properties, p;
-    guint *signals, s, n_signals;
+    guint n_properties,
+      p;
+    guint *signals,
+      s,
+      n_signals;
     GObjectClass *klass;
 
     g_printf ("GType is a GObject.");
@@ -212,19 +195,20 @@ lba_core_dump_type (GType plugin_type)
       def_val = g_strdup_value_contents (g_param_spec_get_default_value (prop));
 
       g_printf ("- Property: (%s) %s = %s\n",
-          G_PARAM_SPEC_TYPE_NAME (prop), g_param_spec_get_name (prop), def_val);
+                G_PARAM_SPEC_TYPE_NAME (prop), g_param_spec_get_name (prop),
+                def_val);
 
       g_printf ("\tnick = '%s', %s\n\n",
-          g_param_spec_get_nick (prop), g_param_spec_get_blurb (prop));
+                g_param_spec_get_nick (prop), g_param_spec_get_blurb (prop));
       g_free (def_val);
     }
-
 
     /* Iterate signals */
     {
       GType t;
       const gchar *_tab = "  ";
       gchar *tab = g_strdup (_tab);
+
       g_printf ("--- Signals:\n");
       for (t = plugin_type; t; t = g_type_parent (t)) {
         gchar *tmptab;
@@ -244,12 +228,11 @@ lba_core_dump_type (GType plugin_type)
           }
 
           g_printf ("%s%s:: %s (* %s) ", tab, t_query.type_name,
-              g_type_name (query.return_type), query.signal_name);
+                    g_type_name (query.return_type), query.signal_name);
 
           g_printf ("(");
           for (p = 0; p < query.n_params; p++) {
-            g_printf ("%s%s", p ? ", " : "",
-                g_type_name (query.param_types[p]));
+            g_printf ("%s%s", p ? ", " : "", g_type_name (query.param_types[p]));
           }
           g_printf (");\n");
         }
@@ -266,7 +249,7 @@ lba_core_dump_type (GType plugin_type)
       guint i;
       guint n_interfaces;
       GType *in = g_type_interfaces (plugin_type,
-          &n_interfaces);
+                                     &n_interfaces);
 
       for (i = 0; i < n_interfaces; i++) {
 
@@ -280,14 +263,13 @@ lba_core_dump_type (GType plugin_type)
   }
 }
 
-
 static void
-lba_core_scan (LbaCore * self, const gchar * path)
-{
+lba_core_scan (LbaCore * self, const gchar * path) {
   GModule *module = NULL;
   gpointer ptr;
   lBaPluginSystemGetGtypeFunc get_type_f;
-  GSList *modules_files = NULL, *l;
+  GSList *modules_files = NULL,
+      *l;
   GDir *dir = NULL;
 
   if (path) {
@@ -299,6 +281,7 @@ lba_core_scan (LbaCore * self, const gchar * path)
     if (g_file_test (path, G_FILE_TEST_IS_DIR)) {
       GError *err;
       const gchar *file;
+
       dir = g_dir_open (path, 0, &err);
       if (!dir) {
         g_warning ("%s", err->message);
@@ -308,7 +291,7 @@ lba_core_scan (LbaCore * self, const gchar * path)
       while ((file = g_dir_read_name (dir))) {
         if (g_str_has_suffix (file, G_MODULE_SUFFIX)) {
           modules_files = g_slist_append (modules_files,
-              g_build_filename (path, file, NULL));
+                                          g_build_filename (path, file, NULL));
         }
       }
     } else {
@@ -317,7 +300,7 @@ lba_core_scan (LbaCore * self, const gchar * path)
   }
 
   for (l = modules_files; l; l = l->next) {
-    const gchar *module_filename = (const gchar *) l->data;
+    const gchar *module_filename = (const gchar *)l->data;
 
     module = g_module_open (module_filename, G_MODULE_BIND_LOCAL);
     if (!module) {
@@ -354,11 +337,9 @@ lba_core_scan (LbaCore * self, const gchar * path)
   g_slist_free_full (modules_files, g_free);
 }
 
-
 /* TODO: return FALSE if execution fails */
 static void
-lba_core_execute (LbaCore * self, const gchar * commands)
-{
+lba_core_execute (LbaCore * self, const gchar * commands) {
   if (!self->started) {
     /* Start main loop and scan the plugins */
     static volatile gboolean once;
@@ -385,8 +366,7 @@ lba_core_execute (LbaCore * self, const gchar * commands)
 
     /* Start the main loop */
     /* FIXME: custom MainContext would be nice */
-    self->mainloop_thr =
-        g_thread_new ("LbaCoreMainLoop", lba_core_mainloop, self);
+    self->mainloop_thr = g_thread_new ("LbaCoreMainLoop", lba_core_mainloop, self);
 
     /* Done */
     self->started = TRUE;
@@ -410,46 +390,41 @@ lba_core_execute (LbaCore * self, const gchar * commands)
   }
 }
 
-
 static void
 lba_core_set_property (GObject * object,
-    guint property_id, const GValue * value, GParamSpec * pspec)
-{
+                       guint property_id, const GValue * value, GParamSpec * pspec) {
   LbaCore *self = (LbaCore *) object;
 
   switch ((LbaCoreProperty) property_id) {
-    case PROP_PLUGINS_PATH:
-      g_free (self->plugins_path);
-      self->plugins_path = g_value_dup_string (value);
-      break;
-    default:
-      /* We don't have any other property... */
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-      break;
+  case PROP_PLUGINS_PATH:
+    g_free (self->plugins_path);
+    self->plugins_path = g_value_dup_string (value);
+    break;
+  default:
+    /* We don't have any other property... */
+    G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+    break;
   }
 }
 
 static void
 lba_core_get_property (GObject * object,
-    guint property_id, GValue * value, GParamSpec * pspec)
-{
+                       guint property_id, GValue * value, GParamSpec * pspec) {
   LbaCore *self = (LbaCore *) object;
 
   switch ((LbaCoreProperty) property_id) {
-    case PROP_PLUGINS_PATH:
-      g_value_set_string (value, self->plugins_path);
-      break;
-    default:
-      /* We don't have any other property... */
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-      break;
+  case PROP_PLUGINS_PATH:
+    g_value_set_string (value, self->plugins_path);
+    break;
+  default:
+    /* We don't have any other property... */
+    G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+    break;
   }
 }
 
-
 static void
-lba_core_class_init (LbaCoreClass * klass)
-{
+lba_core_class_init (LbaCoreClass * klass) {
   GObjectClass *object_class = (GObjectClass *) klass;
 
   klass->execute = lba_core_execute;
@@ -460,18 +435,19 @@ lba_core_class_init (LbaCoreClass * klass)
   /* TODO: change to bool_string, need some syntax checking */
   lba_core_signals[SIGNAL_EXECUTE] =
       g_signal_new ("execute", G_TYPE_FROM_CLASS (klass),
-      G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
-      G_STRUCT_OFFSET (LbaCoreClass, execute), NULL, NULL,
-      g_cclosure_marshal_VOID__STRING,
-      G_TYPE_NONE, 1, G_TYPE_STRING, G_TYPE_NONE);
+                    G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+                    G_STRUCT_OFFSET (LbaCoreClass, execute), NULL, NULL,
+                    g_cclosure_marshal_VOID__STRING,
+                    G_TYPE_NONE, 1, G_TYPE_STRING, G_TYPE_NONE);
 
   g_object_class_install_property (object_class, PROP_PLUGINS_PATH,
-      g_param_spec_string ("plugins-path",
-          "Plugins path",
-          "Path to scan the plugins",
-          NULL, G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE));
+                                   g_param_spec_string ("plugins-path",
+                                                        "Plugins path",
+                                                        "Path to scan the plugins",
+                                                        NULL,
+                                                        G_PARAM_STATIC_STRINGS |
+                                                        G_PARAM_READWRITE));
 }
-
 
 G_DEFINE_TYPE (LbaCore, lba_core, G_TYPE_OBJECT)
 /* Just for logging */

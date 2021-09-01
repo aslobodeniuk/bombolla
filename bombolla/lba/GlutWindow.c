@@ -28,51 +28,40 @@
 #define LBA_OPENGL_IFACE_IMPLEMENTATION 1
 #include "bombolla/base/lba-base-opengl-interface.h"
 
-typedef struct _GlutWindow
-{
+typedef struct _GlutWindow {
   BaseWindow parent;
 
   GThread *mainloop_thr;
 } GlutWindow;
 
-
-typedef struct _GlutWindowClass
-{
+typedef struct _GlutWindowClass {
   BaseWindowClass parent;
 } GlutWindowClass;
-
 
 static GlutWindow *global_self;
 
 void
-glut_window_on_mouse_cb (int button, int state, int x, int y)
-{
+glut_window_on_mouse_cb (int button, int state, int x, int y) {
   LBA_LOG ("button = %d, state = %d, x = %d, y = %d\n", button, state, x, y);
 }
 
-
 void
-glut_window_on_reshape_cb (int width, int height)
-{
+glut_window_on_reshape_cb (int width, int height) {
   LBA_LOG ("width = %d, height = %d\n", width, height);
 }
 
 void
-glut_window_on_keyboard_cb (unsigned char key, int x, int y)
-{
+glut_window_on_keyboard_cb (unsigned char key, int x, int y) {
   LBA_LOG ("key = %x, x = %d, y = %d\n", key, x, y);
 }
 
 void
-glut_window_on_special_key_cb (int key, int x, int y)
-{
+glut_window_on_special_key_cb (int key, int x, int y) {
   LBA_LOG ("special key = %d, x = %d, y = %d\n", key, x, y);
 }
 
-
 static void
-glut_window_request_redraw (BaseWindow * base)
-{
+glut_window_request_redraw (BaseWindow * base) {
   GlutWindow *self = (GlutWindow *) base;
 
   if (self->mainloop_thr)
@@ -80,8 +69,7 @@ glut_window_request_redraw (BaseWindow * base)
 }
 
 static void
-glut_window_on_display_cb (void)
-{
+glut_window_on_display_cb (void) {
   LBA_LOG ("display cb");
 
   glClearColor (0.4, 0.4, 0.4, 1.0);
@@ -95,15 +83,13 @@ glut_window_on_display_cb (void)
 }
 
 static gpointer
-glut_window_mainloop (gpointer data)
-{
+glut_window_mainloop (gpointer data) {
   glutMainLoop ();
   return NULL;
 }
 
 static void
-glut_window_close (BaseWindow * base)
-{
+glut_window_close (BaseWindow * base) {
   GlutWindow *self = (GlutWindow *) base;
 
   glutLeaveMainLoop ();
@@ -111,15 +97,13 @@ glut_window_close (BaseWindow * base)
 }
 
 static void
-glut_window_on_close (void)
-{
+glut_window_on_close (void) {
   LBA_LOG ("Window closed by user\n");
 }
 
 /* Fixme: defaults are not set */
 static void
-glut_window_open (BaseWindow * base)
-{
+glut_window_open (BaseWindow * base) {
   GLfloat ambientColor[] = { 0.2, 0.2, 0.2, 1.0 };
   GlutWindow *self = (GlutWindow *) base;
 
@@ -143,22 +127,17 @@ glut_window_open (BaseWindow * base)
   glutMouseFunc (glut_window_on_mouse_cb);
   glutCloseFunc (glut_window_on_close);
 
-  self->mainloop_thr =
-      g_thread_new ("glutMainLoop", glut_window_mainloop, NULL);
+  self->mainloop_thr = g_thread_new ("glutMainLoop", glut_window_mainloop, NULL);
 }
 
-
 static void
-glut_window_init (GlutWindow * self)
-{
+glut_window_init (GlutWindow * self) {
   global_self = self;
 }
 
-
 /* =================== CLASS */
 static void
-glut_window_class_init (GlutWindowClass * klass)
-{
+glut_window_class_init (GlutWindowClass * klass) {
   BaseWindowClass *base_class = BASE_WINDOW_CLASS (klass);
 
   base_class->open = glut_window_open;
@@ -167,8 +146,7 @@ glut_window_class_init (GlutWindowClass * klass)
 }
 
 static void
-glut_window_opengl_interface_init (BaseOpenGLInterface * iface)
-{
+glut_window_opengl_interface_init (BaseOpenGLInterface * iface) {
   static gsize initialization_value = 0;
 
   if (g_once_init_enter (&initialization_value)) {
@@ -182,29 +160,26 @@ glut_window_opengl_interface_init (BaseOpenGLInterface * iface)
     glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
     glutInit (&argc, argv);
 
-    glutInitWindowSize (100,100);
+    glutInitWindowSize (100, 100);
     glutInitWindowPosition (0, 0);
-    
+
 //    glutCreateWindow ("");
-    
+
 //    err = glewInit();
-    if (0 && GLEW_OK != err)
-    {
+    if (0 && GLEW_OK != err) {
       /* Problem: glewInit failed, something is seriously wrong. */
-      fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
+      fprintf (stderr, "Error: %s\n", glewGetErrorString (err));
       g_abort ();
     }
-    
+
     g_once_init_leave (&initialization_value, setup_value);
   }
 
   lba_opengl_interface_init (iface);
 }
 
-
 G_DEFINE_TYPE_WITH_CODE (GlutWindow, glut_window, G_TYPE_BASE_WINDOW,
-    G_IMPLEMENT_INTERFACE (G_TYPE_BASE_OPENGL,
-        glut_window_opengl_interface_init))
-
+                         G_IMPLEMENT_INTERFACE (G_TYPE_BASE_OPENGL,
+                                                glut_window_opengl_interface_init))
 /* Export plugin */
     BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (glut_window);

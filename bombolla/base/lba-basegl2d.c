@@ -17,27 +17,23 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "bombolla/base/lba-basegl2d.h"
 #include "bombolla/lba-log.h"
 
-typedef enum
-{
+typedef enum {
   PROP_GL_PROVIDER = 1
 } Basegl2dProperty;
 
-
 static void
-basegl2d_draw (BaseDrawable * base)
-{
+basegl2d_draw (BaseDrawable * base) {
   Basegl2d *self = (Basegl2d *) base;
   Basegl2dClass *klass = BASE_GL2D_GET_CLASS (self);
 
   if (G_UNLIKELY (!self->i)) {
     GType t;
     BaseOpenGLInterface *i = NULL;
-    LBA_LOG
-        ("No OpenGL interface provided. Trying to query one from drawing scene");
+
+    LBA_LOG ("No OpenGL interface provided. Trying to query one from drawing scene");
 
     if (base->scene)
       for (t = G_OBJECT_TYPE (base->scene); t; t = g_type_parent (t)) {
@@ -63,37 +59,31 @@ basegl2d_draw (BaseDrawable * base)
     klass->draw (self, self->i);
 }
 
-
 static void
 basegl2d_set_property (GObject * object,
-    guint property_id, const GValue * value, GParamSpec * pspec)
-{
+                       guint property_id, const GValue * value, GParamSpec * pspec) {
   Basegl2d *self = (Basegl2d *) object;
 
   switch ((Basegl2dProperty) property_id) {
-    case PROP_GL_PROVIDER:
-      self->i = (BaseOpenGLInterface *)
-          g_type_interface_peek (g_type_class_peek (g_value_get_gtype (value)),
-          G_TYPE_BASE_OPENGL);
+  case PROP_GL_PROVIDER:
+    self->i = (BaseOpenGLInterface *)
+        g_type_interface_peek (g_type_class_peek (g_value_get_gtype (value)),
+                               G_TYPE_BASE_OPENGL);
 
-      LBA_LOG ("Interface provider %sfound", self->i ? "" : "NOT ");
-      break;
+    LBA_LOG ("Interface provider %sfound", self->i ? "" : "NOT ");
+    break;
 
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+  default:
+    G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
   }
 }
 
-
 static void
-basegl2d_init (Basegl2d * self)
-{
+basegl2d_init (Basegl2d * self) {
 }
 
-
 static void
-basegl2d_class_init (Basegl2dClass * klass)
-{
+basegl2d_class_init (Basegl2dClass * klass) {
   GObjectClass *object_class = (GObjectClass *) klass;
   BaseDrawableClass *base_drawable_class = (BaseDrawableClass *) klass;
 
@@ -102,12 +92,14 @@ basegl2d_class_init (Basegl2dClass * klass)
   object_class->set_property = basegl2d_set_property;
 
   g_object_class_install_property (object_class,
-      PROP_GL_PROVIDER,
-      g_param_spec_gtype ("gl-provider",
-          "GL provider", "Object, that provides Opengl interface",
-          /* We don't know what plugin may provide us an interface yet */
-          G_TYPE_NONE, G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE));
+                                   PROP_GL_PROVIDER,
+                                   g_param_spec_gtype ("gl-provider",
+                                                       "GL provider",
+                                                       "Object, that provides Opengl interface",
+                                                       /* We don't know what plugin may provide us an interface yet */
+                                                       G_TYPE_NONE,
+                                                       G_PARAM_STATIC_STRINGS |
+                                                       G_PARAM_WRITABLE));
 }
-
 
 G_DEFINE_TYPE (Basegl2d, basegl2d, G_TYPE_BASE2D)

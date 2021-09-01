@@ -18,9 +18,9 @@
  */
 
 #ifndef __BASE_OPENGL_INTERFACE_H__
-#define __BASE_OPENGL_INTERFACE_H__
+#  define __BASE_OPENGL_INTERFACE_H__
 
-#include <glib-object.h>
+#  include <glib-object.h>
 
 typedef char lba_GLchar;
 typedef unsigned int lba_GLenum;
@@ -43,8 +43,8 @@ typedef gintptr lba_GLsizeiptr;
 
 /* When implementation is including this header, it can test if types
  * are matching the sizes */
-#ifdef LBA_OPENGL_IFACE_IMPLEMENTATION
-#define LBA_TEST_TYPE_SIZE(x)                     \
+#  ifdef LBA_OPENGL_IFACE_IMPLEMENTATION
+#    define LBA_TEST_TYPE_SIZE(x)                     \
   G_STATIC_ASSERT(sizeof (x) == sizeof (lba_##x))
 
 LBA_TEST_TYPE_SIZE (GLchar);
@@ -64,12 +64,10 @@ LBA_TEST_TYPE_SIZE (GLclampf);
 LBA_TEST_TYPE_SIZE (GLdouble);
 LBA_TEST_TYPE_SIZE (GLclampd);
 LBA_TEST_TYPE_SIZE (GLsizeiptr);
-#endif
+#  endif
 
-struct _BaseOpenGLInterface
-{
+struct _BaseOpenGLInterface {
   GTypeInterface parent_iface;
-
 
   lba_GLbitfield LBA_GL_COLOR_BUFFER_BIT;
   lba_GLbitfield LBA_GL_STENCIL_BUFFER_BIT;
@@ -81,7 +79,6 @@ struct _BaseOpenGLInterface
   void (*glBegin) (lba_GLenum mode);
   void (*glEnd) (void);
 
-
   lba_GLenum LBA_GL_PROJECTION;
   lba_GLenum LBA_GL_MODELVIEW;
   void (*glMatrixMode) (lba_GLenum mode);
@@ -92,15 +89,13 @@ struct _BaseOpenGLInterface
   lba_GLenum LBA_GL_DEPTH_TEST;
 
   void (*glClearColor) (lba_GLfloat red,
-      lba_GLfloat green, lba_GLfloat blue, lba_GLfloat alpha);
-
+                        lba_GLfloat green, lba_GLfloat blue, lba_GLfloat alpha);
 
   void (*glClear) (lba_GLbitfield mask);
 
   void (*glLoadIdentity) (void);
 
-  void (*glRotatef) (lba_GLfloat angle,
-      lba_GLfloat x, lba_GLfloat y, lba_GLfloat z);
+  void (*glRotatef) (lba_GLfloat angle, lba_GLfloat x, lba_GLfloat y, lba_GLfloat z);
 
   void (*glColor3f) (lba_GLfloat red, lba_GLfloat green, lba_GLfloat blue);
   void (*glVertex3f) (lba_GLfloat x, lba_GLfloat y, lba_GLfloat z);
@@ -110,38 +105,35 @@ struct _BaseOpenGLInterface
   lba_GLenum LBA_GL_LIGHT0;
   lba_GLenum LBA_GL_DIFFUSE;
   lba_GLenum LBA_GL_POSITION;
-  void (*glLightfv) (lba_GLenum light,
-      lba_GLenum pnam, const lba_GLfloat * params);
-
+  void (*glLightfv) (lba_GLenum light, lba_GLenum pnam, const lba_GLfloat * params);
 
   void (*glGenTextures) (lba_GLsizei n, lba_GLuint * textures);
 
   lba_GLenum LBA_GL_TEXTURE_2D;
   void (*glBindTexture) (lba_GLenum target, lba_GLuint texture);
 
-
   lba_GLenum LBA_GL_TEXTURE_MIN_FILTER;
   lba_GLenum LBA_GL_TEXTURE_MAG_FILTER;
 
   lba_GLenum LBA_GL_NEAREST;
-  void (*glTexParameteri) (lba_GLenum target,
-      lba_GLenum pname, lba_GLint param);
+  void (*glTexParameteri) (lba_GLenum target, lba_GLenum pname, lba_GLint param);
 
   lba_GLenum LBA_GL_RGBA;
   lba_GLenum LBA_GL_LUMINANCE;
 
   lba_GLenum LBA_GL_UNSIGNED_BYTE;
   void (*glTexImage2D) (lba_GLenum target,
-      lba_GLint level,
-      lba_GLint internalformat,
-      lba_GLsizei width,
-      lba_GLsizei height,
-      lba_GLint border, lba_GLenum format, lba_GLenum type, const void *data);
+                        lba_GLint level,
+                        lba_GLint internalformat,
+                        lba_GLsizei width,
+                        lba_GLsizei height,
+                        lba_GLint border, lba_GLenum format, lba_GLenum type,
+                        const void *data);
 
   void (*glOrtho) (lba_GLdouble left,
-      lba_GLdouble right,
-      lba_GLdouble bottom,
-      lba_GLdouble top, lba_GLdouble nearVal, lba_GLdouble farVal);
+                   lba_GLdouble right,
+                   lba_GLdouble bottom,
+                   lba_GLdouble top, lba_GLdouble nearVal, lba_GLdouble farVal);
 
   void (*glTexCoord2i) (lba_GLint s, lba_GLint t);
 
@@ -150,18 +142,19 @@ struct _BaseOpenGLInterface
     lba_GLuint (*glCreateShader) (lba_GLenum shaderType);
 
   void (*glShaderSource) (lba_GLuint shader,
-      lba_GLsizei count,
-      const lba_GLchar * const *string, const lba_GLint * length);
+                          lba_GLsizei count,
+                          const lba_GLchar * const *string,
+                          const lba_GLint * length);
 
   void (*glCompileShader) (lba_GLuint shader);
 
-  void (*glGetShaderiv) (lba_GLuint shader,
-      lba_GLenum pname, lba_GLint * params);
+  void (*glGetShaderiv) (lba_GLuint shader, lba_GLenum pname, lba_GLint * params);
 
   lba_GLenum LBA_GL_COMPILE_STATUS;
 
   void (*glGetShaderInfoLog) (lba_GLuint shader,
-      lba_GLsizei maxLength, lba_GLsizei * length, lba_GLchar * infoLog);
+                              lba_GLsizei maxLength, lba_GLsizei * length,
+                              lba_GLchar * infoLog);
 
   lba_GLenum LBA_GL_VERTEX_SHADER;
   lba_GLenum LBA_GL_FRAGMENT_SHADER;
@@ -170,16 +163,15 @@ struct _BaseOpenGLInterface
 
   void (*glAttachShader) (lba_GLuint program, lba_GLuint shader);
 
-
   void (*glLinkProgram) (lba_GLuint program);
 
-  void (*glGetProgramiv) (lba_GLuint program,
-      lba_GLenum pname, lba_GLint * params);
+  void (*glGetProgramiv) (lba_GLuint program, lba_GLenum pname, lba_GLint * params);
 
   lba_GLenum LBA_GL_LINK_STATUS;
 
   void (*glGetProgramInfoLog) (lba_GLuint program,
-      lba_GLsizei maxLength, lba_GLsizei * length, lba_GLchar * infoLog);
+                               lba_GLsizei maxLength, lba_GLsizei * length,
+                               lba_GLchar * infoLog);
 
   void (*glDeleteShader) (lba_GLuint shader);
 
@@ -202,31 +194,29 @@ struct _BaseOpenGLInterface
   lba_GLenum LBA_GL_ARRAY_BUFFER;
 
   void (*glBufferData) (lba_GLenum target,
-      lba_GLsizeiptr size, const void *data, lba_GLenum usage);
+                        lba_GLsizeiptr size, const void *data, lba_GLenum usage);
 
   lba_GLenum LBA_GL_STREAM_DRAW;
 
-    lba_GLint (*glGetAttribLocation) (lba_GLuint program,
-      const lba_GLchar * name);
+    lba_GLint (*glGetAttribLocation) (lba_GLuint program, const lba_GLchar * name);
 
   void (*glVertexAttribPointer) (lba_GLuint index,
-      lba_GLint size,
-      lba_GLenum type,
-      lba_GLboolean normalized, lba_GLsizei stride, const void *pointer);
+                                 lba_GLint size,
+                                 lba_GLenum type,
+                                 lba_GLboolean normalized, lba_GLsizei stride,
+                                 const void *pointer);
 
   lba_GLenum LBA_GL_FLOAT;
   lba_GLboolean LBA_GL_FALSE;
 
-
   void (*glEnableVertexAttribArray) (lba_GLuint index);
 };
 
-#ifdef LBA_OPENGL_IFACE_IMPLEMENTATION
+#  ifdef LBA_OPENGL_IFACE_IMPLEMENTATION
 static void
-lba_opengl_interface_init (struct _BaseOpenGLInterface *iface)
-{
-#define iface_set(x) iface->x = x
-#define iface_set_lba(x) iface->LBA_##x = x
+lba_opengl_interface_init (struct _BaseOpenGLInterface *iface) {
+#    define iface_set(x) iface->x = x
+#    define iface_set_lba(x) iface->LBA_##x = x
 
   iface_set_lba (GL_COLOR_BUFFER_BIT);
   iface_set_lba (GL_STENCIL_BUFFER_BIT);
@@ -311,11 +301,11 @@ lba_opengl_interface_init (struct _BaseOpenGLInterface *iface)
   iface_set_lba (GL_FALSE);
   iface_set (glEnableVertexAttribArray);
 
-#undef iface_set
-#undef iface_set_lba
+#    undef iface_set
+#    undef iface_set_lba
 }
-#endif
+#  endif
 
-#define G_TYPE_BASE_OPENGL base_opengl_get_type ()
+#  define G_TYPE_BASE_OPENGL base_opengl_get_type ()
 G_DECLARE_INTERFACE (BaseOpenGL, base_opengl, G, BASE_OPENGL, GObject)
 #endif

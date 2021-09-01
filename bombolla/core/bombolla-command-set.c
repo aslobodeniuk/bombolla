@@ -20,10 +20,8 @@
 #include "bombolla/lba-log.h"
 #include "bombolla/core/bombolla-commands.h"
 
-
 static void
-_str2float (const GValue * src_value, GValue * dest_value)
-{
+_str2float (const GValue * src_value, GValue * dest_value) {
   gfloat ret = 0;
   const gchar *s = g_value_get_string (src_value);
 
@@ -35,10 +33,8 @@ _str2float (const GValue * src_value, GValue * dest_value)
   g_value_set_float (dest_value, ret);
 }
 
-
 static void
-_str2double (const GValue * src_value, GValue * dest_value)
-{
+_str2double (const GValue * src_value, GValue * dest_value) {
   gdouble ret = 0;
   const gchar *s = g_value_get_string (src_value);
 
@@ -50,10 +46,8 @@ _str2double (const GValue * src_value, GValue * dest_value)
   g_value_set_double (dest_value, ret);
 }
 
-
 static void
-_str2bool (const GValue * src_value, GValue * dest_value)
-{
+_str2bool (const GValue * src_value, GValue * dest_value) {
   guint ret = 0;
   const gchar *s = g_value_get_string (src_value);
 
@@ -65,10 +59,8 @@ _str2bool (const GValue * src_value, GValue * dest_value)
   g_value_set_boolean (dest_value, ret);
 }
 
-
 static void
-_str2uint (const GValue * src_value, GValue * dest_value)
-{
+_str2uint (const GValue * src_value, GValue * dest_value) {
   guint ret = 0;
   const gchar *s = g_value_get_string (src_value);
 
@@ -80,10 +72,8 @@ _str2uint (const GValue * src_value, GValue * dest_value)
   g_value_set_uint (dest_value, ret);
 }
 
-
 static void
-_str2gtype (const GValue * src_value, GValue * dest_value)
-{
+_str2gtype (const GValue * src_value, GValue * dest_value) {
   GType t = G_TYPE_NONE;
   gpointer ptr;
   const gchar *s = g_value_get_string (src_value);
@@ -99,11 +89,9 @@ _str2gtype (const GValue * src_value, GValue * dest_value)
   g_value_set_gtype (dest_value, t);
 }
 
-
 static gboolean
-lba_command_set_str2obj (BombollaContext *ctx,
-    const GValue * src_value, GValue * dest_value)
-{
+lba_command_set_str2obj (BombollaContext * ctx,
+                         const GValue * src_value, GValue * dest_value) {
   GObject *obj = NULL;
   const gchar *s = g_value_get_string (src_value);
 
@@ -120,21 +108,20 @@ lba_command_set_str2obj (BombollaContext *ctx,
   return TRUE;
 }
 
-
 gboolean
-lba_command_set (BombollaContext *ctx, gchar **tokens)
-{
-  
+lba_command_set (BombollaContext * ctx, gchar ** tokens) {
+
   GValue inp = G_VALUE_INIT;
   GValue outp = G_VALUE_INIT;
-  const gchar *prop_name, *prop_val;
+  const gchar *prop_name,
+   *prop_val;
   const gchar *objname;
   GObject *obj;
   GParamSpec *prop;
   char **tmp = NULL;
   gboolean ret = FALSE;
   static volatile gboolean once;
-  
+
   tmp = g_strsplit (tokens[1], ".", 2);
 
   if (FALSE == (tmp && tmp[0] && tmp[1] && tokens[2])) {
@@ -151,8 +138,6 @@ lba_command_set (BombollaContext *ctx, gchar **tokens)
     g_warning ("object %s not found", objname);
     goto done;
   }
-  
-
 
   if (!once) {
     /* Register basic transform functions for types */
@@ -164,9 +149,9 @@ lba_command_set (BombollaContext *ctx, gchar **tokens)
 
     once = 1;
   }
-  
+
   /* FIXME */
-  prop_val = tokens [2];
+  prop_val = tokens[2];
 
   /* Now we need to find out gtype of out */
   prop = g_object_class_find_property (G_OBJECT_GET_CLASS (obj), prop_name);
@@ -180,7 +165,7 @@ lba_command_set (BombollaContext *ctx, gchar **tokens)
   g_value_set_string (&inp, prop_val);
   g_value_init (&outp, prop->value_type);
 
- /* Now set outp */
+  /* Now set outp */
   if (prop->value_type == G_TYPE_OBJECT) {
     if (!lba_command_set_str2obj (ctx, &inp, &outp)) {
       g_warning ("object '%s' not found", prop_val);

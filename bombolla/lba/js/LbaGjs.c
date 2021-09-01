@@ -21,68 +21,58 @@
 #include "bombolla/lba-log.h"
 #include <gjs/gjs.h>
 
-typedef struct _LbaGjs
-{
+typedef struct _LbaGjs {
   GObject parent;
 
-  GjsContext* js_context;
+  GjsContext *js_context;
 } LbaGjs;
 
-typedef struct _LbaGjsClass
-{
+typedef struct _LbaGjsClass {
   GObjectClass parent;
 } LbaGjsClass;
 
 static void
-lba_gjs_init (LbaGjs * self)
-{
+lba_gjs_init (LbaGjs * self) {
 
-  self->js_context = GJS_CONTEXT(g_object_new(
-        GJS_TYPE_CONTEXT,
+  self->js_context = GJS_CONTEXT (g_object_new (GJS_TYPE_CONTEXT,
 //        "search-path", "",
 //        "exec-as-module", TRUE,
-        NULL));
+                                                NULL));
 
   if (!self->js_context) {
     g_critical ("Couldn't create context");
     return;
   }
-
 // TODO: scan path for files
   {
-    GError* error = NULL;
+    GError *error = NULL;
     gint exit_status;
+
     // As you can see, my friend, as you can see...
     char filename[] = "examples/js/plugin-in-js.js";
 
-    if (!gjs_context_eval_file(self->js_context,
-            filename,
-            &exit_status,
-            &error)) {
-      g_critical("GJS error [%d], [%s]", exit_status, error->message);
-      g_clear_error(&error);
+    if (!gjs_context_eval_file (self->js_context, filename, &exit_status, &error)) {
+      g_critical ("GJS error [%d], [%s]", exit_status, error->message);
+      g_clear_error (&error);
     }
   }
 }
 
 static void
-lba_gjs_dispose (GObject * gobject)
-{
-  LbaGjs *self = (LbaGjs *)gobject;
-  
+lba_gjs_dispose (GObject * gobject) {
+  LbaGjs *self = (LbaGjs *) gobject;
+
   if (self->js_context) {
     g_object_unref (self->js_context);
   }
 }
 
 static void
-lba_gjs_class_init (LbaGjsClass * klass)
-{
+lba_gjs_class_init (LbaGjsClass * klass) {
   GObjectClass *object_class = (GObjectClass *) klass;
 
   object_class->dispose = lba_gjs_dispose;
 }
-
 
 G_DEFINE_TYPE (LbaGjs, lba_gjs, G_TYPE_OBJECT)
 /* Export plugin */

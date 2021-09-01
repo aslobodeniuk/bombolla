@@ -27,8 +27,7 @@
 GType lba_core_get_type (void);
 
 int
-main (int argc, char **argv)
-{
+main (int argc, char **argv) {
   int ret = 1;
   gchar *script_contents = NULL;
   GObject *core;
@@ -39,12 +38,13 @@ main (int argc, char **argv)
     GError *err = NULL;
     gchar *path = NULL;
     gchar *script = NULL;
+
     GOptionEntry options[] = {
-      {"script", 'i', 0, G_OPTION_ARG_STRING, &script,
-          "Proccess input file before entering shell", NULL},
-      {"path", 'p', 0, G_OPTION_ARG_STRING, &path,
-          "Path to the plugins directory", NULL},
-      {NULL}
+      { "script", 'i', 0, G_OPTION_ARG_STRING, &script,
+       "Proccess input file before entering shell", NULL },
+      { "path", 'p', 0, G_OPTION_ARG_STRING, &path,
+       "Path to the plugins directory", NULL },
+      { NULL }
     };
 
     ctx = g_option_context_new ("-i <script file> | -p <plugins path or file>");
@@ -63,7 +63,7 @@ main (int argc, char **argv)
       gsize length = 0;
 
       g_printf ("Opening script %s\n", script);
-      
+
       if (!g_file_test (script, G_FILE_TEST_EXISTS)) {
         g_warning ("Script file doesn't exist\n");
         return 1;
@@ -94,12 +94,12 @@ main (int argc, char **argv)
 
   /* FIXME: to property */
   g_printf ("scanning finished, entering shell...\n"
-      "commands:\n------------\n"
-      "create <type name> <var name>\n"
-      "destroy <var name>\n"
-      "set <var name>.<property> <value>\n"
-      "call <var name>.<signal> (params are not supported yet)\n"
-      "on <var name>.<signal>\n" "q (quit)\n------------\n");
+            "commands:\n------------\n"
+            "create <type name> <var name>\n"
+            "destroy <var name>\n"
+            "set <var name>.<property> <value>\n"
+            "call <var name>.<signal> (params are not supported yet)\n"
+            "on <var name>.<signal>\n" "q (quit)\n------------\n");
 
   for (;;) {
     char a[512];

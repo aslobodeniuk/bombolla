@@ -22,22 +22,17 @@
 #include <gmodule.h>
 #include <Python.h>
 
-typedef struct _LbaPythonScanner
-{
+typedef struct _LbaPythonScanner {
   GObject parent;
   GModule *module;
 } LbaPythonScanner;
 
-
-typedef struct _LbaPythonScannerClass
-{
+typedef struct _LbaPythonScannerClass {
   GObjectClass parent;
 } LbaPythonScannerClass;
 
-
 static void
-lba_python_scanner_init (LbaPythonScanner * self)
-{
+lba_python_scanner_init (LbaPythonScanner * self) {
   static volatile gboolean once;
 
   if (!once) {
@@ -60,6 +55,7 @@ lba_python_scanner_init (LbaPythonScanner * self)
     // As you can see, my friend, as you can see...
     char filename[] = "examples/python/plugin-in-python.py";
     FILE *fp;
+
     fp = g_fopen (filename, "r");
 
     if (fp) {
@@ -69,26 +65,24 @@ lba_python_scanner_init (LbaPythonScanner * self)
       fclose (fp);
 
       // Now extract that string to the C code!!
-      PyRun_SimpleString ("print ('loaded class: %s' % GObject.GType(lba_plugin).name)");
+      PyRun_SimpleString
+          ("print ('loaded class: %s' % GObject.GType(lba_plugin).name)");
     }
   }
 }
 
 static void
-lba_python_scanner_dispose (GObject * gobject)
-{
+lba_python_scanner_dispose (GObject * gobject) {
   PyRun_SimpleString ("print('Bombolla home python goes to sleep')");
   Py_Finalize ();
 }
 
 static void
-lba_python_scanner_class_init (LbaPythonScannerClass * klass)
-{
+lba_python_scanner_class_init (LbaPythonScannerClass * klass) {
   GObjectClass *object_class = (GObjectClass *) klass;
 
   object_class->dispose = lba_python_scanner_dispose;
 }
-
 
 G_DEFINE_TYPE (LbaPythonScanner, lba_python_scanner, G_TYPE_OBJECT)
 /* Export plugin */

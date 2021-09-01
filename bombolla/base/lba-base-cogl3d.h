@@ -17,25 +17,23 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef __BASE_COGL3D_H__
-#define __BASE_COGL3D_H__
+#  define __BASE_COGL3D_H__
 
-#include <glib-object.h>
-#include <cogl/cogl.h>
+#  include <glib-object.h>
+#  include <cogl/cogl.h>
 
-#include "bombolla/base/lba-base3d.h"
+#  include "bombolla/base/lba-base3d.h"
 
 GType base_cogl3d_get_type (void);
 
-#define G_TYPE_BASE_COGL3D (base_cogl3d_get_type ())
-#define G_OBJECT_IS_COGL3D(obj)               (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_TYPE_BASE_COGL3D))
+#  define G_TYPE_BASE_COGL3D (base_cogl3d_get_type ())
+#  define G_OBJECT_IS_COGL3D(obj)               (G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_TYPE_BASE_COGL3D))
 
-#define BASE_COGL3D_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj), G_TYPE_BASE_COGL3D, BaseCogl3dClass))
-#define BASE_COGL3D_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASE_COGL3D, BaseCogl3dClass))
+#  define BASE_COGL3D_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj), G_TYPE_BASE_COGL3D, BaseCogl3dClass))
+#  define BASE_COGL3D_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASE_COGL3D, BaseCogl3dClass))
 
-typedef struct _BaseCogl3d
-{
+typedef struct _BaseCogl3d {
   Base3d parent;
 
   CoglFramebuffer *fb;
@@ -43,15 +41,12 @@ typedef struct _BaseCogl3d
   CoglContext *ctx;
 } BaseCogl3d;
 
-
-typedef struct _BaseCogl3dClass
-{
+typedef struct _BaseCogl3dClass {
   Base3dClass parent;
 
-  void (*paint) (BaseCogl3d *, CoglFramebuffer *fb, CoglPipeline *pipeline);
-  void (*reopen) (BaseCogl3d *, CoglFramebuffer *fb, CoglPipeline *pipeline,
-      CoglContext *ctx);
+  void (*paint) (BaseCogl3d *, CoglFramebuffer * fb, CoglPipeline * pipeline);
+  void (*reopen) (BaseCogl3d *, CoglFramebuffer * fb, CoglPipeline * pipeline,
+                  CoglContext * ctx);
 } BaseCogl3dClass;
-
 
 #endif

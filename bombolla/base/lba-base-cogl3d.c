@@ -17,21 +17,18 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "bombolla/base/lba-base-cogl3d.h"
 #include "bombolla/lba-log.h"
 
 static void
-base_cogl3d_draw (BaseDrawable * base)
-{
+base_cogl3d_draw (BaseDrawable * base) {
   BaseCogl3d *self = (BaseCogl3d *) base;
   BaseCogl3dClass *klass = BASE_COGL3D_GET_CLASS (self);
 
   /* Now let the child draw */
   if (klass->paint) {
     if (!self->fb || !self->pipeline) {
-      LBA_LOG ("Incompatible drawing scene: "
-          "needs COGL framebuffer and pipeline");
+      LBA_LOG ("Incompatible drawing scene: " "needs COGL framebuffer and pipeline");
       return;
     }
 
@@ -40,15 +37,14 @@ base_cogl3d_draw (BaseDrawable * base)
 }
 
 static void
-base_cogl3d_scene_reopen (GObject * scene, gpointer user_data)
-{
+base_cogl3d_scene_reopen (GObject * scene, gpointer user_data) {
   BaseCogl3d *self = (BaseCogl3d *) user_data;
   BaseCogl3dClass *klass = BASE_COGL3D_GET_CLASS (self);
 
   LBA_LOG ("Catching Cogl context");
   g_object_get (scene,
-      "cogl-framebuffer", &self->fb, "cogl-pipeline", &self->pipeline,
-      "cogl-ctx", &self->ctx, NULL);
+                "cogl-framebuffer", &self->fb, "cogl-pipeline", &self->pipeline,
+                "cogl-ctx", &self->ctx, NULL);
 
   if (klass->reopen && self->fb && self->pipeline && self->ctx) {
     klass->reopen (self, self->fb, self->pipeline, self->ctx);
@@ -57,8 +53,7 @@ base_cogl3d_scene_reopen (GObject * scene, gpointer user_data)
 
 void
 base_cogl3d_has_drawing_scene (GObject * gobject, GParamSpec * pspec,
-    gpointer user_data)
-{
+                               gpointer user_data) {
   BaseDrawable *drawable = (BaseDrawable *) gobject;
   BaseCogl3d *self = (BaseCogl3d *) gobject;
 
@@ -72,13 +67,13 @@ base_cogl3d_has_drawing_scene (GObject * gobject, GParamSpec * pspec,
         || !g_object_class_find_property (scene_instance_class, "cogl-pipeline")
         || !g_object_class_find_property (scene_instance_class, "cogl-ctx")) {
       LBA_LOG ("Incompatible drawing scene: "
-          "must have 'cogl-framebuffer', 'cogl-pipeline' and 'cogl-ctx' parameters");
+               "must have 'cogl-framebuffer', 'cogl-pipeline' and 'cogl-ctx' parameters");
       return;
     }
 
     /* On each reopen we must update */
     g_signal_connect_after (drawable->scene, "open",
-        G_CALLBACK (base_cogl3d_scene_reopen), self);
+                            G_CALLBACK (base_cogl3d_scene_reopen), self);
 
     /* Update also at this moment */
     base_cogl3d_scene_reopen (G_OBJECT (drawable->scene), self);
@@ -88,22 +83,17 @@ base_cogl3d_has_drawing_scene (GObject * gobject, GParamSpec * pspec,
   }
 }
 
-
 static void
-base_cogl3d_init (BaseCogl3d * self)
-{
+base_cogl3d_init (BaseCogl3d * self) {
   g_signal_connect (self, "notify::drawing-scene",
-      G_CALLBACK (base_cogl3d_has_drawing_scene), self);
+                    G_CALLBACK (base_cogl3d_has_drawing_scene), self);
 }
 
-
 static void
-base_cogl3d_class_init (BaseCogl3dClass * klass)
-{
+base_cogl3d_class_init (BaseCogl3dClass * klass) {
   BaseDrawableClass *base_drawable_class = (BaseDrawableClass *) klass;
 
   base_drawable_class->draw = base_cogl3d_draw;
 }
-
 
 G_DEFINE_TYPE (BaseCogl3d, base_cogl3d, G_TYPE_BASE3D)

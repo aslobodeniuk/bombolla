@@ -21,23 +21,18 @@
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 
-typedef struct _GLLight
-{
+typedef struct _GLLight {
   Basegl3d parent;
   gboolean enabled_update;
 } GLLight;
 
-
-typedef struct _GLLightClass
-{
+typedef struct _GLLightClass {
   Basegl3dClass parent;
 } GLLightClass;
 
-
 static void
-gl_light_draw (Basegl3d * base, BaseOpenGLInterface * i)
-{
-  GLLight *self = (GLLight *)base;
+gl_light_draw (Basegl3d * base, BaseOpenGLInterface * i) {
+  GLLight *self = (GLLight *) base;
   BaseDrawable *drawable = (BaseDrawable *) base;
 
   if (self->enabled_update) {
@@ -63,10 +58,9 @@ gl_light_draw (Basegl3d * base, BaseOpenGLInterface * i)
 }
 
 void
-gl_light_enabled (GObject * gobject, GParamSpec * pspec, gpointer user_data)
-{
+gl_light_enabled (GObject * gobject, GParamSpec * pspec, gpointer user_data) {
   BaseDrawable *drawable = (BaseDrawable *) gobject;
-  GLLight *self = (GLLight *)gobject;
+  GLLight *self = (GLLight *) gobject;
 
   if (drawable->scene) {
     LBA_LOG ("update..");
@@ -77,25 +71,19 @@ gl_light_enabled (GObject * gobject, GParamSpec * pspec, gpointer user_data)
 }
 
 static void
-gl_light_init (GLLight * self)
-{
-  g_signal_connect (self, "notify::enabled", G_CALLBACK (gl_light_enabled),
-      self);
+gl_light_init (GLLight * self) {
+  g_signal_connect (self, "notify::enabled", G_CALLBACK (gl_light_enabled), self);
   g_signal_connect (self, "notify::drawing-scene",
-      G_CALLBACK (gl_light_enabled), self);
+                    G_CALLBACK (gl_light_enabled), self);
 }
 
-
 static void
-gl_light_class_init (GLLightClass * klass)
-{
+gl_light_class_init (GLLightClass * klass) {
   Basegl3dClass *base_gl3d_class = (Basegl3dClass *) klass;
 
   base_gl3d_class->draw = gl_light_draw;
 }
 
-
 G_DEFINE_TYPE (GLLight, gl_light, G_TYPE_BASEGL3D)
-
 /* Export plugin */
     BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (gl_light);

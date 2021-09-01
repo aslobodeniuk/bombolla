@@ -17,37 +17,32 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef __BASEGL2D_H__
-#define __BASEGL2D_H__
+#  define __BASEGL2D_H__
 
-#include <glib-object.h>
-#include <glib/gstdio.h>
-#include "bombolla/base/lba-base2d.h"
-#include "bombolla/base/lba-base-opengl-interface.h"
+#  include <glib-object.h>
+#  include <glib/gstdio.h>
+#  include "bombolla/base/lba-base2d.h"
+#  include "bombolla/base/lba-base-opengl-interface.h"
 
 GType basegl2d_get_type (void);
 
-#define G_TYPE_BASEGL2D (basegl2d_get_type ())
+#  define G_TYPE_BASEGL2D (basegl2d_get_type ())
 
-#define BASE_GL2D_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),G_TYPE_BASEGL2D ,Basegl2dClass))
-#define BASE_GL2D_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASEGL2D ,Basegl2dClass))
+#  define BASE_GL2D_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),G_TYPE_BASEGL2D ,Basegl2dClass))
+#  define BASE_GL2D_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASEGL2D ,Basegl2dClass))
 
-typedef struct _Basegl2d
-{
+typedef struct _Basegl2d {
   Base2d parent;
 
   BaseOpenGLInterface *i;
 
 } Basegl2d;
 
-
-typedef struct _Basegl2dClass
-{
+typedef struct _Basegl2dClass {
   Base2dClass parent;
 
   void (*draw) (Basegl2d *, BaseOpenGLInterface *);
 } Basegl2dClass;
-
 
 #endif

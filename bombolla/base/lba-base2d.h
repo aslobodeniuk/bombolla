@@ -17,34 +17,32 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef __BASE2D_H__
-#define __BASE2D_H__
+#  define __BASE2D_H__
 
-#include <glib-object.h>
-#include <glib/gstdio.h>
-#include "bombolla/base/lba-basedrawable.h"
+#  include <glib-object.h>
+#  include <glib/gstdio.h>
+#  include "bombolla/base/lba-basedrawable.h"
 
 GType base2d_get_type (void);
 
-#define G_TYPE_BASE2D (base2d_get_type ())
+#  define G_TYPE_BASE2D (base2d_get_type ())
 
-#define BASE2D_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),G_TYPE_BASE2D ,Base2dClass))
-#define BASE2D_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASE2D ,Base2dClass))
+#  define BASE2D_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),G_TYPE_BASE2D ,Base2dClass))
+#  define BASE2D_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASE2D ,Base2dClass))
 
-typedef struct _Base2d
-{
+typedef struct _Base2d {
   BaseDrawable parent;
 
-  guint x, y, width, height;
+  guint x,
+    y,
+    width,
+    height;
 
 } Base2d;
 
-
-typedef struct _Base2dClass
-{
+typedef struct _Base2dClass {
   BaseDrawableClass parent;
 } Base2dClass;
-
 
 #endif

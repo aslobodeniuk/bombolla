@@ -23,7 +23,7 @@
 typedef struct {
   GSList *commands_list;
   GObject *self;
-  gboolean (*proccess_command) (GObject *self, const gchar * command);
+    gboolean (*proccess_command) (GObject * self, const gchar * command);
 } BombollaOnCommandCtx;
 
 /* Callback for "on" command. It's designed to use parameters
@@ -31,11 +31,10 @@ typedef struct {
  * So, it executes the commands, stored for that "on" instance. */
 static void
 lba_command_on_cb (GClosure * closure,
-    GValue * return_value,
-    guint n_param_values,
-    const GValue * param_values,
-    gpointer invocation_hint, gpointer marshal_data)
-{
+                   GValue * return_value,
+                   guint n_param_values,
+                   const GValue * param_values,
+                   gpointer invocation_hint, gpointer marshal_data) {
   gpointer user_data;
   GSList *l;
   BombollaOnCommandCtx *ctx = user_data;
@@ -51,18 +50,16 @@ lba_command_on_cb (GClosure * closure,
 
   /* Now execute line by line everything */
   for (l = ctx->commands_list; l; l = l->next) {
-    ctx->proccess_command (ctx->self, (const gchar *) l->data);
+    ctx->proccess_command (ctx->self, (const gchar *)l->data);
   }
 }
 
-
 static void
 lba_command_on_marshal (GClosure * closure,
-    GValue * return_value,
-    guint n_param_values,
-    const GValue * param_values,
-    gpointer invocation_hint, gpointer marshal_data)
-{
+                        GValue * return_value,
+                        guint n_param_values,
+                        const GValue * param_values,
+                        gpointer invocation_hint, gpointer marshal_data) {
   /* this is our "passthrough" marshaller. We could also just omit
    * the closure's callback and do what we want here, given that it's passthrough, but
    * that is a hack */
@@ -73,14 +70,12 @@ lba_command_on_marshal (GClosure * closure,
   callback = (GClosureMarshal) (marshal_data ? marshal_data : cc->callback);
 
   callback (closure,
-      return_value,
-      n_param_values, param_values, invocation_hint, marshal_data);
+            return_value,
+            n_param_values, param_values, invocation_hint, marshal_data);
 }
 
-
 static void
-lba_command_on_finish (gpointer data, GClosure * closure)
-{
+lba_command_on_finish (gpointer data, GClosure * closure) {
   BombollaOnCommandCtx *ctx = data;
 
   /* unref ctx->self */
@@ -88,25 +83,22 @@ lba_command_on_finish (gpointer data, GClosure * closure)
   g_free (ctx);
 }
 
-
 gboolean
-lba_command_on_append (gpointer ctx_ptr, const gchar *command)
-{
+lba_command_on_append (gpointer ctx_ptr, const gchar * command) {
   BombollaOnCommandCtx *ctx = ctx_ptr;
 
   if (g_str_has_prefix (command, "end")) {
     return FALSE;
   }
-  
+
   ctx->commands_list = g_slist_append (ctx->commands_list, g_strdup (command));
   return TRUE;
 }
 
-
 gboolean
-lba_command_on (BombollaContext *ctx, gchar **tokens)
-{
-  const gchar *objname, *signal_name;
+lba_command_on (BombollaContext * ctx, gchar ** tokens) {
+  const gchar *objname,
+   *signal_name;
   GObject *obj;
   char **tmp = NULL;
   gboolean ret = FALSE;
@@ -149,18 +141,18 @@ lba_command_on (BombollaContext *ctx, gchar **tokens)
     /* User data are the lines we will execute. */
     closure =
         g_cclosure_new (G_CALLBACK (lba_command_on_cb), on_ctx,
-            lba_command_on_finish);
-    
+                        lba_command_on_finish);
+
     /* Set our custom passthrough marshaller */
     g_closure_set_marshal (closure, lba_command_on_marshal);
     /* memory management: alive while object is alive,
      * invalidated if object is freed */
     g_object_watch_closure (obj, closure);
-    
+
     /* Connect our super closure. */
     g_signal_connect_closure (obj, signal_name, closure,
-        /* execute after default handler = TRUE */
-        TRUE);
+                              /* execute after default handler = TRUE */
+                              TRUE);
 
     /* unref closure ?? */
   }
@@ -171,6 +163,6 @@ lba_command_on (BombollaContext *ctx, gchar **tokens)
 done:
   if (tmp) {
     g_strfreev (tmp);
-  }    
+  }
   return ret;
 }

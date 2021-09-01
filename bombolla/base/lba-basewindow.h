@@ -17,22 +17,19 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef __BASE_WINDOW_H__
-#define __BASE_WINDOW_H__
+#  define __BASE_WINDOW_H__
 
-#include <glib-object.h>
-#include <glib/gstdio.h>
+#  include <glib-object.h>
+#  include <glib/gstdio.h>
 
 GType base_window_get_type (void);
 
-#define G_TYPE_BASE_WINDOW (base_window_get_type ())           
-#define BASE_WINDOW_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),G_TYPE_BASE_WINDOW ,BaseWindowClass))
-#define BASE_WINDOW_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASE_WINDOW ,BaseWindowClass))
+#  define G_TYPE_BASE_WINDOW (base_window_get_type ())
+#  define BASE_WINDOW_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),G_TYPE_BASE_WINDOW ,BaseWindowClass))
+#  define BASE_WINDOW_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASE_WINDOW ,BaseWindowClass))
 
-
-typedef struct _BaseWindow
-{
+typedef struct _BaseWindow {
   GObject parent;
 
   /* instance members */
@@ -45,11 +42,9 @@ typedef struct _BaseWindow
   gboolean opened;
 } BaseWindow;
 
-
-typedef struct _BaseWindowClass
-{
+typedef struct _BaseWindowClass {
   GObjectClass parent;
-  
+
   /* Events */
   void (*on_display) (BaseWindow *);
 

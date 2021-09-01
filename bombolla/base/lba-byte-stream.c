@@ -17,12 +17,10 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "bombolla/base/lba-byte-stream.h"
 #include "bombolla/lba-log.h"
 
-enum
-{
+enum {
   SIGNAL_ON_HAVE_DATA,
   LAST_SIGNAL
 };
@@ -30,9 +28,7 @@ enum
 static guint lba_byte_stream_signals[LAST_SIGNAL] = { 0 };
 
 gboolean
-lba_byte_stream_write_gbytes (LbaByteStream * self, GBytes * data,
-    GError ** err)
-{
+lba_byte_stream_write_gbytes (LbaByteStream * self, GBytes * data, GError ** err) {
   LbaByteStreamClass *klass = LBA_BYTE_STREAM_GET_CLASS (self);
 
   if (klass->write) {
@@ -46,8 +42,7 @@ lba_byte_stream_write_gbytes (LbaByteStream * self, GBytes * data,
 /* This calls are unneccessary: stream can open on first writing, and close
  * on object's destruction */
 gboolean
-lba_byte_stream_open (LbaByteStream * self, GError ** err)
-{
+lba_byte_stream_open (LbaByteStream * self, GError ** err) {
   LbaByteStreamClass *klass = LBA_BYTE_STREAM_GET_CLASS (self);
 
   if (klass->open) {
@@ -58,8 +53,7 @@ lba_byte_stream_open (LbaByteStream * self, GError ** err)
 }
 
 void
-lba_byte_stream_close (LbaByteStream * self)
-{
+lba_byte_stream_close (LbaByteStream * self) {
   LbaByteStreamClass *klass = LBA_BYTE_STREAM_GET_CLASS (self);
 
   if (klass->close) {
@@ -69,11 +63,9 @@ lba_byte_stream_close (LbaByteStream * self)
   self->opened = FALSE;
 }
 
-
 static gboolean
 lba_byte_stream_write_passthrough (LbaByteStream * self, GBytes * data,
-    GError ** err)
-{
+                                   GError ** err) {
   LBA_LOG ("passthrough");
   g_signal_emit (self, lba_byte_stream_signals[SIGNAL_ON_HAVE_DATA], 0, data);
   g_bytes_unref (data);
@@ -81,13 +73,11 @@ lba_byte_stream_write_passthrough (LbaByteStream * self, GBytes * data,
 }
 
 static void
-lba_byte_stream_init (LbaByteStream * self)
-{
+lba_byte_stream_init (LbaByteStream * self) {
 }
 
 static void
-lba_byte_stream_dispose (GObject * gobject)
-{
+lba_byte_stream_dispose (GObject * gobject) {
   LbaByteStream *self = (LbaByteStream *) gobject;
   LbaByteStreamClass *klass = LBA_BYTE_STREAM_GET_CLASS (self);
 
@@ -96,23 +86,20 @@ lba_byte_stream_dispose (GObject * gobject)
   }
 }
 
-
 static void
-lba_byte_stream_class_init (LbaByteStreamClass * klass)
-{
+lba_byte_stream_class_init (LbaByteStreamClass * klass) {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
   object_class->dispose = lba_byte_stream_dispose;
 
   lba_byte_stream_signals[SIGNAL_ON_HAVE_DATA] =
       g_signal_new ("on-have-data", G_TYPE_FROM_CLASS (klass),
-      G_SIGNAL_RUN_LAST,
-      0, NULL, NULL,
-      g_cclosure_marshal_VOID__BOXED, G_TYPE_NONE, 1, G_TYPE_BYTES);
+                    G_SIGNAL_RUN_LAST,
+                    0, NULL, NULL,
+                    g_cclosure_marshal_VOID__BOXED, G_TYPE_NONE, 1, G_TYPE_BYTES);
 
   klass->write = lba_byte_stream_write_passthrough;
 }
-
 
 G_DEFINE_TYPE (LbaByteStream, lba_byte_stream, G_TYPE_OBJECT)
     BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (lba_byte_stream);

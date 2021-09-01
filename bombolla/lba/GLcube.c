@@ -21,23 +21,20 @@
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 
-typedef struct _GLCube
-{
+typedef struct _GLCube {
   Basegl3d parent;
 } GLCube;
 
-
-typedef struct _GLCubeClass
-{
+typedef struct _GLCubeClass {
   Basegl3dClass parent;
 } GLCubeClass;
 
-
 static void
-gl_cube_draw (Basegl3d * base, BaseOpenGLInterface * i)
-{
+gl_cube_draw (Basegl3d * base, BaseOpenGLInterface * i) {
   Base3d *s3d = (Base3d *) base;
-  double x, y, z;
+  double x,
+    y,
+    z;
   double size = 0.3;
 
   x = s3d->x;
@@ -47,14 +44,14 @@ gl_cube_draw (Basegl3d * base, BaseOpenGLInterface * i)
   LBA_LOG ("draw (%f, %f, %f)", x, y, z);
 
   /* Reset transformations */
-  i->glMatrixMode(i->LBA_GL_MODELVIEW);
-  i->glLoadIdentity();
+  i->glMatrixMode (i->LBA_GL_MODELVIEW);
+  i->glLoadIdentity ();
 
   /* Rotate a bit */
-  i->glRotatef(60.0, 1.0, 1.0, 1.0);
-  i->glRotatef(60.0, 1.0, 0.0, 1.0 );
-  i->glRotatef(60.0, 0.0, 1.0, 1.0 );
-  
+  i->glRotatef (60.0, 1.0, 1.0, 1.0);
+  i->glRotatef (60.0, 1.0, 0.0, 1.0);
+  i->glRotatef (60.0, 0.0, 1.0, 1.0);
+
   // BACK
   i->glBegin (i->LBA_GL_POLYGON);
   i->glColor3f (0.5, 0.3, 0.2);
@@ -82,7 +79,6 @@ gl_cube_draw (Basegl3d * base, BaseOpenGLInterface * i)
   i->glVertex3f (x - size, y + size, z - size);
   i->glEnd ();
 
-
   // RIGHT
   i->glBegin (i->LBA_GL_POLYGON);
   i->glColor3f (0.0, 0.0, 0.0);
@@ -101,7 +97,6 @@ gl_cube_draw (Basegl3d * base, BaseOpenGLInterface * i)
   i->glVertex3f (x + size, y + size, z - size);
   i->glEnd ();
 
-
   // BOTTOM
   i->glBegin (i->LBA_GL_POLYGON);
   i->glColor3f (0.3, 0.0, 0.3);
@@ -113,21 +108,16 @@ gl_cube_draw (Basegl3d * base, BaseOpenGLInterface * i)
 }
 
 static void
-gl_cube_init (GLCube * self)
-{
+gl_cube_init (GLCube * self) {
 }
 
-
 static void
-gl_cube_class_init (GLCubeClass * klass)
-{
+gl_cube_class_init (GLCubeClass * klass) {
   Basegl3dClass *base_gl3d_class = (Basegl3dClass *) klass;
 
   base_gl3d_class->draw = gl_cube_draw;
 }
 
-
 G_DEFINE_TYPE (GLCube, gl_cube, G_TYPE_BASEGL3D)
-
 /* Export plugin */
     BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (gl_cube);

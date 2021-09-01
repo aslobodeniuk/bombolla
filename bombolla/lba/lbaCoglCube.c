@@ -21,8 +21,7 @@
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 
-typedef struct _LbaCoglCube
-{
+typedef struct _LbaCoglCube {
   BaseCogl3d parent;
 
   CoglPrimitive *prim;
@@ -31,21 +30,19 @@ typedef struct _LbaCoglCube
 
 } LbaCoglCube;
 
-
-typedef struct _LbaCoglCubeClass
-{
+typedef struct _LbaCoglCubeClass {
   BaseCogl3dClass parent;
 } LbaCoglCubeClass;
 
-
 static void
 lba_cogl_cube_paint (BaseCogl3d * base, CoglFramebuffer * fb,
-    CoglPipeline * pipeline)
-{
+                     CoglPipeline * pipeline) {
   Base3d *s3d = (Base3d *) base;
   LbaCoglCube *self = (LbaCoglCube *) base;
 
-  double x, y, z;
+  double x,
+    y,
+    z;
   int framebuffer_width;
   int framebuffer_height;
   float rotation = 75.0;
@@ -60,11 +57,8 @@ lba_cogl_cube_paint (BaseCogl3d * base, CoglFramebuffer * fb,
   framebuffer_height = cogl_framebuffer_get_height (fb);
 
   cogl_framebuffer_push_matrix (fb);
-  
-  cogl_framebuffer_translate (fb,
-                              framebuffer_width / 2,
-                              framebuffer_height / 2,
-                              0);
+
+  cogl_framebuffer_translate (fb, framebuffer_width / 2, framebuffer_height / 2, 0);
 
   cogl_framebuffer_scale (fb, 35, 35, 35);
 
@@ -87,8 +81,7 @@ lba_cogl_cube_paint (BaseCogl3d * base, CoglFramebuffer * fb,
 
 static void
 lba_cogl_cube_reopen (BaseCogl3d * base, CoglFramebuffer * fb,
-    CoglPipeline * pipeline, CoglContext * ctx)
-{
+                      CoglPipeline * pipeline, CoglContext * ctx) {
   LbaCoglCube *self = (LbaCoglCube *) base;
 
   /* A cube modelled using 4 vertices for each face.
@@ -98,44 +91,44 @@ lba_cogl_cube_reopen (BaseCogl3d * base, CoglFramebuffer * fb,
    */
   static CoglVertexP3T2 vertices[] = {
     /* Front face */
-    { /* pos = */ -1.0f, -1.0f, 1.0f, /* tex coords = */ 0.0f, 1.0f},
-    { /* pos = */ 1.0f, -1.0f, 1.0f, /* tex coords = */ 1.0f, 1.0f},
-    { /* pos = */ 1.0f, 1.0f, 1.0f, /* tex coords = */ 1.0f, 0.0f},
-    { /* pos = */ -1.0f, 1.0f, 1.0f, /* tex coords = */ 0.0f, 0.0f},
+    { /* pos = */ -1.0f, -1.0f, 1.0f, /* tex coords = */ 0.0f, 1.0f },
+    { /* pos = */ 1.0f, -1.0f, 1.0f, /* tex coords = */ 1.0f, 1.0f },
+    { /* pos = */ 1.0f, 1.0f, 1.0f, /* tex coords = */ 1.0f, 0.0f },
+    { /* pos = */ -1.0f, 1.0f, 1.0f, /* tex coords = */ 0.0f, 0.0f },
 
     /* Back face */
-    { /* pos = */ -1.0f, -1.0f, -1.0f, /* tex coords = */ 1.0f, 0.0f},
-    { /* pos = */ -1.0f, 1.0f, -1.0f, /* tex coords = */ 1.0f, 1.0f},
-    { /* pos = */ 1.0f, 1.0f, -1.0f, /* tex coords = */ 0.0f, 1.0f},
-    { /* pos = */ 1.0f, -1.0f, -1.0f, /* tex coords = */ 0.0f, 0.0f},
+    { /* pos = */ -1.0f, -1.0f, -1.0f, /* tex coords = */ 1.0f, 0.0f },
+    { /* pos = */ -1.0f, 1.0f, -1.0f, /* tex coords = */ 1.0f, 1.0f },
+    { /* pos = */ 1.0f, 1.0f, -1.0f, /* tex coords = */ 0.0f, 1.0f },
+    { /* pos = */ 1.0f, -1.0f, -1.0f, /* tex coords = */ 0.0f, 0.0f },
 
     /* Top face */
-    { /* pos = */ -1.0f, 1.0f, -1.0f, /* tex coords = */ 0.0f, 1.0f},
-    { /* pos = */ -1.0f, 1.0f, 1.0f, /* tex coords = */ 0.0f, 0.0f},
-    { /* pos = */ 1.0f, 1.0f, 1.0f, /* tex coords = */ 1.0f, 0.0f},
-    { /* pos = */ 1.0f, 1.0f, -1.0f, /* tex coords = */ 1.0f, 1.0f},
+    { /* pos = */ -1.0f, 1.0f, -1.0f, /* tex coords = */ 0.0f, 1.0f },
+    { /* pos = */ -1.0f, 1.0f, 1.0f, /* tex coords = */ 0.0f, 0.0f },
+    { /* pos = */ 1.0f, 1.0f, 1.0f, /* tex coords = */ 1.0f, 0.0f },
+    { /* pos = */ 1.0f, 1.0f, -1.0f, /* tex coords = */ 1.0f, 1.0f },
 
     /* Bottom face */
-    { /* pos = */ -1.0f, -1.0f, -1.0f, /* tex coords = */ 1.0f, 1.0f},
-    { /* pos = */ 1.0f, -1.0f, -1.0f, /* tex coords = */ 0.0f, 1.0f},
-    { /* pos = */ 1.0f, -1.0f, 1.0f, /* tex coords = */ 0.0f, 0.0f},
-    { /* pos = */ -1.0f, -1.0f, 1.0f, /* tex coords = */ 1.0f, 0.0f},
+    { /* pos = */ -1.0f, -1.0f, -1.0f, /* tex coords = */ 1.0f, 1.0f },
+    { /* pos = */ 1.0f, -1.0f, -1.0f, /* tex coords = */ 0.0f, 1.0f },
+    { /* pos = */ 1.0f, -1.0f, 1.0f, /* tex coords = */ 0.0f, 0.0f },
+    { /* pos = */ -1.0f, -1.0f, 1.0f, /* tex coords = */ 1.0f, 0.0f },
 
     /* Right face */
-    { /* pos = */ 1.0f, -1.0f, -1.0f, /* tex coords = */ 1.0f, 0.0f},
-    { /* pos = */ 1.0f, 1.0f, -1.0f, /* tex coords = */ 1.0f, 1.0f},
-    { /* pos = */ 1.0f, 1.0f, 1.0f, /* tex coords = */ 0.0f, 1.0f},
-    { /* pos = */ 1.0f, -1.0f, 1.0f, /* tex coords = */ 0.0f, 0.0f},
+    { /* pos = */ 1.0f, -1.0f, -1.0f, /* tex coords = */ 1.0f, 0.0f },
+    { /* pos = */ 1.0f, 1.0f, -1.0f, /* tex coords = */ 1.0f, 1.0f },
+    { /* pos = */ 1.0f, 1.0f, 1.0f, /* tex coords = */ 0.0f, 1.0f },
+    { /* pos = */ 1.0f, -1.0f, 1.0f, /* tex coords = */ 0.0f, 0.0f },
 
     /* Left face */
-    { /* pos = */ -1.0f, -1.0f, -1.0f, /* tex coords = */ 0.0f, 0.0f},
-    { /* pos = */ -1.0f, -1.0f, 1.0f, /* tex coords = */ 1.0f, 0.0f},
-    { /* pos = */ -1.0f, 1.0f, 1.0f, /* tex coords = */ 1.0f, 1.0f},
-    { /* pos = */ -1.0f, 1.0f, -1.0f, /* tex coords = */ 0.0f, 1.0f}
+    { /* pos = */ -1.0f, -1.0f, -1.0f, /* tex coords = */ 0.0f, 0.0f },
+    { /* pos = */ -1.0f, -1.0f, 1.0f, /* tex coords = */ 1.0f, 0.0f },
+    { /* pos = */ -1.0f, 1.0f, 1.0f, /* tex coords = */ 1.0f, 1.0f },
+    { /* pos = */ -1.0f, 1.0f, -1.0f, /* tex coords = */ 0.0f, 1.0f }
   };
 
   LBA_LOG ("reopening");
-  
+
   /* rectangle indices allow the GPU to interpret a list of quads (the
    * faces of our cube) as a list of triangles.
    *
@@ -145,30 +138,24 @@ lba_cogl_cube_reopen (BaseCogl3d * base, CoglFramebuffer * fb,
    */
   self->indices = cogl_get_rectangle_indices (ctx, 6 /* n_rectangles */ );
   self->prim = cogl_primitive_new_p3t2 (ctx, COGL_VERTICES_MODE_TRIANGLES,
-      G_N_ELEMENTS (vertices), vertices);
+                                        G_N_ELEMENTS (vertices), vertices);
 
   /* Each face will have 6 indices so we have 6 * 6 indices in total... */
   cogl_primitive_set_indices (self->prim, self->indices, 6 * 6);
 }
 
-
 static void
-lba_cogl_cube_init (LbaCoglCube * self)
-{
+lba_cogl_cube_init (LbaCoglCube * self) {
 }
 
-
 static void
-lba_cogl_cube_class_init (LbaCoglCubeClass * klass)
-{
+lba_cogl_cube_class_init (LbaCoglCubeClass * klass) {
   BaseCogl3dClass *base_cogl3d_class = (BaseCogl3dClass *) klass;
 
   base_cogl3d_class->paint = lba_cogl_cube_paint;
   base_cogl3d_class->reopen = lba_cogl_cube_reopen;
 }
 
-
 G_DEFINE_TYPE (LbaCoglCube, lba_cogl_cube, G_TYPE_BASE_COGL3D)
-
 /* Export plugin */
     BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (lba_cogl_cube);

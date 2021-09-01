@@ -21,13 +21,12 @@
 #include "bombolla/core/bombolla-commands.h"
 
 static gboolean
-lba_command_create (BombollaContext *ctx, gchar **tokens)
-{
+lba_command_create (BombollaContext * ctx, gchar ** tokens) {
   const gchar *typename = tokens[1];
   const gchar *varname = tokens[2];
   const gchar *request_failure_msg = NULL;
   GType obj_type;
-  
+
   obj_type = g_type_from_name (typename);
 
   if (!varname) {
@@ -44,8 +43,8 @@ lba_command_create (BombollaContext *ctx, gchar **tokens)
     return FALSE;
   } else {
     GObject *obj = g_object_new (obj_type, NULL);
-    
-    if (obj) {      
+
+    if (obj) {
       g_hash_table_insert (ctx->objects, (gpointer) g_strdup (varname), obj);
 
       /* FIXME: LBA_LOG */
@@ -57,8 +56,7 @@ lba_command_create (BombollaContext *ctx, gchar **tokens)
 }
 
 static gboolean
-lba_command_destroy (BombollaContext *ctx, gchar **tokens)
-{
+lba_command_destroy (BombollaContext * ctx, gchar ** tokens) {
   const gchar *varname = tokens[1];
   GObject *obj;
 
@@ -69,16 +67,16 @@ lba_command_destroy (BombollaContext *ctx, gchar **tokens)
     g_printf ("%s destroyed\n", varname);
     return TRUE;
   }
-  
+
   g_warning ("object %s not found", varname);
   return FALSE;
-  
+
 }
 
 static gboolean
-lba_command_call (BombollaContext *ctx, gchar **tokens)
-{
-  const gchar *objname, *signal_name;
+lba_command_call (BombollaContext * ctx, gchar ** tokens) {
+  const gchar *objname,
+   *signal_name;
   GObject *obj;
   char **tmp = NULL;
   gboolean ret = FALSE;
@@ -112,7 +110,6 @@ done:
 
   return ret;
 }
-
 
 const BombollaCommand commands[] = {
   { "create", lba_command_create },

@@ -17,22 +17,20 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef __BASE_DRAWABLE_H__
-#define __BASE_DRAWABLE_H__
+#  define __BASE_DRAWABLE_H__
 
-#include <glib-object.h>
-#include <glib/gstdio.h>
+#  include <glib-object.h>
+#  include <glib/gstdio.h>
 
 GType base_drawable_get_type (void);
 
-#define G_TYPE_BASE_DRAWABLE (base_drawable_get_type ())
+#  define G_TYPE_BASE_DRAWABLE (base_drawable_get_type ())
 
-#define BASE_DRAWABLE_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),G_TYPE_BASE_DRAWABLE ,BaseDrawableClass))
-#define BASE_DRAWABLE_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASE_DRAWABLE ,BaseDrawableClass))
+#  define BASE_DRAWABLE_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),G_TYPE_BASE_DRAWABLE ,BaseDrawableClass))
+#  define BASE_DRAWABLE_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_BASE_DRAWABLE ,BaseDrawableClass))
 
-typedef struct _BaseDrawable
-{
+typedef struct _BaseDrawable {
   GObject parent;
 
   GObject *scene;
@@ -40,9 +38,7 @@ typedef struct _BaseDrawable
   gboolean enabled;
 } BaseDrawable;
 
-
-typedef struct _BaseDrawableClass
-{
+typedef struct _BaseDrawableClass {
   GObjectClass parent;
 
   void (*draw) (BaseDrawable *);

@@ -21,8 +21,7 @@
 #include "bombolla/lba-log.h"
 #include <string.h>
 
-enum
-{
+enum {
   SIGNAL_FOO,
   SIGNAL_BAR,
   LAST_SIGNAL
@@ -30,31 +29,25 @@ enum
 
 static guint foobar_parser_signals[LAST_SIGNAL] = { 0 };
 
-typedef enum
-{
+typedef enum {
   PROP_SOURCE = 1,
 } FooBarParserProperty;
 
-
-typedef struct _FooBarParser
-{
+typedef struct _FooBarParser {
   GObject parent;
   GObject *source;
   gulong source_signal_id;
 } FooBarParser;
 
-
-typedef struct _FooBarParserClass
-{
+typedef struct _FooBarParserClass {
   GObjectClass parent;
 } FooBarParserClass;
 
-
 static gint
 foobar_parser_on_message_cb (GObject * source, const gchar * msg,
-    FooBarParser * self)
-{
+                             FooBarParser * self) {
   gint ret = 1234;
+
   if (strstr (msg, "foo")) {
     LBA_LOG ("foo");
     g_signal_emit (self, foobar_parser_signals[SIGNAL_FOO], 0);
@@ -68,10 +61,8 @@ foobar_parser_on_message_cb (GObject * source, const gchar * msg,
   return ret;
 }
 
-
 static void
-foobar_parser_source_free (FooBarParser * self)
-{
+foobar_parser_source_free (FooBarParser * self) {
   if (self->source) {
     /* If source already have been set - free the previous one. */
     g_signal_handler_disconnect (self->source, self->source_signal_id);
@@ -80,69 +71,64 @@ foobar_parser_source_free (FooBarParser * self)
   }
 }
 
-
 static void
 foobar_parser_set_property (GObject * object,
-    guint property_id, const GValue * value, GParamSpec * pspec)
-{
+                            guint property_id, const GValue * value,
+                            GParamSpec * pspec) {
   FooBarParser *self = (FooBarParser *) object;
 
   switch ((FooBarParserProperty) property_id) {
-    case PROP_SOURCE:
-      foobar_parser_source_free (self);
+  case PROP_SOURCE:
+    foobar_parser_source_free (self);
 
-      self->source = g_value_get_object (value);
+    self->source = g_value_get_object (value);
 
-      if (self->source) {
-        g_object_ref (self->source);
-        /* TODO: check it has signal, and check signal signature */
-        self->source_signal_id = g_signal_connect (self->source, "message",
-            G_CALLBACK (foobar_parser_on_message_cb), self);
-      }
+    if (self->source) {
+      g_object_ref (self->source);
+      /* TODO: check it has signal, and check signal signature */
+      self->source_signal_id = g_signal_connect (self->source, "message",
+                                                 G_CALLBACK
+                                                 (foobar_parser_on_message_cb),
+                                                 self);
+    }
 
-      break;
-    default:
-      /* We don't have any other property... */
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-      break;
+    break;
+  default:
+    /* We don't have any other property... */
+    G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+    break;
   }
 }
-
 
 static void
 foobar_parser_get_property (GObject * object,
-    guint property_id, GValue * value, GParamSpec * pspec)
-{
+                            guint property_id, GValue * value, GParamSpec * pspec) {
   FooBarParser *self = (FooBarParser *) object;
 
   switch ((FooBarParserProperty) property_id) {
-    case PROP_SOURCE:
-      g_value_set_object (value, self->source);
-      break;
-    default:
-      /* We don't have any other property... */
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-      break;
+  case PROP_SOURCE:
+    g_value_set_object (value, self->source);
+    break;
+  default:
+    /* We don't have any other property... */
+    G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+    break;
   }
 }
 
-
-
 static void
-foobar_parser_init (FooBarParser * self)
-{
+foobar_parser_init (FooBarParser * self) {
 }
 
 static void
-foobar_parser_dispose (GObject * gobject)
-{
+foobar_parser_dispose (GObject * gobject) {
   FooBarParser *self = (FooBarParser *) gobject;
+
   foobar_parser_source_free (self);
 }
 
 static void
-foobar_parser_class_init (FooBarParserClass * klass)
-{
+foobar_parser_class_init (FooBarParserClass * klass) {
   GObjectClass *object_class = (GObjectClass *) klass;
 
   object_class->set_property = foobar_parser_set_property;
@@ -151,25 +137,26 @@ foobar_parser_class_init (FooBarParserClass * klass)
 
   foobar_parser_signals[SIGNAL_FOO] =
       g_signal_new ("foo", G_TYPE_FROM_CLASS (klass),
-      G_SIGNAL_RUN_LAST,
-      0, NULL, NULL,
-      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0, G_TYPE_NONE);
+                    G_SIGNAL_RUN_LAST,
+                    0, NULL, NULL,
+                    g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0, G_TYPE_NONE);
 
   foobar_parser_signals[SIGNAL_BAR] =
       g_signal_new ("bar", G_TYPE_FROM_CLASS (klass),
-      G_SIGNAL_RUN_LAST,
-      0, NULL, NULL,
-      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0, G_TYPE_NONE);
+                    G_SIGNAL_RUN_LAST,
+                    0, NULL, NULL,
+                    g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0, G_TYPE_NONE);
 
   g_object_class_install_property (object_class,
-      PROP_SOURCE,
-      g_param_spec_object ("source",
-          "Source", "Source of messages we'll parse",
-          G_TYPE_OBJECT, G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE));
+                                   PROP_SOURCE,
+                                   g_param_spec_object ("source",
+                                                        "Source",
+                                                        "Source of messages we'll parse",
+                                                        G_TYPE_OBJECT,
+                                                        G_PARAM_STATIC_STRINGS |
+                                                        G_PARAM_READWRITE));
 }
 
-
 G_DEFINE_TYPE (FooBarParser, foobar_parser, G_TYPE_OBJECT)
-
 /* Export plugin */
     BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (foobar_parser);
