@@ -27,7 +27,7 @@ typedef struct _GLTexture {
   lba_GLuint tex;
   gboolean tex_uploaded;
 
-  lba_GLuint             shader_program;
+  lba_GLuint shader_program;
 } GLTexture;
 
 typedef struct _GLTextureClass {

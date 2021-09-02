@@ -6,7 +6,7 @@
 if test ! -f cogl/autogen.sh;
 then
   echo "+ Setting up COGL submodule"
-  git submodule update --init
+  git submodule update --init || exit 1
 fi
 
 cd cogl

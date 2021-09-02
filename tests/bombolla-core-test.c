@@ -27,34 +27,25 @@ typedef struct {
 } Fixture;
 
 static void
-fixture_set_up (Fixture *fixture,
-    gconstpointer user_data)
-{
+fixture_set_up (Fixture * fixture, gconstpointer user_data) {
   fixture->obj = g_object_new (lba_core_get_type (), NULL);
 }
 
 static void
-fixture_tear_down (Fixture *fixture,
-    gconstpointer user_data)
-{
+fixture_tear_down (Fixture * fixture, gconstpointer user_data) {
   g_clear_object (&fixture->obj);
 }
 
 static void
-test1 (Fixture *fixture,
-    gconstpointer user_data)
-{
+test1 (Fixture * fixture, gconstpointer user_data) {
 }
 
 static void
-test2 (Fixture *fixture,
-    gconstpointer user_data)
-{
+test2 (Fixture * fixture, gconstpointer user_data) {
 }
 
 int
-main (int argc, char *argv[])
-{
+main (int argc, char *argv[]) {
   g_test_init (&argc, &argv, NULL);
 
   // Define the tests.
