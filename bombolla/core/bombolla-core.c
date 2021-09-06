@@ -97,6 +97,9 @@ lba_core_stop (LbaCore * self) {
   /* Wait for main loop to quit */
   g_thread_join (self->mainloop_thr);
   g_source_destroy (s);
+  g_main_loop_unref (self->mainloop);
+  self->mainloop = NULL;
+  self->started = FALSE;
 }
 
 static void
@@ -112,6 +115,14 @@ lba_core_dispose (GObject * gobject) {
 
   if (self->started) {
     lba_core_stop (self);
+  }
+
+  if (self->ctx) {
+    if (self->ctx->objects) {
+      g_hash_table_unref (self->ctx->objects);
+    }
+    g_free (self->ctx);
+    self->ctx = NULL;
   }
 
   /* And now destroy all the objects, and free all the data. */

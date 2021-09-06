@@ -37,7 +37,9 @@ fixture_tear_down (Fixture * fixture, gconstpointer user_data) {
 }
 
 static void
-test1 (Fixture * fixture, gconstpointer user_data) {
+test_empty_string (Fixture * fixture, gconstpointer user_data) {
+  /* execute empty string */
+  g_signal_emit_by_name (fixture->obj, "execute", "\n");
 }
 
 static void
@@ -48,9 +50,9 @@ int
 main (int argc, char *argv[]) {
   g_test_init (&argc, &argv, NULL);
 
-  // Define the tests.
-  g_test_add ("/core/test1", Fixture, "some-user-data",
-              fixture_set_up, test1, fixture_tear_down);
+  g_test_add ("/core/test-empty-string", Fixture, NULL,
+              fixture_set_up, test_empty_string, fixture_tear_down);
+
   g_test_add ("/core/test2", Fixture, "some-user-data",
               fixture_set_up, test2, fixture_tear_down);
 

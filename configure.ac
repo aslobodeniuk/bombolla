@@ -63,11 +63,21 @@ AC_SUBST(COGL_PANGO_DEP_LIBS)
 dnl no idea about the required minimum version of Vala
 AM_PROG_VALAC([0.35], [AC_MSG_RESULT([valac found])], [AC_MSG_ERROR([valac not found])])
 
-COMMON_CFLAGS="-Wall -Werror -I\$(top_srcdir)"
-BASECLASS_CFLAGS="$COMMON_CFLAGS $GOBJ_CFLAGS"
+
+ASAN_CFLAGS="-O0 -g -fsanitize=address -fno-omit-frame-pointer"
+ASAN_LDFLAGS="-fsanitize=address"
+
+COMMON_CFLAGS="-Wall -Werror -I\$(top_srcdir) $ASAN_CFLAGS"
+
+BASECLASS_CFLAGS="$GOBJ_CFLAGS $COMMON_CFLAGS"
 BASECLASS_LIBS="$GOBJ_LIBS"
-PLUGIN_CFLAGS="$COMMON_CFLAGS -fpic"
-PLUGIN_LDFLAGS="-module -avoid-version -no-undefined"
+PLUGIN_CFLAGS="-fpic $COMMON_CFLAGS"
+PLUGIN_LDFLAGS="-module -avoid-version -no-undefined $ASAN_LDFLAGS"
+
+AC_SUBST(COMMON_CFLAGS)
+
+AC_SUBST(ASAN_CFLAGS)
+AC_SUBST(ASAN_LDFLAGS)
 
 AC_SUBST(BASECLASS_CFLAGS)
 AC_SUBST(BASECLASS_LIBS)

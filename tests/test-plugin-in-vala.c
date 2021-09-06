@@ -44,8 +44,15 @@ fixture_tear_down (Fixture * fixture, gconstpointer user_data) {
 
 static void
 plugin_in_vala (Fixture * fixture, gconstpointer user_data) {
-  g_signal_emit_by_name (fixture->obj, "execute",
-                         "create ValaTest t\n" "call t.say_hello");
+  const gchar commands[] = {
+    /* *INDENT-OFF* */
+    "create ValaTest t\n"
+    "call t.say_hello\n"
+    "destroy t\n"
+    /* *INDENT-ON* */
+  };
+
+  g_signal_emit_by_name (fixture->obj, "execute", commands);
 }
 
 int
