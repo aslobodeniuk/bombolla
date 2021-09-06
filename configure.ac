@@ -60,6 +60,9 @@ PKG_CHECK_MODULES(COGL_PANGO_DEP, pangocairo >= 1.20)
 AC_SUBST(COGL_PANGO_DEP_CFLAGS)
 AC_SUBST(COGL_PANGO_DEP_LIBS)
 
+dnl no idea about the required minimum version of Vala
+AM_PROG_VALAC([0.35], [AC_MSG_RESULT([valac found])], [AC_MSG_ERROR([valac not found])])
+
 COMMON_CFLAGS="-Wall -Werror -I\$(top_srcdir)"
 BASECLASS_CFLAGS="$COMMON_CFLAGS $GOBJ_CFLAGS"
 BASECLASS_LIBS="$GOBJ_LIBS"
@@ -85,7 +88,6 @@ AC_SUBST(LBA_COGL_LIBS)
 
 AC_CONFIG_FILES([
 Makefile
-tests/Makefile
 bombolla/Makefile
 bombolla/core/Makefile
 bombolla/lba/Makefile
@@ -94,5 +96,8 @@ bombolla/lba/python/Makefile
 bombolla/lba/js/Makefile
 bombolla/shell/Makefile
 bombolla/base/Makefile
+examples/Makefile
+examples/vala/Makefile
+tests/Makefile
 ])
 AC_OUTPUT

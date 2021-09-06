@@ -37,3 +37,8 @@ Makefile.in
 /ltsugar.m4
 /ltversion.m4
 /lt~obsolete.m4
+/examples/vala/plugin-in-vala.c
+/examples/vala/liblba_vala_example_la_vala.stamp
+/tests/test-plugin-in-vala
+/tests/test-plugin-in-vala.log
+/tests/test-plugin-in-vala.trs

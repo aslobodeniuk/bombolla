@@ -1,0 +1,3 @@
+create ValaTest t
+
+call t.say_hello
