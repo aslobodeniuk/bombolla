@@ -28,7 +28,6 @@ GType lba_core_get_type (void);
 
 int
 main (int argc, char **argv) {
-  int ret = 1;
   gchar *script_contents = NULL;
   GObject *core;
 
@@ -57,6 +56,8 @@ main (int argc, char **argv) {
 
     if (path) {
       g_setenv ("LBA_PLUGINS_PATH", path, TRUE);
+      g_free (path);
+      path = NULL;
     }
 
     if (script) {
@@ -88,6 +89,8 @@ main (int argc, char **argv) {
 
   if (script_contents) {
     g_signal_emit_by_name (core, "execute", script_contents);
+    g_free (script_contents);
+    script_contents = NULL;
   }
 
   /* Now just wait on command line */
@@ -106,7 +109,9 @@ main (int argc, char **argv) {
 
     /* Stdin input. */
     g_printf ("\n\t# ");
-    fgets (a, sizeof (a), stdin);
+    if (NULL == fgets (a, sizeof (a), stdin)) {
+      break;
+    }
     a[strlen (a) - 1] = 0;
 
     if (a[0] == 'q') {

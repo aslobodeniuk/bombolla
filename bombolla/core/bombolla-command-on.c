@@ -37,7 +37,7 @@ lba_command_on_cb (GClosure * closure,
                    gpointer invocation_hint, gpointer marshal_data) {
   gpointer user_data;
   GSList *l;
-  BombollaOnCommandCtx *ctx = user_data;
+  BombollaOnCommandCtx *ctx;
 
   /* Execute stored commands */
   LBA_LOG ("on something of %d parameters\n", n_param_values);

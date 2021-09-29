@@ -111,12 +111,129 @@ done:
   return ret;
 }
 
+static void
+lba_command_dump_type (GType plugin_type) {
+  GTypeQuery query;
+
+  g_type_query (plugin_type, &query);
+  g_printf ("GType name = '%s'\n", query.type_name);
+
+  if (G_TYPE_IS_OBJECT (plugin_type)) {
+    GParamSpec **properties;
+    guint n_properties,
+      p;
+    guint *signals,
+      s,
+      n_signals;
+    GObjectClass *klass;
+
+    g_printf ("GType is a GObject.");
+    klass = (GObjectClass *) g_type_class_ref (plugin_type);
+
+    properties = g_object_class_list_properties (klass, &n_properties);
+
+    for (p = 0; p < n_properties; p++) {
+      GParamSpec *prop = properties[p];
+      gchar *def_val;
+
+      def_val = g_strdup_value_contents (g_param_spec_get_default_value (prop));
+
+      g_printf ("- Property: (%s) %s = %s\n",
+                G_PARAM_SPEC_TYPE_NAME (prop), g_param_spec_get_name (prop),
+                def_val);
+
+      g_printf ("\tnick = '%s', %s\n\n",
+                g_param_spec_get_nick (prop), g_param_spec_get_blurb (prop));
+      g_free (def_val);
+    }
+
+    /* Iterate signals */
+    {
+      GType t;
+      const gchar *_tab = "  ";
+      gchar *tab = g_strdup (_tab);
+
+      g_printf ("--- Signals:\n");
+      for (t = plugin_type; t; t = g_type_parent (t)) {
+        gchar *tmptab;
+
+        signals = g_signal_list_ids (t, &n_signals);
+
+        for (s = 0; s < n_signals; s++) {
+          GSignalQuery query;
+          GTypeQuery t_query;
+
+          g_signal_query (signals[s], &query);
+          g_type_query (t, &t_query);
+
+          if (t_query.type == 0) {
+            g_warning ("Error quering type");
+            break;
+          }
+
+          g_printf ("%s%s:: %s (* %s) ", tab, t_query.type_name,
+                    g_type_name (query.return_type), query.signal_name);
+
+          g_printf ("(");
+          for (p = 0; p < query.n_params; p++) {
+            g_printf ("%s%s", p ? ", " : "", g_type_name (query.param_types[p]));
+          }
+          g_printf (");\n");
+        }
+
+        tmptab = tab;
+        tab = g_strdup_printf ("%s%s", _tab, tab);
+        g_free (tmptab);
+        g_free (signals);
+      }
+    }
+
+    /* Iterate interfaces */
+    {
+      guint i;
+      guint n_interfaces;
+      GType *in = g_type_interfaces (plugin_type,
+                                     &n_interfaces);
+
+      for (i = 0; i < n_interfaces; i++) {
+
+        g_printf ("Provides interface %s\n", g_type_name (in[i]));
+      }
+      g_free (in);
+    }
+
+    g_type_class_unref (klass);
+    g_free (properties);
+  }
+}
+
+static gboolean
+lba_command_dump (BombollaContext * ctx, gchar ** tokens) {
+  GType t;
+
+  if (NULL == tokens[1]) {
+    g_warning ("No type specified");
+    return FALSE;
+  }
+
+  t = g_type_from_name (tokens[1]);
+
+  if (0 == t) {
+    g_warning ("Type %s not found", tokens[1]);
+    return FALSE;
+  }
+
+  lba_command_dump_type (t);
+  return TRUE;
+}
+
 const BombollaCommand commands[] = {
   { "create", lba_command_create },
   { "destroy", lba_command_destroy },
   { "call", lba_command_call },
   { "on", lba_command_on },
   { "set", lba_command_set },
+  { "dump", lba_command_dump },
   /* End of list */
   { NULL, NULL }
 };

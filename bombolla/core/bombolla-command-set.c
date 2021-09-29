@@ -75,7 +75,6 @@ _str2uint (const GValue * src_value, GValue * dest_value) {
 static void
 _str2gtype (const GValue * src_value, GValue * dest_value) {
   GType t = G_TYPE_NONE;
-  gpointer ptr;
   const gchar *s = g_value_get_string (src_value);
 
   if (s) {

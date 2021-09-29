@@ -122,7 +122,6 @@ lba_core_dispose (GObject * gobject) {
       g_hash_table_unref (self->ctx->objects);
     }
     g_free (self->ctx);
-    self->ctx = NULL;
   }
 
   /* And now destroy all the objects, and free all the data. */
@@ -179,102 +178,6 @@ done:
 }
 
 static void
-lba_core_dump_type (GType plugin_type) {
-  GTypeQuery query;
-
-  g_type_query (plugin_type, &query);
-  g_printf ("GType name = '%s'\n", query.type_name);
-
-  if (G_TYPE_IS_OBJECT (plugin_type)) {
-    GParamSpec **properties;
-    guint n_properties,
-      p;
-    guint *signals,
-      s,
-      n_signals;
-    GObjectClass *klass;
-
-    g_printf ("GType is a GObject.");
-    klass = (GObjectClass *) g_type_class_ref (plugin_type);
-
-    properties = g_object_class_list_properties (klass, &n_properties);
-
-    for (p = 0; p < n_properties; p++) {
-      GParamSpec *prop = properties[p];
-      gchar *def_val;
-
-      def_val = g_strdup_value_contents (g_param_spec_get_default_value (prop));
-
-      g_printf ("- Property: (%s) %s = %s\n",
-                G_PARAM_SPEC_TYPE_NAME (prop), g_param_spec_get_name (prop),
-                def_val);
-
-      g_printf ("\tnick = '%s', %s\n\n",
-                g_param_spec_get_nick (prop), g_param_spec_get_blurb (prop));
-      g_free (def_val);
-    }
-
-    /* Iterate signals */
-    {
-      GType t;
-      const gchar *_tab = "  ";
-      gchar *tab = g_strdup (_tab);
-
-      g_printf ("--- Signals:\n");
-      for (t = plugin_type; t; t = g_type_parent (t)) {
-        gchar *tmptab;
-
-        signals = g_signal_list_ids (t, &n_signals);
-
-        for (s = 0; s < n_signals; s++) {
-          GSignalQuery query;
-          GTypeQuery t_query;
-
-          g_signal_query (signals[s], &query);
-          g_type_query (t, &t_query);
-
-          if (t_query.type == 0) {
-            g_warning ("Error quering type");
-            break;
-          }
-
-          g_printf ("%s%s:: %s (* %s) ", tab, t_query.type_name,
-                    g_type_name (query.return_type), query.signal_name);
-
-          g_printf ("(");
-          for (p = 0; p < query.n_params; p++) {
-            g_printf ("%s%s", p ? ", " : "", g_type_name (query.param_types[p]));
-          }
-          g_printf (");\n");
-        }
-
-        tmptab = tab;
-        tab = g_strdup_printf ("%s%s", _tab, tab);
-        g_free (tmptab);
-        g_free (signals);
-      }
-    }
-
-    /* Iterate interfaces */
-    {
-      guint i;
-      guint n_interfaces;
-      GType *in = g_type_interfaces (plugin_type,
-                                     &n_interfaces);
-
-      for (i = 0; i < n_interfaces; i++) {
-
-        g_printf ("Provides interface %s\n", g_type_name (in[i]));
-      }
-      g_free (in);
-    }
-
-    g_type_class_unref (klass);
-    g_free (properties);
-  }
-}
-
-static void
 lba_core_scan (LbaCore * self, const gchar * path) {
   GModule *module = NULL;
   gpointer ptr;
@@ -311,6 +214,7 @@ lba_core_scan (LbaCore * self, const gchar * path) {
   }
 
   for (l = modules_files; l; l = l->next) {
+    GType plugin_gtype;
     const gchar *module_filename = (const gchar *)l->data;
 
     module = g_module_open (module_filename, G_MODULE_BIND_LOCAL);
@@ -333,12 +237,13 @@ lba_core_scan (LbaCore * self, const gchar * path) {
     module = NULL;
 
     get_type_f = (lBaPluginSystemGetGtypeFunc) ptr;
+    plugin_gtype = get_type_f ();
 
     /* This function does nothing important, only prints everything
      * it can about the GType it has. It could output something like a
      * dot graph actually, or so. */
-    LBA_LOG ("======\nPlugin file %s:\n", module_filename);
-    lba_core_dump_type (get_type_f ());
+    LBA_LOG ("Found plugin: type = [%s] file = [%s]\n", g_type_name (plugin_gtype),
+             module_filename);
   }
 
   if (module)
