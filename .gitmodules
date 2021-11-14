@@ -1,3 +1,6 @@
 [submodule "cogl"]
-	path = cogl
+	path = deps/cogl
 	url = https://github.com/GNOME/cogl.git
+[submodule "glib"]
+	path = deps/meson-based/glib
+	url = https://github.com/GNOME/glib.git

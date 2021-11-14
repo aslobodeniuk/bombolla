@@ -1,1 +1,1 @@
-SUBDIRS = cogl bombolla examples tests
+SUBDIRS = deps bombolla examples tests

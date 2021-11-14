@@ -3,17 +3,23 @@
 # ACLOCAL, AUTOPOINT and/or LIBTOOLIZE to the right versions, or leave them
 # unset and get the defaults
 
-if test ! -f cogl/autogen.sh;
+if test ! -f deps/cogl/autogen.sh;
 then
   echo "+ Setting up COGL submodule"
-  git submodule update --init || exit 1
+  git submodule update --init deps/cogl || exit 1
 fi
 
-cd cogl
+if test ! -f deps/meson-based/glib/meson.build;
+then
+  echo "+ Setting up GLIB submodule"
+  git submodule update --init deps/meson-based/glib || exit 1
+fi
+
+cd deps/cogl
 echo "patching cogl to build on Ubuntu focal.."
-git apply ../patches/0001-fix-build-on-Ubuntu-focal.patch 2>/dev/null && echo "ok"
+git apply ../../patches/0001-fix-build-on-Ubuntu-focal.patch 2>/dev/null && echo "ok"
 NOCONFIGURE=1 ./autogen.sh
-cd ..
+cd ../..
 
 autoreconf --force --install || {
  echo 'autogen.sh failed';

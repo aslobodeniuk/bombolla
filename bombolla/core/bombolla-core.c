@@ -242,7 +242,7 @@ lba_core_scan (LbaCore * self, const gchar * path) {
     /* This function does nothing important, only prints everything
      * it can about the GType it has. It could output something like a
      * dot graph actually, or so. */
-    LBA_LOG ("Found plugin: type = [%s] file = [%s]\n", g_type_name (plugin_gtype),
+    LBA_LOG ("Found plugin: type = [%s] file = [%s]", g_type_name (plugin_gtype),
              module_filename);
   }
 
@@ -265,7 +265,7 @@ lba_core_execute (LbaCore * self, const gchar * commands) {
       if (!self->plugins_path) {
         self->plugins_path = g_strdup (g_getenv ("LBA_PLUGINS_PATH"));
 
-        if (self->plugins_path) {
+        if (!self->plugins_path) {
           gchar *cur_dir = g_get_current_dir ();
 
           /* Is it really a proper default path ?? */

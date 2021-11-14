@@ -9,7 +9,7 @@ test-suite.log
 
 include $(top_srcdir)/glib-tap.mk
 # This one is needed to properly identify memleaks
-AM_TESTS_ENVIRONMENT += G_SLICE=always-malloc
+AM_TESTS_ENVIRONMENT += G_SLICE=always-malloc LBA_PLUGINS_PATH=$(LBA_PLUGINS_PATH)
 # -----------------------------------------------
 
 EXTRA_DIST += ../autogen.sh

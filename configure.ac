@@ -74,6 +74,11 @@ BASECLASS_LIBS="$GOBJ_LIBS"
 PLUGIN_CFLAGS="-fpic $COMMON_CFLAGS"
 PLUGIN_LDFLAGS="-module -avoid-version -no-undefined $ASAN_LDFLAGS"
 
+# for now we keep plugins path to be a /lib directory. That's bad,
+# and we'll fix it.
+LBA_PLUGINS_PATH=${prefix}
+AC_SUBST(LBA_PLUGINS_PATH)
+
 AC_SUBST(COMMON_CFLAGS)
 
 AC_SUBST(ASAN_CFLAGS)
@@ -88,16 +93,27 @@ AC_SUBST(PLUGIN_LDFLAGS)
 
 GLIB_TESTS
 
-dnl call cogl/configure recursively
-AC_CONFIG_SUBDIRS([cogl])
+dnl configure glib
+if test ! -f deps/meson-based/glib/_builddir;
+then
+mkdir deps/meson-based/glib/_builddir
+fi
 
-LBA_COGL_CFLAGS="-DCOGL_ENABLE_EXPERIMENTAL_2_0_API -I\$(top_srcdir)/cogl ${COGL_PANGO_DEP_CFLAGS}"
-LBA_COGL_LIBS="${COGL_PANGO_DEP_LIBS} ${COGL_DEP_LIBS} -L\$(top_srcdir)/cogl/cogl/.libs/ -lcogl -L\$(top_srcdir)/cogl/cogl-pango/.libs/ -lcogl-pango"
+cd deps/meson-based/glib/_builddir && meson --prefix=${prefix} --libdir=lib-asan --default-library=both --buildtype=debug --backend=ninja --wrap-mode=nodownload -Dinternal_pcre=true -Dlibmount=disabled -Ddtrace=false -Diconv=libc -Db_sanitize=address
+cd ../../../..
+
+dnl call cogl/configure recursively
+AC_CONFIG_SUBDIRS([deps/cogl])
+
+LBA_COGL_CFLAGS="-DCOGL_ENABLE_EXPERIMENTAL_2_0_API -I\$(top_srcdir)/deps/cogl ${COGL_PANGO_DEP_CFLAGS}"
+LBA_COGL_LIBS="${COGL_PANGO_DEP_LIBS} ${COGL_DEP_LIBS} -L\$(top_srcdir)/deps/cogl/cogl/.libs/ -lcogl -L\$(top_srcdir)/deps/cogl/cogl-pango/.libs/ -lcogl-pango"
 AC_SUBST(LBA_COGL_CFLAGS)
 AC_SUBST(LBA_COGL_LIBS)
 
 AC_CONFIG_FILES([
 Makefile
+deps/Makefile
+deps/meson-based/Makefile
 bombolla/Makefile
 bombolla/core/Makefile
 bombolla/lba/Makefile

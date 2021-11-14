@@ -47,9 +47,8 @@ $(top_builddir)/bombolla/base/liblba-basedrawable.la \
 $(top_builddir)/bombolla/base/liblba-base3d.la
 
 liblba_base_cogl3d_la_SOURCES = lba-base-cogl3d.c
-liblba_base_cogl3d_la_CFLAGS = -DCOGL_ENABLE_EXPERIMENTAL_2_0_API -I$(top_srcdir)/cogl \
-    $(BASECLASS_CFLAGS)
-liblba_base_cogl3d_la_LIBADD = $(BASECLASS_LIBS) -llba-basedrawable -llba-base3d $(COGL_DEP_LIBS) -L$(top_builddir)/cogl/cogl/.libs/ -lcogl
+liblba_base_cogl3d_la_CFLAGS = $(LBA_COGL_CFLAGS) $(BASECLASS_CFLAGS)
+liblba_base_cogl3d_la_LIBADD = $(BASECLASS_LIBS) -llba-basedrawable -llba-base3d $(COGL_DEP_LIBS) $(LBA_COGL_LIBS)
 
 # Basegl3d
 lib_LTLIBRARIES += liblba-basegl3d.la

@@ -136,6 +136,8 @@ base_window_dispose (GObject * gobject) {
 
   if (self->opened)
     klass->close (self);
+
+  g_free (self->title);
 }
 
 static void
