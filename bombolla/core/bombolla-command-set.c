@@ -112,14 +112,15 @@ lba_command_set (BombollaContext * ctx, gchar ** tokens) {
 
   GValue inp = G_VALUE_INIT;
   GValue outp = G_VALUE_INIT;
-  const gchar *prop_name,
-   *prop_val;
+  const gchar *prop_name;
+  gchar *prop_val = NULL;
   const gchar *objname;
   GObject *obj;
   GParamSpec *prop;
   char **tmp = NULL;
   gboolean ret = FALSE;
   static volatile gboolean once;
+  gint i;
 
   tmp = g_strsplit (tokens[1], ".", 2);
 
@@ -149,8 +150,18 @@ lba_command_set (BombollaContext * ctx, gchar ** tokens) {
     once = 1;
   }
 
-  /* FIXME */
-  prop_val = tokens[2];
+  prop_val = g_strdup (tokens[2]);
+
+  for (i = 3; tokens[i]; i++) {
+    /* FIXME: we recover original string from tokens, it would be better to
+     * just have an original string here an take it. This code has a bit
+     * of problems, for example, tabs won't be recovered. */
+    gchar *tmp_prop_val;
+
+    tmp_prop_val = g_strdup_printf ("%s %s", prop_val, tokens[i]);
+    g_free (prop_val);
+    prop_val = tmp_prop_val;
+  }
 
   /* Now we need to find out gtype of out */
   prop = g_object_class_find_property (G_OBJECT_GET_CLASS (obj), prop_name);
@@ -176,7 +187,7 @@ lba_command_set (BombollaContext * ctx, gchar ** tokens) {
     goto done;
   }
 
-  g_printf ("setting %s.%s to %s\n", objname, prop_name, prop_val);
+  g_printf ("setting %s.%s to [%s]\n", objname, prop_name, prop_val);
   g_object_set_property (obj, prop_name, &outp);
 
   ret = TRUE;
@@ -184,6 +195,8 @@ done:
   if (tmp) {
     g_strfreev (tmp);
   }
+
+  g_free (prop_val);
 
   return ret;
 }

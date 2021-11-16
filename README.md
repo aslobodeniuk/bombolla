@@ -1,6 +1,8 @@
 ![Ubuntu build & unit tests](https://github.com/aslobodeniuk/bombolla/actions/workflows/ubuntu.yml/badge.svg)
 
 # bombolla
+![Screenshot](demo.png)
+
 Bombolla is just a bunch of plugins used to play with the code and some technologies.
 This project doesn't make sense at all actually.
 But we do have some spinning cubes (almost).

@@ -55,6 +55,8 @@ typedef struct _LbaCoreClass {
 
 } LbaCoreClass;
 
+G_DEFINE_TYPE (LbaCore, lba_core, G_TYPE_OBJECT);
+
 static gpointer
 lba_core_mainloop (gpointer data) {
   LbaCore *self = (LbaCore *) data;
@@ -126,6 +128,9 @@ lba_core_dispose (GObject * gobject) {
 
   /* And now destroy all the objects, and free all the data. */
   g_free (self->plugins_path);
+
+  /* Always chain up */
+  G_OBJECT_CLASS (lba_core_parent_class)->dispose (gobject);
 }
 
 static gboolean
@@ -200,6 +205,7 @@ lba_core_scan (LbaCore * self, const gchar * path) {
       if (!dir) {
         g_warning ("%s", err->message);
         g_error_free (err);
+        return;
       }
 
       while ((file = g_dir_read_name (dir))) {
@@ -365,6 +371,5 @@ lba_core_class_init (LbaCoreClass * klass) {
                                                         G_PARAM_READWRITE));
 }
 
-G_DEFINE_TYPE (LbaCore, lba_core, G_TYPE_OBJECT)
 /* Just for logging */
-    BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (lba_core);
+BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (lba_core);
