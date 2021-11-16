@@ -1,1 +1,1 @@
-SUBDIRS = cogl meson-based
+SUBDIRS = meson-based cogl

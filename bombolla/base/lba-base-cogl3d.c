@@ -20,19 +20,28 @@
 #include "bombolla/base/lba-base-cogl3d.h"
 #include "bombolla/lba-log.h"
 
+G_DEFINE_TYPE (BaseCogl3d, base_cogl3d, G_TYPE_BASE3D);
+
 static void
 base_cogl3d_draw (BaseDrawable * base) {
   BaseCogl3d *self = (BaseCogl3d *) base;
   BaseCogl3dClass *klass = BASE_COGL3D_GET_CLASS (self);
 
+  LBA_LOG ("draw");
+
   /* Now let the child draw */
   if (klass->paint) {
+    g_mutex_lock (&self->lock);
+
     if (!self->fb || !self->pipeline) {
-      LBA_LOG ("Incompatible drawing scene: " "needs COGL framebuffer and pipeline");
+      LBA_LOG ("Incompatible drawing scene: needs COGL framebuffer and pipeline");
+      g_mutex_unlock (&self->lock);
       return;
     }
 
     klass->paint (self, self->fb, self->pipeline);
+
+    g_mutex_unlock (&self->lock);
   }
 }
 
@@ -41,7 +50,10 @@ base_cogl3d_scene_reopen (GObject * scene, gpointer user_data) {
   BaseCogl3d *self = (BaseCogl3d *) user_data;
   BaseCogl3dClass *klass = BASE_COGL3D_GET_CLASS (self);
 
-  LBA_LOG ("Catching Cogl context");
+  LBA_LOG ("reopen");
+
+  g_mutex_lock (&self->lock);
+
   g_object_get (scene,
                 "cogl-framebuffer", &self->fb, "cogl-pipeline", &self->pipeline,
                 "cogl-ctx", &self->ctx, NULL);
@@ -49,6 +61,8 @@ base_cogl3d_scene_reopen (GObject * scene, gpointer user_data) {
   if (klass->reopen && self->fb && self->pipeline && self->ctx) {
     klass->reopen (self, self->fb, self->pipeline, self->ctx);
   }
+
+  g_mutex_unlock (&self->lock);
 }
 
 void
@@ -85,15 +99,28 @@ base_cogl3d_has_drawing_scene (GObject * gobject, GParamSpec * pspec,
 
 static void
 base_cogl3d_init (BaseCogl3d * self) {
+  g_mutex_init (&self->lock);
+
   g_signal_connect (self, "notify::drawing-scene",
                     G_CALLBACK (base_cogl3d_has_drawing_scene), self);
 }
 
 static void
-base_cogl3d_class_init (BaseCogl3dClass * klass) {
-  BaseDrawableClass *base_drawable_class = (BaseDrawableClass *) klass;
+base_cogl3d_dispose (GObject * gobject) {
+  BaseCogl3d *self = (BaseCogl3d *) gobject;
 
-  base_drawable_class->draw = base_cogl3d_draw;
+  g_mutex_clear (&self->lock);
+
+  /* Always chain up */
+  G_OBJECT_CLASS (base_cogl3d_parent_class)->dispose (gobject);
 }
 
-G_DEFINE_TYPE (BaseCogl3d, base_cogl3d, G_TYPE_BASE3D)
+static void
+base_cogl3d_class_init (BaseCogl3dClass * klass) {
+  BaseDrawableClass *base_drawable_class = (BaseDrawableClass *) klass;
+  GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
+
+  base_drawable_class->draw = base_cogl3d_draw;
+
+  gobject_class->dispose = base_cogl3d_dispose;
+}

@@ -26,10 +26,17 @@ typedef GType (*lBaPluginSystemGetGtypeFunc) (void);
 #  define BOMBOLLA_PLUGIN_SYSTEM_ENTRY_   bombolla_plugin_system_get_gtype
 #  define BOMBOLLA_PLUGIN_SYSTEM_ENTRY   G_STRINGIFY (BOMBOLLA_PLUGIN_SYSTEM_ENTRY_)
 
-#  define BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE(name)                      \
+/* This is a variable to cache plugin's type's name for logging */
+G_GNUC_UNUSED static const gchar *global_lba_plugin_name;
+
+#  define BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE(name)                    \
   GType BOMBOLLA_PLUGIN_SYSTEM_ENTRY_ (void)                            \
   {                                                                     \
-    return name##_get_type ();                                          \
+    GType ret = name##_get_type ();                                     \
+    if (!ret)                                                           \
+      return 0;                                                         \
+    global_lba_plugin_name = g_type_name (ret);                         \
+    return ret;                                                         \
   }
 
 #endif

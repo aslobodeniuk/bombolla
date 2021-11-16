@@ -39,6 +39,8 @@ typedef struct _BaseCogl3d {
   CoglFramebuffer *fb;
   CoglPipeline *pipeline;
   CoglContext *ctx;
+
+  GMutex lock;
 } BaseCogl3d;
 
 typedef struct _BaseCogl3dClass {
