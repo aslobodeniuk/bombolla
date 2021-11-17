@@ -28,6 +28,7 @@ GType lba_byte_stream_get_type (void);
 #  define G_TYPE_LBA_BYTE_STREAM (lba_byte_stream_get_type ())
 #  define LBA_BYTE_STREAM_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),G_TYPE_LBA_BYTE_STREAM ,LbaByteStreamClass))
 #  define LBA_BYTE_STREAM_CLASS(klass)  (G_TYPE_CHECK_CLASS_CAST((klass), G_TYPE_LBA_BYTE_STREAM ,LbaByteStreamClass))
+#  define LBA_IS_BYTE_STREAM(obj)		(G_TYPE_CHECK_INSTANCE_TYPE ((obj), G_TYPE_LBA_BYTE_STREAM))
 
 typedef struct _LbaByteStream {
   GObject parent;

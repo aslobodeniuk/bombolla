@@ -1,0 +1,421 @@
+/* la Bombolla GObject shell.
+ * Copyright (C) 2021 Aleksandr Slobodeniuk
+ *
+ *   This file is part of bombolla.
+ *
+ *   Bombolla is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   Bombolla is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "bombolla/lba-plugin-system.h"
+#include "bombolla/lba-log.h"
+#include "bombolla/base/lba-byte-stream.h"
+#include <string.h>
+
+enum {
+  SIGNAL_START,
+  LAST_SIGNAL
+};
+
+static guint lba_remote_object_server_signals[LAST_SIGNAL] = { 0 };
+
+typedef enum {
+  PROP_SOURCE = 1,
+  PROP_OUTPUT_STREAM
+} LbaRemoteObjectServerProperty;
+
+typedef struct _LbaRemoteObjectServer {
+  GObject parent;
+  GObject *source;
+  LbaByteStream *output_stream;
+} LbaRemoteObjectServer;
+
+typedef struct _LbaRemoteObjectServerClass {
+  GObjectClass parent;
+
+  /* Actions */
+  void (*start) (LbaRemoteObjectServer *);
+
+} LbaRemoteObjectServerClass;
+
+G_DEFINE_TYPE (LbaRemoteObjectServer, lba_remote_object_server, G_TYPE_OBJECT);
+
+void
+lba_remote_object_server_source_param_notify (GObject * gobject,
+                                              GParamSpec * pspec,
+                                              gpointer user_data) {
+  const gchar *pspec_name;
+  GValue src_val,
+    dst_val = { 0 };
+  GBytes *bytes = NULL;
+  const gchar *type_name;
+  LbaRemoteObjectServer *self = (LbaRemoteObjectServer *) user_data;
+
+  /* FIXME: lock mutex */
+
+  pspec_name = g_param_spec_get_name (pspec);
+
+  g_object_getv (gobject, 1, &pspec_name, &src_val);
+
+  type_name = g_type_name (G_VALUE_TYPE (&src_val));
+
+  LBA_LOG ("Notify [%s %s]", type_name, pspec_name);
+
+  if (!g_value_type_transformable (G_VALUE_TYPE (&src_val), G_TYPE_BYTES)) {
+    g_warning ("Type %s can't be transformed to bytes", type_name);
+    goto exit;
+  }
+
+  g_value_init (&dst_val, G_TYPE_BYTES);
+
+  if (!g_value_transform (&src_val, &dst_val)) {
+    g_warning ("Couldn't transform");
+    goto exit;
+  }
+
+  bytes = g_value_get_boxed (&dst_val);
+
+  /* Finally, write our value to the output */
+  {
+    GBytes *message;
+
+    /* The protocol message is:
+       [pnot] - message magic of "parameter notify", 4 bytes
+       [size] - size of the message (without size and magic), 4 bytes
+       [param name] - zero-terminated string
+       [bytes] - new parameter value
+     */
+    gchar notify_magic[4] = { 'p', 'n', 'a', 't' };
+    guint msg_body_size,
+      msg_size,
+      type_name_len,
+      msg_size_be;
+    gpointer msg;
+    gsize bytes_size;
+    gconstpointer bytes_ptr;
+    GError *err = NULL;
+
+    bytes_ptr = g_bytes_get_data (bytes, &bytes_size);
+
+    type_name_len = strlen (type_name) + 1;
+
+    msg_body_size = type_name_len + bytes_size;
+    msg_size = 4 + 4 + msg_body_size;
+
+    msg_size_be = GUINT32_TO_BE (msg_size);
+
+    msg = g_malloc (msg_size);
+
+    memcpy (msg, notify_magic, 4);
+    memcpy (msg + 4, &msg_size_be, 4);
+    memcpy (msg + 8, type_name, type_name_len);
+    memcpy (msg + 8 + type_name_len, bytes_ptr, bytes_size);
+
+    message = g_bytes_new_take (msg, msg_size);
+
+    /* Finally, write the bytes */
+    if (!lba_byte_stream_write_gbytes (self->output_stream, message, &err)) {
+      g_critical ("Couldn't write param header: [%s]", err ? err->message : "");
+      g_error_free (err);
+      goto exit;
+    }
+  }
+
+exit:
+  g_value_unset (&src_val);
+  g_value_unset (&dst_val);
+}
+
+static gboolean
+lba_remote_object_server_send_source_header (LbaRemoteObjectServer * self) {
+  /* TODO */
+  return TRUE;
+}
+
+/* FIXME: should return gboolean ?? */
+static void
+lba_remote_object_server_start (LbaRemoteObjectServer * self) {
+  GError *err = NULL;
+  GType t;
+
+  LBA_LOG ("Starting server");
+
+  if (!self->output_stream) {
+    g_warning ("No output stream");
+    return;
+  }
+
+  if (!self->source) {
+    g_warning ("No source object");
+    return;
+  }
+
+  /* Open the output stream */
+  if (!lba_byte_stream_open (self->output_stream, &err)) {
+    g_warning ("Couldn't open output stream: [%s]", err ? err->message : "");
+    g_error_free (err);
+    return;
+  }
+
+  /* FIXME: lock mutex */
+
+  /* Now we introspect the source object and send it's description.
+   * Note: for connection-type streams this should be sent each time new connection
+   * is opened. */
+  if (!lba_remote_object_server_send_source_header (self)) {
+    return;
+  }
+
+  t = G_OBJECT_TYPE (self->source);
+
+  /* Now we connect to all the signals and notifications, so each time
+   * source notifies, we will send notification to the bytestream*/
+  {
+    GParamSpec **properties;
+    guint n_properties,
+      p;
+    guint *signals,
+      s,
+      n_signals;
+    GObjectClass *klass;
+
+    klass = g_type_class_peek (t);
+
+    properties = g_object_class_list_properties (klass, &n_properties);
+
+    /* Connect to notify::property  */
+    for (p = 0; p < n_properties; p++) {
+      GParamSpec *prop;
+      gchar *prop_notify_str;
+
+      prop = properties[p];
+      prop_notify_str = g_strdup_printf ("notify::%s", g_param_spec_get_name (prop));
+
+      g_signal_connect_after (self->source, prop_notify_str,
+                              G_CALLBACK
+                              (lba_remote_object_server_source_param_notify), self);
+
+      g_free (prop_notify_str);
+    }
+
+    /* Iterate signals */
+    {
+      for (; t; t = g_type_parent (t)) {
+
+        signals = g_signal_list_ids (t, &n_signals);
+
+        for (s = 0; s < n_signals; s++) {
+          GSignalQuery query;
+          GTypeQuery t_query;
+
+          g_signal_query (signals[s], &query);
+          g_type_query (t, &t_query);
+
+          if (t_query.type == 0) {
+            g_warning ("Error quering type");
+            break;
+          }
+//          g_printf ("%s%s:: %s (* %s) ", tab, t_query.type_name,
+//                    g_type_name (query.return_type), query.signal_name);
+
+          for (p = 0; p < query.n_params; p++) {
+//            g_printf ("%s%s", p ? ", " : "", g_type_name (query.param_types[p]));
+          }
+        }
+
+        g_free (signals);
+      }
+    }
+
+  }
+}
+
+static void
+lba_remote_object_server_set_property (GObject * object,
+                                       guint property_id, const GValue * value,
+                                       GParamSpec * pspec) {
+  LbaRemoteObjectServer *self = (LbaRemoteObjectServer *) object;
+
+  switch ((LbaRemoteObjectServerProperty) property_id) {
+  case PROP_OUTPUT_STREAM:
+
+    {
+      GObject *obj;
+
+      obj = g_value_get_object (value);
+
+      if (!LBA_IS_BYTE_STREAM (obj)) {
+        /* Fixme: write it's own param_spec ?? */
+        g_warning ("Object is not an LbaByteStream");
+        break;
+      }
+
+      if (self->output_stream) {
+        /* FIXME: need some teardown? */
+        g_object_unref (self->output_stream);
+      }
+
+      self->output_stream = (LbaByteStream *) obj;
+
+      if (self->output_stream) {
+        g_object_ref (self->output_stream);
+      }
+    }
+    break;
+
+  case PROP_SOURCE:
+    if (self->source) {
+      g_critical ("Changing the source on fly is not supported yet");
+    }
+
+    self->source = g_value_get_object (value);
+
+    if (self->source) {
+      g_object_ref (self->source);
+
+      // Here we must:
+      // 1) Dump object's class: client remote object
+      // decides to connect, the first thing we do is
+      // send the class, so client could instantiate an
+      // object with the same properties and signals.
+
+      // 2) connect to all the event signals. If source object
+      // emits an event signal, we send it to the client.
+      // Also connect to all the notify:: signals for the same
+      // reason.
+
+      // 3) start listening on the data input: this input is
+      // can trigger setting the properties or calling action
+      // signals
+
+      // ------------------------------------------------
+
+      // So, we basically need:
+      // - one data output point to write
+      // - one data input point to read
+      // For the beginning it can be just unix pipes
+      // Perfect chance to play with GIO.
+
+      // ------------------------------------------------
+      // Now let's define a protocol to dump the class.
+      // [KlassDump0000000] - magic number, 16 bytes
+      // [Signal0000000000] - magic says there's a signal, 16 bytes
+      // [flags] - 4 bytes. (reserved)
+      // [Number of parameters] - 2 bytes. Last bit says if it has return value or not.
+      // (optionally) [name of GType of the return value: size / string]
+      // [name of GType of the parameter: size / string]
+
+      // write (output, "KlassDump0000000", 16);
+      // for (;;) {
+      //  write (output, "Signal0000000000", 16);
+      //  write (output, &num_params, 2);
+      //  for (;;) {
+      //    write (output, &string_size, 2);
+      //    write (output, string, string_size);
+      //  }
+      // }
+
+      // How do we write?
+      // We have some objects of type LbaStream: output-stream, input-stream
+      // LbaStream has actions "write", "read", "seek", and has event "have-data"
+      // So, we call something like
+      // g_signal_emit_by_name (self->output_stream, "write", data, size, &ret);
+
+    }
+
+    break;
+  default:
+    /* We don't have any other property... */
+    G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+    break;
+  }
+}
+
+static void
+lba_remote_object_server_get_property (GObject * object,
+                                       guint property_id, GValue * value,
+                                       GParamSpec * pspec) {
+  LbaRemoteObjectServer *self = (LbaRemoteObjectServer *) object;
+
+  switch ((LbaRemoteObjectServerProperty) property_id) {
+
+  case PROP_OUTPUT_STREAM:
+    g_value_set_object (value, self->output_stream);
+    break;
+  case PROP_SOURCE:
+    // Probably other side (client) could get the "ghost" object through
+    // getting this property (if the connection is established).
+
+    // If so, what we need:
+    // 1) First receive class dump, and build a new class.
+    // 2) Create an object of that class
+    // 3) listen on the input, and emit event signals, set properties,
+    // so the object also emits notify:: .
+    // 4) On action signals dump the data and send it to the output
+    // 5) Same when someone sets object's properties.
+    g_value_set_object (value, self->source);
+    break;
+  default:
+    /* We don't have any other property... */
+    G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+    break;
+  }
+}
+
+static void
+lba_remote_object_server_init (LbaRemoteObjectServer * self) {
+}
+
+static void
+lba_remote_object_server_dispose (GObject * gobject) {
+
+  G_OBJECT_CLASS (lba_remote_object_server_parent_class)->dispose (gobject);
+}
+
+static void
+lba_remote_object_server_class_init (LbaRemoteObjectServerClass * klass) {
+  GObjectClass *object_class = (GObjectClass *) klass;
+
+  klass->start = lba_remote_object_server_start;
+
+  object_class->set_property = lba_remote_object_server_set_property;
+  object_class->get_property = lba_remote_object_server_get_property;
+  object_class->dispose = lba_remote_object_server_dispose;
+
+  g_object_class_install_property (object_class,
+                                   PROP_SOURCE,
+                                   g_param_spec_object ("source",
+                                                        "Source",
+                                                        "Source object we bind in remote",
+                                                        G_TYPE_OBJECT,
+                                                        G_PARAM_STATIC_STRINGS |
+                                                        G_PARAM_READWRITE));
+
+  g_object_class_install_property (object_class,
+                                   PROP_OUTPUT_STREAM,
+                                   g_param_spec_object ("output-stream",
+                                                        "Output Stream",
+                                                        "Stream for data output",
+                                                        G_TYPE_OBJECT,
+                                                        G_PARAM_STATIC_STRINGS |
+                                                        G_PARAM_READWRITE));
+
+  lba_remote_object_server_signals[SIGNAL_START] =
+      g_signal_new ("start", G_TYPE_FROM_CLASS (klass),
+                    G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+                    G_STRUCT_OFFSET (LbaRemoteObjectServerClass, start), NULL, NULL,
+                    g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+}
+
+/* Export plugin */
+BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (lba_remote_object_server);

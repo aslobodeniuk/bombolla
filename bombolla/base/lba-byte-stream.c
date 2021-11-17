@@ -20,6 +20,8 @@
 #include "bombolla/base/lba-byte-stream.h"
 #include "bombolla/lba-log.h"
 
+G_DEFINE_TYPE (LbaByteStream, lba_byte_stream, G_TYPE_OBJECT);
+
 enum {
   SIGNAL_ON_HAVE_DATA,
   LAST_SIGNAL
@@ -45,9 +47,7 @@ gboolean
 lba_byte_stream_open (LbaByteStream * self, GError ** err) {
   LbaByteStreamClass *klass = LBA_BYTE_STREAM_GET_CLASS (self);
 
-  if (klass->open) {
-    self->opened = klass->open (self, err);
-  }
+  self->opened = klass->open ? klass->open (self, err) : TRUE;
 
   return self->opened;
 }
@@ -84,6 +84,8 @@ lba_byte_stream_dispose (GObject * gobject) {
   if (self->opened && klass->close) {
     klass->close (self);
   }
+
+  G_OBJECT_CLASS (lba_byte_stream_parent_class)->dispose (gobject);
 }
 
 static void
@@ -101,5 +103,4 @@ lba_byte_stream_class_init (LbaByteStreamClass * klass) {
   klass->write = lba_byte_stream_write_passthrough;
 }
 
-G_DEFINE_TYPE (LbaByteStream, lba_byte_stream, G_TYPE_OBJECT)
-    BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (lba_byte_stream);
+BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (lba_byte_stream);
