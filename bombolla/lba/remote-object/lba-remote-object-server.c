@@ -50,13 +50,111 @@ typedef struct _LbaRemoteObjectServerClass {
 
 G_DEFINE_TYPE (LbaRemoteObjectServer, lba_remote_object_server, G_TYPE_OBJECT);
 
+static void
+_str2bytes (const GValue * src_value, GValue * dest_value) {
+  const gchar *s;
+  GBytes *bytes;
+
+  s = g_value_get_string (src_value);
+  bytes = g_bytes_new (s, 1 + strlen (s));
+
+  g_value_set_boxed (dest_value, bytes);
+}
+
+static void
+_double2bytes (const GValue * src_value, GValue * dest_value) {
+  gdouble d;
+  GBytes *bytes;
+
+  d = g_value_get_double (src_value);
+  bytes = g_bytes_new (&d, sizeof (gdouble));
+
+  g_value_set_boxed (dest_value, bytes);
+}
+
+static void
+_float2bytes (const GValue * src_value, GValue * dest_value) {
+  gfloat f;
+  GBytes *bytes;
+
+  f = g_value_get_float (src_value);
+  bytes = g_bytes_new (&f, sizeof (gfloat));
+
+  g_value_set_boxed (dest_value, bytes);
+}
+
+static void
+_int2bytes (const GValue * src_value, GValue * dest_value) {
+  gint i;
+  GBytes *bytes;
+
+  i = g_value_get_int (src_value);
+  bytes = g_bytes_new (&i, sizeof (gint));
+
+  g_value_set_boxed (dest_value, bytes);
+}
+
+static void
+_uint2bytes (const GValue * src_value, GValue * dest_value) {
+  guint u;
+  GBytes *bytes;
+
+  u = g_value_get_int (src_value);
+  bytes = g_bytes_new (&u, sizeof (guint));
+
+  g_value_set_boxed (dest_value, bytes);
+}
+
+static void
+_boolean2bytes (const GValue * src_value, GValue * dest_value) {
+  gboolean b;
+  GBytes *bytes;
+
+  b = g_value_get_boolean (src_value);
+  bytes = g_bytes_new (&b, sizeof (gboolean));
+
+  g_value_set_boxed (dest_value, bytes);
+}
+
+static GBytes *
+lba_remote_object_server_value2bytes (const GValue * src_val) {
+  GBytes *ret = NULL;
+  GValue dst_val = { 0 };
+
+  if (G_VALUE_TYPE (src_val) == G_TYPE_BYTES) {
+    ret = g_value_get_boxed (src_val);
+    return ret ? g_bytes_ref (ret) : NULL;
+  }
+
+  if (!g_value_type_transformable (G_VALUE_TYPE (src_val), G_TYPE_BYTES)) {
+    g_warning ("Type %s can't be transformed to bytes",
+               g_type_name (G_VALUE_TYPE (src_val)));
+    goto exit;
+  }
+
+  g_value_init (&dst_val, G_TYPE_BYTES);
+
+  if (!g_value_transform (src_val, &dst_val)) {
+    g_warning ("Couldn't transform");
+    goto exit;
+  }
+
+  ret = g_value_get_boxed (&dst_val);
+
+  if (ret) {
+    g_bytes_ref (ret);
+  }
+exit:
+  g_value_unset (&dst_val);
+  return ret;
+}
+
 void
 lba_remote_object_server_source_param_notify (GObject * gobject,
                                               GParamSpec * pspec,
                                               gpointer user_data) {
   const gchar *pspec_name;
-  GValue src_val,
-    dst_val = { 0 };
+  GValue src_val = { 0 };
   GBytes *bytes = NULL;
   const gchar *type_name;
   LbaRemoteObjectServer *self = (LbaRemoteObjectServer *) user_data;
@@ -71,19 +169,12 @@ lba_remote_object_server_source_param_notify (GObject * gobject,
 
   LBA_LOG ("Notify [%s %s]", type_name, pspec_name);
 
-  if (!g_value_type_transformable (G_VALUE_TYPE (&src_val), G_TYPE_BYTES)) {
-    g_warning ("Type %s can't be transformed to bytes", type_name);
+  bytes = lba_remote_object_server_value2bytes (&src_val);
+
+  if (G_UNLIKELY (!bytes)) {
+    g_warning ("No bytes after transformation..");
     goto exit;
   }
-
-  g_value_init (&dst_val, G_TYPE_BYTES);
-
-  if (!g_value_transform (&src_val, &dst_val)) {
-    g_warning ("Couldn't transform");
-    goto exit;
-  }
-
-  bytes = g_value_get_boxed (&dst_val);
 
   /* Finally, write our value to the output */
   {
@@ -134,7 +225,8 @@ lba_remote_object_server_source_param_notify (GObject * gobject,
 
 exit:
   g_value_unset (&src_val);
-  g_value_unset (&dst_val);
+  if (bytes)
+    g_bytes_unref (bytes);
 }
 
 static gboolean
@@ -214,15 +306,18 @@ lba_remote_object_server_signal_cb (GClosure * closure,
                                     const GValue * param_values,
                                     gpointer invocation_hint,
                                     gpointer marshal_data) {
-  /* LbaRemoteObjectServer * self; */
   LbaRemoteObjectServerSignalCtx *signal_ctx;
+  LbaRemoteObjectServer *self;
 
   /* Execute stored commands */
   LBA_LOG ("signal with %d parameters\n", n_param_values);
 
   /* Closure data is a "user data" */
   signal_ctx = closure->data;
-  /* self = signal_ctx->self; */
+  g_assert (signal_ctx);
+  self = signal_ctx->self;
+  g_assert (self);
+  g_assert (n_param_values >= 1);
 
   LBA_LOG ("Signal %s", signal_ctx->signal_query.signal_name);
 
@@ -234,10 +329,54 @@ lba_remote_object_server_signal_cb (GClosure * closure,
     /* The protocol message is:
        [sign] - message magic of "signal", 4 bytes
        [number of params] - number of parameters, 1 byte
-       [param name] - zero-terminated string
-       [bytes] - new parameter value
-     */
 
+       .. then for each param. GTypes are already known from the dump sent on start.
+
+       [param value size] - 4 bytes
+       [param value] - bytes
+
+       FIXME: we actually don't need to write size for int types etc
+     */
+    gint p;
+    GByteArray *msg = NULL;
+    GBytes *msg_bytes = NULL;
+    guchar sign_magic[4] = { 's', 'i', 'g', 'n' };
+    guint8 msg_number_of_params = n_param_values;
+    GError *err = NULL;
+
+    msg = g_byte_array_new ();
+
+    /* [sign] */
+    g_byte_array_append (msg, sign_magic, 4);
+    /* [number of params] */
+    g_byte_array_append (msg, &msg_number_of_params, 1);
+
+    /* We skip the first parameter because it is an object of the source */
+    for (p = 1; p < n_param_values; p++) {
+      GBytes *bytes;
+      guint32 bytes_size,
+        bytes_size_be;
+
+      bytes = lba_remote_object_server_value2bytes (&param_values[p]);
+      g_assert (bytes);
+
+      bytes_size = g_bytes_get_size (bytes);
+      bytes_size_be = GUINT32_TO_BE (bytes_size);
+
+      /* [param value size] */
+      g_byte_array_append (msg, (guint8 *) & bytes_size_be, 4);
+      /* [param value] */
+      g_byte_array_append (msg, g_bytes_get_data (bytes, NULL), bytes_size);
+    }
+
+    msg_bytes = g_byte_array_free_to_bytes (msg);
+
+    /* Finally, write the bytes */
+    LBA_LOG ("Writing %" G_GSIZE_FORMAT " bytes", g_bytes_get_size (msg_bytes));
+    if (!lba_byte_stream_write_gbytes (self->output_stream, msg_bytes, &err)) {
+      g_critical ("Couldn't write param header: [%s]", err ? err->message : "");
+      g_error_free (err);
+    }
   }
 }
 
@@ -272,6 +411,7 @@ static void
 lba_remote_object_server_start (LbaRemoteObjectServer * self) {
   GError *err = NULL;
   GType t;
+  static volatile gboolean once;
 
   LBA_LOG ("Starting server");
 
@@ -283,6 +423,18 @@ lba_remote_object_server_start (LbaRemoteObjectServer * self) {
   if (!self->source) {
     g_warning ("No source object");
     return;
+  }
+
+  if (!once) {
+    /* Register basic transform functions for types */
+    g_value_register_transform_func (G_TYPE_STRING, G_TYPE_BYTES, _str2bytes);
+    g_value_register_transform_func (G_TYPE_DOUBLE, G_TYPE_BYTES, _double2bytes);
+    g_value_register_transform_func (G_TYPE_FLOAT, G_TYPE_BYTES, _float2bytes);
+    g_value_register_transform_func (G_TYPE_INT, G_TYPE_BYTES, _int2bytes);
+    g_value_register_transform_func (G_TYPE_UINT, G_TYPE_BYTES, _uint2bytes);
+    g_value_register_transform_func (G_TYPE_BOOLEAN, G_TYPE_BYTES, _boolean2bytes);
+
+    once = 1;
   }
 
   /* Open the output stream */
