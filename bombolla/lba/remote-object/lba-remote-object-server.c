@@ -61,6 +61,11 @@ _str2bytes (const GValue * src_value, GValue * dest_value) {
   g_value_set_boxed (dest_value, bytes);
 }
 
+G_STATIC_ASSERT (sizeof (gdouble) == 8);
+G_STATIC_ASSERT (sizeof (gfloat) == 4);
+G_STATIC_ASSERT (sizeof (gint) == 4);
+G_STATIC_ASSERT (sizeof (gboolean) == 4);
+
 static void
 _double2bytes (const GValue * src_value, GValue * dest_value) {
   gdouble d;
@@ -99,7 +104,7 @@ _uint2bytes (const GValue * src_value, GValue * dest_value) {
   guint u;
   GBytes *bytes;
 
-  u = g_value_get_int (src_value);
+  u = g_value_get_uint (src_value);
   bytes = g_bytes_new (&u, sizeof (guint));
 
   g_value_set_boxed (dest_value, bytes);
@@ -119,7 +124,7 @@ _boolean2bytes (const GValue * src_value, GValue * dest_value) {
 static GBytes *
 lba_remote_object_server_value2bytes (const GValue * src_val) {
   GBytes *ret = NULL;
-  GValue dst_val = { 0 };
+  GValue dst_val = G_VALUE_INIT;
 
   if (G_VALUE_TYPE (src_val) == G_TYPE_BYTES) {
     ret = g_value_get_boxed (src_val);
@@ -154,7 +159,7 @@ lba_remote_object_server_source_param_notify (GObject * gobject,
                                               GParamSpec * pspec,
                                               gpointer user_data) {
   const gchar *pspec_name;
-  GValue src_val = { 0 };
+  GValue src_val = G_VALUE_INIT;
   GBytes *bytes = NULL;
   const gchar *type_name;
   LbaRemoteObjectServer *self = (LbaRemoteObjectServer *) user_data;
@@ -231,64 +236,236 @@ exit:
 
 static gboolean
 lba_remote_object_server_send_source_header (LbaRemoteObjectServer * self) {
-  /* GError *err = NULL; */
-  GType t;
+  GError *err = NULL;
+  GType t,
+    ti;
+  GByteArray *msg;
+  GBytes *msg_bytes;
+  guchar magic[4] = { 'd', 'u', 'm', 'p' };
+  guint8 class_name_size;
+  guint8 num_signals = 0;
 
   t = G_OBJECT_TYPE (self->source);
 
-  /* Now we connect to all the signals and notifications, so each time
-   * source notifies, we will send notification to the bytestream*/
+  LBA_LOG ("Dumping gtype %s", g_type_name (t));
+
+  msg = g_byte_array_new ();
+  /* Class name actually doesn't matter, but we will still dump it,
+   * just for information.
+
+   NOTE: "notify" signal is not included into the dump,
+   because when the parameter changes, RemoteObjectClient emits
+   it anyway.
+
+   Protocol is:
+   [dump] - magic, 4 bytes
+   [class name size] - 1 byte
+   [class name] - zero-terminated string
+   [number of signals] - 1 byte
+
+   for each signal:
+   [signal name size] - 1 byte
+   [signal name] - zero-terminated string
+   [signal id] - 4 bytes
+   [signal flags] - 4 bytes
+   [gtype name size] - 1 byte
+   [gtype name] - name of return type
+
+   [number of parameters] - 1 byte
+   for each parameter:
+   [gtype name size] - 1 byte
+   [gtype name] - zero-terminated string
+
+   [number of properties] - 1 byte
+   for each property:
+   [property name size] - 1 byte
+   [property name] - zero-terminated string
+   [gtype name size] - 1 byte
+   [gtype name] - zero-terminated string
+   [current value size] - 4 bytes
+   [current value] - bytes
+
+   FIXME: min/max ? flags? default value?
+   */
+
+  /* [dump] */
+  g_byte_array_append (msg, magic, 4);
+
+  /* [class name size] - 1 byte */
+  class_name_size = strlen (g_type_name (t)) + 1;
+  g_byte_array_append (msg, &class_name_size, 1);
+
+  /* [class name] - zero-terminated string */
+  g_byte_array_append (msg, (guchar *) g_type_name (t), class_name_size);
+
+  /* Count number of signals */
+  for (ti = t; ti; ti = g_type_parent (ti)) {
+    guint *signals,
+      s,
+      n_signals;
+    guint has_notify = 0;
+
+    signals = g_signal_list_ids (ti, &n_signals);
+
+    for (s = 0; s < n_signals; s++) {
+      GSignalQuery query;
+
+      g_signal_query (signals[s], &query);
+      if (0 == g_strcmp0 (query.signal_name, "notify")) {
+        has_notify = 1;
+      }
+    }
+
+    num_signals += n_signals - has_notify;
+
+    g_free (signals);
+  }
+
+  LBA_LOG ("Number of signals in dump: %u", num_signals);
+
+  /* [number of signals] - 1 byte */
+  g_byte_array_append (msg, &num_signals, 1);
+
+  /* for each signal.. */
+  for (ti = t; ti; ti = g_type_parent (ti)) {
+    guint *signals,
+      s,
+      n_signals;
+
+    signals = g_signal_list_ids (ti, &n_signals);
+
+    for (s = 0; s < n_signals; s++) {
+      GSignalQuery query;
+      guint8 signal_name_size,
+        gtype_size,
+        params_num;
+      guint32 signal_id,
+        signal_flags,
+        p;
+
+      g_signal_query (signals[s], &query);
+      if (0 == g_strcmp0 (query.signal_name, "notify")) {
+        LBA_LOG ("skipping 'notify' signal");
+        g_assert (ti == G_TYPE_OBJECT);
+        continue;
+      }
+
+      LBA_LOG ("Dumping signal %s (%u params, id=%d)", query.signal_name,
+               query.n_params, query.signal_id);
+
+      /* [signal name size] - 1 byte */
+      signal_name_size = strlen (query.signal_name) + 1;
+      g_byte_array_append (msg, &signal_name_size, 1);
+
+      /* [signal name] - string */
+      g_byte_array_append (msg, (guchar *) query.signal_name, signal_name_size);
+
+      /* [signal id] - 4 bytes */
+      signal_id = GUINT32_TO_BE (query.signal_id);
+      g_byte_array_append (msg, (guchar *) & signal_id, 4);
+
+      /* [signal flags] - 4 bytes */
+      signal_flags = GUINT32_TO_BE (query.signal_flags);
+      g_byte_array_append (msg, (guchar *) & signal_flags, 4);
+
+      /* [gtype name size] - 1 byte */
+      gtype_size = strlen (g_type_name (query.return_type)) + 1;
+      g_byte_array_append (msg, &gtype_size, 1);
+
+      /* [gtype name] - name of return type */
+      g_byte_array_append (msg, (guchar *) g_type_name (query.return_type),
+                           gtype_size);
+
+      /* [number of parameters] - 1 byte */
+      params_num = query.n_params;
+      g_byte_array_append (msg, &params_num, 1);
+
+      /* for each parameter: */
+      for (p = 0; p < query.n_params; p++) {
+        /* [gtype name size] - 1 byte */
+        gtype_size = strlen (g_type_name (query.param_types[p])) + 1;
+        g_byte_array_append (msg, &gtype_size, 1);
+
+        /* [gtype name] - string */
+        g_byte_array_append (msg, (guchar *) g_type_name (query.param_types[p]),
+                             gtype_size);
+      }
+    }
+
+    g_free (signals);
+  }
+
   {
     GParamSpec **properties;
     guint n_properties,
       p;
-    guint *signals,
-      s,
-      n_signals;
     GObjectClass *klass;
+    guint8 props_num;
 
     klass = g_type_class_peek (t);
 
     properties = g_object_class_list_properties (klass, &n_properties);
 
-    /* Connect to notify::property  */
+    LBA_LOG ("Properties in dump %u", n_properties);
+
+    /* [number of properties] - 1 byte */
+    props_num = n_properties;
+    g_byte_array_append (msg, &props_num, 1);
+
+    /* for each property: */
     for (p = 0; p < n_properties; p++) {
-      GParamSpec *prop;
+      guint8 type_name_size,
+        prop_name_size;
+      GValue value = G_VALUE_INIT;
+      GBytes *value_bytes;
+      guint32 value_bytes_size_be;
 
-      prop = properties[p];
+      LBA_LOG ("Dumping property [%s %s]", g_type_name (properties[p]->value_type),
+               properties[p]->name);
 
-      LBA_LOG ("%p", prop);
+      /* [property name size] - 1 byte */
+      prop_name_size = strlen (properties[p]->name) + 1;
+      g_byte_array_append (msg, &prop_name_size, 1);
+
+      /* [property name] - zero-terminated string */
+      g_byte_array_append (msg, (guchar *) properties[p]->name, prop_name_size);
+
+      /* [gtype name size] - 1 byte */
+      type_name_size = strlen (g_type_name (properties[p]->value_type)) + 1;
+      g_byte_array_append (msg, &type_name_size, 1);
+
+      /* [gtype name] - zero-terminated string */
+      g_byte_array_append (msg, (guchar *) g_type_name (properties[p]->value_type),
+                           type_name_size);
+
+      /* We also should dump current value */
+      g_object_get_property (self->source, properties[p]->name, &value);
+      value_bytes = lba_remote_object_server_value2bytes (&value);
+      g_assert (value_bytes);   /* FIXME: we definitelly should just skip untransformable properties and signals in future */
+
+      /* [current value size] */
+      value_bytes_size_be = GUINT32_TO_BE (g_bytes_get_size (value_bytes));
+      g_byte_array_append (msg, (guchar *) & value_bytes_size_be, 4);
+
+      /* [current value] */
+      g_byte_array_append (msg, g_bytes_get_data (value_bytes, NULL),
+                           g_bytes_get_size (value_bytes));
+
+      g_bytes_unref (value_bytes);
+      g_value_unset (&value);
     }
 
-    /* Iterate signals */
-    {
-      for (; t; t = g_type_parent (t)) {
+    g_free (properties);
+  }
 
-        signals = g_signal_list_ids (t, &n_signals);
+  msg_bytes = g_byte_array_free_to_bytes (msg);
+  g_assert (msg_bytes);
 
-        for (s = 0; s < n_signals; s++) {
-          GSignalQuery query;
-          GTypeQuery t_query;
-
-          g_signal_query (signals[s], &query);
-          g_type_query (t, &t_query);
-
-          if (t_query.type == 0) {
-            g_warning ("Error quering type");
-            break;
-          }
-//          g_printf ("%s%s:: %s (* %s) ", tab, t_query.type_name,
-//                    g_type_name (query.return_type), query.signal_name);
-
-          for (p = 0; p < query.n_params; p++) {
-            //g_printf ("%s%s", p ? ", " : "", g_type_name (query.param_types[p]));
-          }
-        }
-
-        g_free (signals);
-      }
-    }
-
+  /* Now we finally write the dump */
+  LBA_LOG ("Writing %" G_GSIZE_FORMAT " bytes", g_bytes_get_size (msg_bytes));
+  if (!lba_byte_stream_write_gbytes (self->output_stream, msg_bytes, &err)) {
+    g_critical ("Couldn't write object dump: [%s]", err ? err->message : "");
+    g_error_free (err);
   }
 
   return TRUE;
@@ -329,6 +506,7 @@ lba_remote_object_server_signal_cb (GClosure * closure,
     /* The protocol message is:
        [sign] - message magic of "signal", 4 bytes
        [number of params] - number of parameters, 1 byte
+       [signal id] - 4 bytes
 
        .. then for each param. GTypes are already known from the dump sent on start.
 
@@ -343,6 +521,7 @@ lba_remote_object_server_signal_cb (GClosure * closure,
     guchar sign_magic[4] = { 's', 'i', 'g', 'n' };
     guint8 msg_number_of_params = n_param_values;
     GError *err = NULL;
+    guint32 sig_id;
 
     msg = g_byte_array_new ();
 
@@ -350,6 +529,10 @@ lba_remote_object_server_signal_cb (GClosure * closure,
     g_byte_array_append (msg, sign_magic, 4);
     /* [number of params] */
     g_byte_array_append (msg, &msg_number_of_params, 1);
+
+    /* [signal id] */
+    sig_id = GUINT32_TO_BE (signal_ctx->signal_query.signal_id);
+    g_byte_array_append (msg, (guchar *) & sig_id, 2);
 
     /* We skip the first parameter because it is an object of the source */
     for (p = 1; p < n_param_values; p++) {
@@ -374,7 +557,7 @@ lba_remote_object_server_signal_cb (GClosure * closure,
     /* Finally, write the bytes */
     LBA_LOG ("Writing %" G_GSIZE_FORMAT " bytes", g_bytes_get_size (msg_bytes));
     if (!lba_byte_stream_write_gbytes (self->output_stream, msg_bytes, &err)) {
-      g_critical ("Couldn't write param header: [%s]", err ? err->message : "");
+      g_critical ("Couldn't write signal message: [%s]", err ? err->message : "");
       g_error_free (err);
     }
   }
@@ -487,11 +670,9 @@ lba_remote_object_server_start (LbaRemoteObjectServer * self) {
       g_free (prop_notify_str);
     }
 
-    /* Iterate signals.
-     * FIXME: shoud we connect to the ACTION signals?
-     * O sea, what if someone triggers an action from an outside..
-     * I guess we shouldn't.
-     */
+    g_free (properties);
+
+    /* Iterate signals. */
     {
       for (; t; t = g_type_parent (t)) {
         guint notify_signal_id = 0;
@@ -590,55 +771,6 @@ lba_remote_object_server_set_property (GObject * object,
 
     if (self->source) {
       g_object_ref (self->source);
-
-      // Here we must:
-      // 1) Dump object's class: client remote object
-      // decides to connect, the first thing we do is
-      // send the class, so client could instantiate an
-      // object with the same properties and signals.
-
-      // 2) connect to all the event signals. If source object
-      // emits an event signal, we send it to the client.
-      // Also connect to all the notify:: signals for the same
-      // reason.
-
-      // 3) start listening on the data input: this input is
-      // can trigger setting the properties or calling action
-      // signals
-
-      // ------------------------------------------------
-
-      // So, we basically need:
-      // - one data output point to write
-      // - one data input point to read
-      // For the beginning it can be just unix pipes
-      // Perfect chance to play with GIO.
-
-      // ------------------------------------------------
-      // Now let's define a protocol to dump the class.
-      // [KlassDump0000000] - magic number, 16 bytes
-      // [Signal0000000000] - magic says there's a signal, 16 bytes
-      // [flags] - 4 bytes. (reserved)
-      // [Number of parameters] - 2 bytes. Last bit says if it has return value or not.
-      // (optionally) [name of GType of the return value: size / string]
-      // [name of GType of the parameter: size / string]
-
-      // write (output, "KlassDump0000000", 16);
-      // for (;;) {
-      //  write (output, "Signal0000000000", 16);
-      //  write (output, &num_params, 2);
-      //  for (;;) {
-      //    write (output, &string_size, 2);
-      //    write (output, string, string_size);
-      //  }
-      // }
-
-      // How do we write?
-      // We have some objects of type LbaStream: output-stream, input-stream
-      // LbaStream has actions "write", "read", "seek", and has event "have-data"
-      // So, we call something like
-      // g_signal_emit_by_name (self->output_stream, "write", data, size, &ret);
-
     }
 
     break;
@@ -661,16 +793,6 @@ lba_remote_object_server_get_property (GObject * object,
     g_value_set_object (value, self->output_stream);
     break;
   case PROP_SOURCE:
-    // Probably other side (client) could get the "ghost" object through
-    // getting this property (if the connection is established).
-
-    // If so, what we need:
-    // 1) First receive class dump, and build a new class.
-    // 2) Create an object of that class
-    // 3) listen on the input, and emit event signals, set properties,
-    // so the object also emits notify:: .
-    // 4) On action signals dump the data and send it to the output
-    // 5) Same when someone sets object's properties.
     g_value_set_object (value, self->source);
     break;
   default:
