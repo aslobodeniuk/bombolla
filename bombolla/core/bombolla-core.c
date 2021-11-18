@@ -93,12 +93,16 @@ lba_core_stop (LbaCore * self) {
   s = g_idle_source_new ();
   g_source_set_priority (s, G_PRIORITY_HIGH);
 
-  g_source_attach (s, NULL);
   g_source_set_callback (s, lba_core_quit_msg, self, NULL);
+  g_source_attach (s, NULL);
 
   /* Wait for main loop to quit */
   g_thread_join (self->mainloop_thr);
+  self->mainloop_thr = NULL;
+
   g_source_destroy (s);
+  g_source_unref (s);
+
   g_main_loop_unref (self->mainloop);
   self->mainloop = NULL;
   self->started = FALSE;
@@ -203,8 +207,9 @@ lba_core_scan (LbaCore * self, const gchar * path) {
 
       dir = g_dir_open (path, 0, &err);
       if (!dir) {
-        g_warning ("%s", err->message);
-        g_error_free (err);
+        g_warning ("Couldn't open %s: %s", path, err ? err->message : "");
+        if (err)
+          g_error_free (err);
         return;
       }
 
