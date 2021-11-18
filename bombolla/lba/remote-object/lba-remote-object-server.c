@@ -124,6 +124,7 @@ lba_remote_object_server_source_param_notify (GObject * gobject,
     message = g_bytes_new_take (msg, msg_size);
 
     /* Finally, write the bytes */
+    LBA_LOG ("Writing %u bytes", msg_size);
     if (!lba_byte_stream_write_gbytes (self->output_stream, message, &err)) {
       g_critical ("Couldn't write param header: [%s]", err ? err->message : "");
       g_error_free (err);
@@ -138,8 +139,132 @@ exit:
 
 static gboolean
 lba_remote_object_server_send_source_header (LbaRemoteObjectServer * self) {
-  /* TODO */
+  /* GError *err = NULL; */
+  GType t;
+
+  t = G_OBJECT_TYPE (self->source);
+
+  /* Now we connect to all the signals and notifications, so each time
+   * source notifies, we will send notification to the bytestream*/
+  {
+    GParamSpec **properties;
+    guint n_properties,
+      p;
+    guint *signals,
+      s,
+      n_signals;
+    GObjectClass *klass;
+
+    klass = g_type_class_peek (t);
+
+    properties = g_object_class_list_properties (klass, &n_properties);
+
+    /* Connect to notify::property  */
+    for (p = 0; p < n_properties; p++) {
+      GParamSpec *prop;
+
+      prop = properties[p];
+
+      LBA_LOG ("%p", prop);
+    }
+
+    /* Iterate signals */
+    {
+      for (; t; t = g_type_parent (t)) {
+
+        signals = g_signal_list_ids (t, &n_signals);
+
+        for (s = 0; s < n_signals; s++) {
+          GSignalQuery query;
+          GTypeQuery t_query;
+
+          g_signal_query (signals[s], &query);
+          g_type_query (t, &t_query);
+
+          if (t_query.type == 0) {
+            g_warning ("Error quering type");
+            break;
+          }
+//          g_printf ("%s%s:: %s (* %s) ", tab, t_query.type_name,
+//                    g_type_name (query.return_type), query.signal_name);
+
+          for (p = 0; p < query.n_params; p++) {
+            //g_printf ("%s%s", p ? ", " : "", g_type_name (query.param_types[p]));
+          }
+        }
+
+        g_free (signals);
+      }
+    }
+
+  }
+
   return TRUE;
+}
+
+typedef struct _LbaRemoteObjectServerSignalCtx {
+  LbaRemoteObjectServer *self;
+  GSignalQuery signal_query;
+} LbaRemoteObjectServerSignalCtx;
+
+static void
+lba_remote_object_server_signal_cb (GClosure * closure,
+                                    GValue * return_value,
+                                    guint n_param_values,
+                                    const GValue * param_values,
+                                    gpointer invocation_hint,
+                                    gpointer marshal_data) {
+  /* LbaRemoteObjectServer * self; */
+  LbaRemoteObjectServerSignalCtx *signal_ctx;
+
+  /* Execute stored commands */
+  LBA_LOG ("signal with %d parameters\n", n_param_values);
+
+  /* Closure data is a "user data" */
+  signal_ctx = closure->data;
+  /* self = signal_ctx->self; */
+
+  LBA_LOG ("Signal %s", signal_ctx->signal_query.signal_name);
+
+  /* FIXME: we need to receive the return value, so byte stream has to be a
+   * "connection". Maybe we need an LbaConnection object, that would have various
+   * bytestreams inside.. */
+
+  {
+    /* The protocol message is:
+       [sign] - message magic of "signal", 4 bytes
+       [number of params] - number of parameters, 1 byte
+       [param name] - zero-terminated string
+       [bytes] - new parameter value
+     */
+
+  }
+}
+
+static void
+lba_remote_object_passthrough_marshal (GClosure * closure,
+                                       GValue * return_value,
+                                       guint n_param_values,
+                                       const GValue * param_values,
+                                       gpointer invocation_hint,
+                                       gpointer marshal_data) {
+  /* this is our "passthrough" marshaller. We could also just omit
+   * the closure's callback and do what we want here, given that it's passthrough, but
+   * that is a hack */
+
+  GClosureMarshal callback;
+  GCClosure *cc = (GCClosure *) closure;
+
+  callback = (GClosureMarshal) (marshal_data ? marshal_data : cc->callback);
+
+  callback (closure,
+            return_value,
+            n_param_values, param_values, invocation_hint, marshal_data);
+}
+
+static void
+lba_remote_object_server_free_signal_ctx (gpointer data, GClosure * closure) {
+  g_free (data);
 }
 
 /* FIXME: should return gboolean ?? */
@@ -201,6 +326,8 @@ lba_remote_object_server_start (LbaRemoteObjectServer * self) {
       prop = properties[p];
       prop_notify_str = g_strdup_printf ("notify::%s", g_param_spec_get_name (prop));
 
+      LBA_LOG ("Connecting to %s", prop_notify_str);
+
       g_signal_connect_after (self->source, prop_notify_str,
                               G_CALLBACK
                               (lba_remote_object_server_source_param_notify), self);
@@ -208,35 +335,67 @@ lba_remote_object_server_start (LbaRemoteObjectServer * self) {
       g_free (prop_notify_str);
     }
 
-    /* Iterate signals */
+    /* Iterate signals.
+     * FIXME: shoud we connect to the ACTION signals?
+     * O sea, what if someone triggers an action from an outside..
+     * I guess we shouldn't.
+     */
     {
       for (; t; t = g_type_parent (t)) {
+        guint notify_signal_id = 0;
+
+        if (t == G_TYPE_OBJECT) {
+          notify_signal_id = g_signal_lookup ("notify", t);
+        }
 
         signals = g_signal_list_ids (t, &n_signals);
 
         for (s = 0; s < n_signals; s++) {
           GSignalQuery query;
-          GTypeQuery t_query;
+          GClosure *closure;
+          LbaRemoteObjectServerSignalCtx *signal_ctx;
+
+          /* Avoid connecting to "notify" signal, we iterate properties for this */
+          if (notify_signal_id == signals[s])
+            continue;
 
           g_signal_query (signals[s], &query);
-          g_type_query (t, &t_query);
 
-          if (t_query.type == 0) {
-            g_warning ("Error quering type");
-            break;
+          if (query.signal_flags & G_SIGNAL_ACTION) {
+            LBA_LOG ("Skipping action signal %s", query.signal_name);
           }
-//          g_printf ("%s%s:: %s (* %s) ", tab, t_query.type_name,
-//                    g_type_name (query.return_type), query.signal_name);
 
-          for (p = 0; p < query.n_params; p++) {
-//            g_printf ("%s%s", p ? ", " : "", g_type_name (query.param_types[p]));
-          }
+          LBA_LOG ("Connecting to %s", query.signal_name);
+
+          /* We need to pass both self and signal info to the callback */
+          signal_ctx = g_new0 (LbaRemoteObjectServerSignalCtx, 1);
+          signal_ctx->signal_query = query;
+          signal_ctx->self = self;
+
+          closure =
+              g_cclosure_new (G_CALLBACK (lba_remote_object_server_signal_cb),
+                              signal_ctx, lba_remote_object_server_free_signal_ctx);
+
+          /* Set our custom passthrough marshaller */
+          g_closure_set_marshal (closure, lba_remote_object_passthrough_marshal);
+
+          /* Won't closure be unreffed once we disconnect the signal??  */
+          g_object_watch_closure (G_OBJECT (self), closure);
+
+          /* Connect our super closure. */
+          g_signal_connect_closure_by_id (self->source, signals[s], 0, closure,
+                                          /* Execute after default handler = FALSE.
+                                           * We suppose that default handler can emit more signals,
+                                           * so if we execute after, it may reorder a little bit the emissions
+                                           */
+                                          FALSE);
+
+          /* unref closure ?? */
         }
 
         g_free (signals);
       }
     }
-
   }
 }
 
@@ -260,10 +419,8 @@ lba_remote_object_server_set_property (GObject * object,
         break;
       }
 
-      if (self->output_stream) {
-        /* FIXME: need some teardown? */
-        g_object_unref (self->output_stream);
-      }
+      /* Changing the output on fly is not supported yet */
+      g_assert (!self->output_stream);
 
       self->output_stream = (LbaByteStream *) obj;
 
@@ -274,9 +431,8 @@ lba_remote_object_server_set_property (GObject * object,
     break;
 
   case PROP_SOURCE:
-    if (self->source) {
-      g_critical ("Changing the source on fly is not supported yet");
-    }
+    /* Changing the source on fly is not supported yet */
+    g_assert (!self->source);
 
     self->source = g_value_get_object (value);
 
@@ -378,6 +534,20 @@ lba_remote_object_server_init (LbaRemoteObjectServer * self) {
 
 static void
 lba_remote_object_server_dispose (GObject * gobject) {
+  LbaRemoteObjectServer *self = (LbaRemoteObjectServer *) gobject;
+
+  /* FIXME: lock mutex */
+
+  if (self->source) {
+    g_signal_handlers_disconnect_by_data (self->source, self);
+    g_object_unref (self->source);
+  }
+
+  if (self->output_stream) {
+    /* FIXME should we stop here?? */
+    lba_byte_stream_close (self->output_stream);
+    g_object_unref (self->output_stream);
+  }
 
   G_OBJECT_CLASS (lba_remote_object_server_parent_class)->dispose (gobject);
 }
