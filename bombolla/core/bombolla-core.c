@@ -125,6 +125,7 @@ lba_core_dispose (GObject * gobject) {
 
   if (self->ctx) {
     if (self->ctx->objects) {
+      g_hash_table_remove_all (self->ctx->objects);
       g_hash_table_unref (self->ctx->objects);
     }
     g_free (self->ctx);
