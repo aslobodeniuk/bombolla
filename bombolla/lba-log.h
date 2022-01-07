@@ -23,7 +23,7 @@
 #  include "bombolla/lba-plugin-system.h"
 
 #  define LBA_LOG(form, ...) do {                                       \
-    g_printf ("[LBA %p %s %s] " form "\n",                              \
+    g_log("LBA", G_LOG_LEVEL_MESSAGE,  "[%p %s %s] " form,              \
         g_thread_self (), global_lba_plugin_name, __func__,  ##__VA_ARGS__); \
   } while (0)
 
