@@ -252,40 +252,40 @@ lba_remote_object_server_send_source_header (LbaRemoteObjectServer * self) {
   msg = g_byte_array_new ();
   /* Class name actually doesn't matter, but we will still dump it,
    * just for information.
-
-   NOTE: "notify" signal is not included into the dump,
-   because when the parameter changes, RemoteObjectClient emits
-   it anyway.
-
-   Protocol is:
-   [dump] - magic, 4 bytes
-   [class name size] - 1 byte
-   [class name] - zero-terminated string
-   [number of signals] - 1 byte
-
-   for each signal:
-   [signal name size] - 1 byte
-   [signal name] - zero-terminated string
-   [signal id] - 4 bytes
-   [signal flags] - 4 bytes
-   [gtype name size] - 1 byte
-   [gtype name] - name of return type
-
-   [number of parameters] - 1 byte
-   for each parameter:
-   [gtype name size] - 1 byte
-   [gtype name] - zero-terminated string
-
-   [number of properties] - 1 byte
-   for each property:
-   [property name size] - 1 byte
-   [property name] - zero-terminated string
-   [gtype name size] - 1 byte
-   [gtype name] - zero-terminated string
-   [current value size] - 4 bytes
-   [current value] - bytes
-
-   FIXME: min/max ? flags? default value?
+   *
+   * NOTE: "notify" signal is not included into the dump,
+   * because when the parameter changes, RemoteObjectClient emits
+   * it anyway.
+   *
+   * Protocol is:
+   * [dump] - magic, 4 bytes
+   * [class name size] - 1 byte
+   * [class name] - zero-terminated string
+   * [number of signals] - 1 byte
+   *
+   * for each signal:
+   *   [signal name size] - 1 byte
+   *   [signal name] - zero-terminated string
+   *   [signal id] - 4 bytes
+   *   [signal flags] - 4 bytes
+   *   [gtype name size] - 1 byte
+   *   [gtype name] - name of return type
+   *
+   *   [number of parameters] - 1 byte
+   *   for each parameter:
+   *     [gtype name size] - 1 byte
+   *     [gtype name] - zero-terminated string
+   *
+   *  [number of properties] - 1 byte
+   *  for each property:
+   *    [property name size] - 1 byte
+   *    [property name] - zero-terminated string
+   *    [gtype name size] - 1 byte
+   *    [gtype name] - zero-terminated string
+   *    [current value size] - 4 bytes
+   *    [current value] - bytes
+   *
+   *    FIXME: min/max ? flags? default value?
    */
 
   /* [dump] */
@@ -564,6 +564,11 @@ lba_remote_object_server_signal_cb (GClosure * closure,
 }
 
 static void
+lba_remote_object_server_free_signal_ctx (gpointer data, GClosure * closure) {
+  g_free (data);
+}
+
+static void
 lba_remote_object_passthrough_marshal (GClosure * closure,
                                        GValue * return_value,
                                        guint n_param_values,
@@ -582,11 +587,6 @@ lba_remote_object_passthrough_marshal (GClosure * closure,
   callback (closure,
             return_value,
             n_param_values, param_values, invocation_hint, marshal_data);
-}
-
-static void
-lba_remote_object_server_free_signal_ctx (gpointer data, GClosure * closure) {
-  g_free (data);
 }
 
 /* FIXME: should return gboolean ?? */
