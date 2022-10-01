@@ -1,9 +1,0 @@
-bin_PROGRAMS = bombolla-shell
-
-bombolla_shell_SOURCES = bombolla-shell.c
-bombolla_shell_CFLAGS = $(COMMON_CFLAGS) $(GOBJ_CFLAGS) $(ASAN_CFLAGS)
-bombolla_shell_LDADD = $(GOBJ_LIBS) \
-  $(top_builddir)/bombolla/core/libbombolla-core.la \
-  $(ASAN_LDFLAGS)
-
-EXTRA_DIST = ../../autogen.sh

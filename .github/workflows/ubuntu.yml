@@ -12,14 +12,9 @@ jobs:
     - name: bootstrap
       run: |
         sudo apt-get update -qq
-        DEBIAN_FRONTEND=noninteractive sudo apt-get install -qq libglib2.0-dev libsoup2.4-dev libpango1.0-dev libgjs-dev libpython3-dev automake pkg-config autopoint gtk-doc-tools libx11-xcb-dev freeglut3-dev libxfixes-dev libxdamage-dev libxcomposite-dev libxrandr-dev libglew-dev indent valac meson ninja-build
+        DEBIAN_FRONTEND=noninteractive sudo apt-get install -qq libglib2.0-dev libsoup2.4-dev libgjs-dev libpython3-dev pkg-config indent valac ninja-build libcogl-pango-dev python3-pip python3-setuptools python3-wheel
+        sudo pip install meson
     - name: Checkout repository
       uses: actions/checkout@v2
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
-    - name: configure
-      run: ./autogen.sh
-    - name: build
-      run: make install
-    - name: vaildate
-      run: ./jihn --go-ahead
+    - name: validate
+      run: ./jihn --full-check
