@@ -57,6 +57,9 @@ typedef struct _LbaCoreClass {
 
 G_DEFINE_TYPE (LbaCore, lba_core, G_TYPE_OBJECT);
 
+/* HACK: Needed to use LBA_LOG */
+static const gchar *global_lba_plugin_name = "LbaCore";
+
 static gpointer
 lba_core_mainloop (gpointer data) {
   LbaCore *self = (LbaCore *) data;
@@ -376,6 +379,3 @@ lba_core_class_init (LbaCoreClass * klass) {
                                                         G_PARAM_STATIC_STRINGS |
                                                         G_PARAM_READWRITE));
 }
-
-/* Just for logging */
-BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (lba_core);

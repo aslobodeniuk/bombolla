@@ -1,7 +1,12 @@
-vala_example = library('lba-vala-example',
+vala_example_test_dep = declare_dependency(
   sources: files(['plugin-in-vala.vala', 'register-plugin.c']),
-  c_args: ['-Wno-unused-variable'],
+  compile_args: ['-Wno-unused-variable'],
   dependencies: bombolla_dep
+)
+
+vala_example = library(
+  'lba-vala-example',
+  dependencies: vala_example_test_dep
 )
 
 subdir('test')

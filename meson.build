@@ -9,10 +9,15 @@ bombolla_dep = declare_dependency(
   compile_args: ['-Wall', '-Werror']
 )
 
+asan_dep = declare_dependency(
+  compile_args: ['-fsanitize=address', '-fno-omit-frame-pointer', '-g'],
+  link_args: ['-fsanitize=address'],
+)
+
 cc = meson.get_compiler('c')
 gmodule_dep = dependency('gmodule-2.0')
 
-run_command('sh', '-c', 'cp jihn .git/hooks/pre-commit')
-
 subdir('bombolla')
 subdir('examples')
+
+run_command('sh', '-c', 'cp jihn .git/hooks/pre-commit')

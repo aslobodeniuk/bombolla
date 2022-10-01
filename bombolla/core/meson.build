@@ -3,9 +3,14 @@ src = files(['bombolla-core.c',
              'bombolla-command-on.c',
              'bombolla-command-set.c'])
 
+# To share statically with the test that will build it with asan
+bombolla_core_dep = declare_dependency(
+  sources: src,
+  dependencies: [bombolla_dep, gmodule_dep]
+)
+
 bombolla_core = shared_library('bombolla-core',
-               sources: src,
-               dependencies: [bombolla_dep, gmodule_dep]
-              )
+                               dependencies: bombolla_core_dep
+                              )
 
 subdir ('tests')

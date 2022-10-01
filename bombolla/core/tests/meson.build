@@ -1,6 +1,5 @@
 exe = executable('bombolla-core-test', 'bombolla-core-test.c',
-                 dependencies : [bombolla_dep],
-                 link_with: bombolla_core,
+                 dependencies : [bombolla_core_dep, asan_dep]
                 )
 
 env = environment()
