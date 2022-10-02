@@ -45,6 +45,7 @@ lba_command_create (BombollaContext * ctx, gchar ** tokens) {
     GObject *obj = g_object_new (obj_type, NULL);
 
     if (obj) {
+      g_object_set_data (obj, "bombolla-commands-ctx", ctx);
       g_hash_table_insert (ctx->objects, (gpointer) g_strdup (varname), obj);
 
       /* FIXME: LBA_LOG */
@@ -227,6 +228,32 @@ lba_command_dump (BombollaContext * ctx, gchar ** tokens) {
   return TRUE;
 }
 
+static void
+lba_core_obj_has_binding_weak_ref (gpointer data, GObject * where_the_object_was) {
+  BombollaContext *ctx;
+  gpointer binding;
+
+  ctx =
+      (BombollaContext *) g_object_get_data (where_the_object_was,
+                                             "bombolla-commands-ctx");
+  LBA_ASSERT (ctx != NULL);
+
+  LBA_LOG ("Removing the binding(%s) due to destruction of the object",
+           (gchar *) data);
+
+  binding = g_hash_table_lookup (ctx->bindings, data);
+  if (binding) {
+    gpointer stolen_key;
+
+    /* Binding is already invalid at this moment, because the object is destroyed */
+    LBA_ASSERT (g_hash_table_steal_extended (ctx->bindings,
+                                             data, &stolen_key, NULL));
+    g_free (stolen_key);
+  }
+
+  g_free (data);
+}
+
 static gboolean
 lba_command_bind (BombollaContext * ctx, gchar ** tokens) {
   gchar *prop_name1 = NULL;
@@ -295,6 +322,10 @@ lba_command_bind (BombollaContext * ctx, gchar ** tokens) {
 
     LBA_LOG ("Adding monodirectional binding [%s]<---[%s]", tokens[1], tokens[2]);
     binding = g_object_bind_property (obj2, prop_name2, obj1, prop_name1, flags);
+    g_object_weak_ref (obj2, lba_core_obj_has_binding_weak_ref,
+                       g_strdup (binding_name));
+    g_object_weak_ref (obj1, lba_core_obj_has_binding_weak_ref,
+                       g_strdup (binding_name));
     g_hash_table_insert (ctx->bindings, binding_name, binding);
     LBA_LOG ("Added binding %s", binding_name);
     binding_name = NULL;
@@ -310,6 +341,10 @@ lba_command_bind (BombollaContext * ctx, gchar ** tokens) {
   }
 
   binding = g_object_bind_property (obj1, prop_name1, obj2, prop_name2, flags);
+  g_object_weak_ref (obj1, lba_core_obj_has_binding_weak_ref,
+                     g_strdup (binding_name));
+  g_object_weak_ref (obj2, lba_core_obj_has_binding_weak_ref,
+                     g_strdup (binding_name));
   g_hash_table_insert (ctx->bindings, binding_name, binding);
   LBA_LOG ("Added binding %s", binding_name);
   binding_name = NULL;

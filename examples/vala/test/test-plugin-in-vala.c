@@ -43,6 +43,26 @@ fixture_tear_down (Fixture * fixture, gconstpointer user_data) {
 }
 
 static void
+on (Fixture * fixture, gconstpointer user_data) {
+  const gchar commands[] = {
+    /* *INDENT-OFF* */
+    "create ValaTest t1\n"
+    "create ValaTest t2\n"
+    "set t1.str-rw 0.1234\n"
+    "bind t1.str-rw t2.float-rw\n"
+    "on t1.notify::str-rw\n"
+    "call t1.say_hello\n"
+    "end\n"
+    "set t2.float-rw 0.3456\n"
+    "destroy t1\n"
+    "destroy t2\n"
+    /* *INDENT-ON* */
+  };
+
+  g_signal_emit_by_name (fixture->obj, "execute", commands);
+}
+
+static void
 bindings (Fixture * fixture, gconstpointer user_data) {
   const gchar commands[] = {
     /* *INDENT-OFF* */
@@ -58,6 +78,8 @@ bindings (Fixture * fixture, gconstpointer user_data) {
     "bind t1.float-rw t2.str-rw\n"
     "set t2.str-rw 1.234\n"
     "set t1.float-rw 0.999\n"
+    "destroy t1\n"
+    "destroy t2\n"
     /* *INDENT-ON* */
   };
 
@@ -83,12 +105,16 @@ plugin_in_vala (Fixture * fixture, gconstpointer user_data) {
 int
 main (int argc, char *argv[]) {
   g_test_init (&argc, &argv, NULL);
+  if (0) {
+    g_test_add ("/languages/vala/plugin", Fixture, "some-user-data",
+                fixture_set_up, plugin_in_vala, fixture_tear_down);
 
-  g_test_add ("/languages/vala/plugin", Fixture, "some-user-data",
-              fixture_set_up, plugin_in_vala, fixture_tear_down);
+    g_test_add ("/core/commands/bind", Fixture, "some-user-data",
+                fixture_set_up, bindings, fixture_tear_down);
+  }
 
-  g_test_add ("/core/commands/bind", Fixture, "some-user-data",
-              fixture_set_up, bindings, fixture_tear_down);
+  g_test_add ("/core/commands/on", Fixture, "some-user-data",
+              fixture_set_up, on, fixture_tear_down);
 
   return g_test_run ();
 }

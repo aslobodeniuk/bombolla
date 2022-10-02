@@ -146,7 +146,7 @@ lba_core_dispose (GObject * gobject) {
 }
 
 static gboolean
-lba_core_proccess_command (GObject * obj, const gchar * str) {
+lba_core_proccess_line (GObject * obj, const gchar * str) {
   gboolean ret = TRUE;
   char **tokens;
   const BombollaCommand *command;
@@ -158,30 +158,32 @@ lba_core_proccess_command (GObject * obj, const gchar * str) {
     goto done;
   }
 
-  LBA_LOG ("processing '%s'\n", str);
+  if (!self->ctx || !self->ctx->capturing_on_command) {
+    LBA_LOG ("processing '%s'\n", str);
+  }
 
   if (!self->ctx) {
     self->ctx = g_new0 (BombollaContext, 1);
-    /* ref ?? */
     self->ctx->self = (GObject *) self;
-    self->ctx->proccess_command = NULL; // <---------- FIXME
+    self->ctx->proccess_command = lba_core_proccess_line;
     self->ctx->objects =
         g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
     self->ctx->bindings =
         g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
   }
 
-  for (command = commands; command->name != NULL; command++) {
-    /* FIXME: that's hackish */
-    if (self->ctx->capturing_on_command) {
-      if (!lba_command_on_append (self->ctx->capturing_on_command, str)) {
-        self->ctx->capturing_on_command = NULL;
-      }
+  /* FIXME: that's hackish */
+  if (self->ctx->capturing_on_command) {
+    if (!lba_command_on_append (self->ctx->capturing_on_command, str)) {
+      self->ctx->capturing_on_command = NULL;
     }
+    goto done;
+  }
 
+  for (command = commands; command->name != NULL; command++) {
     if (0 == g_strcmp0 (command->name, tokens[0])) {
       if (!command->parse (self->ctx, tokens)) {
-        /* Bad syntax. FIXME: should we stop proccessing?? */
+        /* Bad syntax. FIXME: should we optionally stop proccessing?? */
         goto done;
       }
 
@@ -190,7 +192,7 @@ lba_core_proccess_command (GObject * obj, const gchar * str) {
     }
   }
 
-  g_warning ("unknown command");
+  g_warning ("Unknown command [%s]", tokens[0]);
 done:
   g_strfreev (tokens);
   return ret;
@@ -319,7 +321,7 @@ lba_core_execute (LbaCore * self, const gchar * commands) {
     lines = g_strsplit (commands, "\n", 0);
 
     for (i = 0; lines[i]; i++) {
-      if (!lba_core_proccess_command ((GObject *) self, lines[i]))
+      if (!lba_core_proccess_line ((GObject *) self, lines[i]))
         break;
     }
 

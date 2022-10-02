@@ -75,7 +75,7 @@ lba_command_on_marshal (GClosure * closure,
 }
 
 static void
-lba_command_on_finish (gpointer data, GClosure * closure) {
+lba_command_on_destroy (gpointer data, GClosure * closure) {
   BombollaOnCommandCtx *ctx = data;
 
   /* unref ctx->self */
@@ -87,8 +87,14 @@ gboolean
 lba_command_on_append (gpointer ctx_ptr, const gchar * command) {
   BombollaOnCommandCtx *ctx = ctx_ptr;
 
-  if (g_str_has_prefix (command, "end")) {
+  if (0 == g_strcmp0 (command, "end")) {
+    g_printf ("}\n");
     return FALSE;
+  }
+
+  if (g_str_has_prefix (command, "on ")) {
+    g_warning ("setting 'on' while defining another is not allowed");
+    return TRUE;
   }
 
   ctx->commands_list = g_slist_append (ctx->commands_list, g_strdup (command));
@@ -129,8 +135,6 @@ lba_command_on (BombollaContext * ctx, gchar ** tokens) {
     GClosure *closure;
     BombollaOnCommandCtx *on_ctx;
 
-    g_printf ("on %s.%s () ...\n", objname, signal_name);
-
     on_ctx = g_new0 (BombollaOnCommandCtx, 1);
     ctx->capturing_on_command = on_ctx;
 
@@ -141,7 +145,7 @@ lba_command_on (BombollaContext * ctx, gchar ** tokens) {
     /* User data are the lines we will execute. */
     closure =
         g_cclosure_new (G_CALLBACK (lba_command_on_cb), on_ctx,
-                        lba_command_on_finish);
+                        lba_command_on_destroy);
 
     /* Set our custom passthrough marshaller */
     g_closure_set_marshal (closure, lba_command_on_marshal);
@@ -159,6 +163,7 @@ lba_command_on (BombollaContext * ctx, gchar ** tokens) {
 
   /* All the next commands until "end" will be stored as is in
    * ctx->on_commands_list */
+  g_printf ("On %s.%s () {\n", objname, signal_name);
   ret = TRUE;
 done:
   if (tmp) {
