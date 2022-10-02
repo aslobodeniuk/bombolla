@@ -156,6 +156,6 @@ lba_cogl_cube_class_init (LbaCoglCubeClass * klass) {
   base_cogl3d_class->reopen = lba_cogl_cube_reopen;
 }
 
-G_DEFINE_TYPE (LbaCoglCube, lba_cogl_cube, G_TYPE_BASE_COGL3D)
+G_DEFINE_TYPE (LbaCoglCube, lba_cogl_cube, G_TYPE_BASE_COGL3D);
 /* Export plugin */
-    BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (lba_cogl_cube);
+BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (lba_cogl_cube);

@@ -227,6 +227,60 @@ lba_command_dump (BombollaContext * ctx, gchar ** tokens) {
   return TRUE;
 }
 
+static gboolean
+lba_command_bind (BombollaContext * ctx, gchar ** tokens) {
+  gchar **tmp1 = NULL;
+  gchar **tmp2 = NULL;
+  const gchar *prop_name1;
+  const gchar *prop_name2;
+  const gchar *objname;
+  GObject *obj1;
+  GObject *obj2;
+
+  if (NULL == tokens[1]) {
+    g_warning ("Need obj1.prop");
+    return FALSE;
+  }
+
+  if (NULL == tokens[2]) {
+    g_warning ("Need obj2.prop");
+    return FALSE;
+  }
+
+  /* todo: to func "parse obj.prop" */
+  tmp1 = g_strsplit (tokens[1], ".", 2);
+
+  objname = tmp1[0];
+  prop_name1 = tmp1[1];
+  obj1 = g_hash_table_lookup (ctx->objects, objname);
+
+  tmp2 = g_strsplit (tokens[2], ".", 2);
+
+  objname = tmp2[0];
+  prop_name2 = tmp2[1];
+  obj2 = g_hash_table_lookup (ctx->objects, objname);
+
+  if (!obj1 || !obj2 || !prop_name1 || !prop_name2) {
+    g_warning ("fail!");
+    return FALSE;
+  }
+
+  /* at this moment obj1 -> obj2 */
+  g_object_unref (g_object_bind_property (obj1,
+                                          prop_name1,
+                                          obj2, prop_name2, G_BINDING_SYNC_CREATE));
+
+  if (tmp1) {
+    g_strfreev (tmp1);
+  }
+
+  if (tmp2) {
+    g_strfreev (tmp2);
+  }
+
+  return TRUE;
+}
+
 const BombollaCommand commands[] = {
   { "create", lba_command_create },
   { "destroy", lba_command_destroy },
@@ -234,6 +288,7 @@ const BombollaCommand commands[] = {
   { "on", lba_command_on },
   { "set", lba_command_set },
   { "dump", lba_command_dump },
+  { "bind", lba_command_bind },
   /* End of list */
   { NULL, NULL }
 };

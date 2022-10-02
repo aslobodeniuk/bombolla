@@ -5,7 +5,7 @@ project('bombolla', 'c', 'vala',
 
 bombolla_dep = declare_dependency(
   include_directories : [include_directories('.')],
-  dependencies: dependency('gobject-2.0'),
+  dependencies: [dependency('gobject-2.0'), dependency('gio-2.0')],
   compile_args: ['-Wall', '-Werror']
 )
 

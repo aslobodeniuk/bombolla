@@ -20,6 +20,10 @@
 #include "lba-basedrawable.h"
 #include "bombolla/lba-log.h"
 
+static const gchar *global_lba_plugin_name = "BaseDrawable";
+
+G_DEFINE_TYPE (BaseDrawable, base_drawable, G_TYPE_OBJECT);
+
 typedef enum {
   PROP_DRAWING_SCENE = 1,
   PROP_ENABLED,
@@ -53,7 +57,7 @@ base_drawable_set_property (GObject * object,
 
     self->texture = g_value_get_object (value);
     /* Update if new texture is set */
-    if (self->enabled && self->scene) {
+    if (self->enabled && self->scene && self->texture) {
       g_signal_emit_by_name (self->texture, "set", NULL);
       g_signal_emit_by_name (self->scene, "request-redraw", NULL);
     }
@@ -114,11 +118,22 @@ base_drawable_init (BaseDrawable * self) {
 }
 
 static void
+base_drawable_dispose (GObject * gobject) {
+  BaseDrawable *self = (BaseDrawable *) gobject;
+
+  if (self->texture) {
+    g_object_unref (self->texture);
+  }
+  G_OBJECT_CLASS (base_drawable_parent_class)->dispose (gobject);
+}
+
+static void
 base_drawable_class_init (BaseDrawableClass * klass) {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
   object_class->set_property = base_drawable_set_property;
   object_class->get_property = base_drawable_get_property;
+  object_class->dispose = base_drawable_dispose;
 
   g_object_class_install_property (object_class, PROP_TEXTURE,
                                    g_param_spec_object ("texture",
@@ -133,7 +148,6 @@ base_drawable_class_init (BaseDrawableClass * klass) {
                                    g_param_spec_object ("drawing-scene",
                                                         "Drawing Scene",
                                                         "Scene that triggers drawing of the object",
-                                                        /* TODO: can check type here: to have a signal */
                                                         G_TYPE_OBJECT,
                                                         G_PARAM_STATIC_STRINGS |
                                                         G_PARAM_READWRITE));
@@ -147,5 +161,3 @@ base_drawable_class_init (BaseDrawableClass * klass) {
                                                          G_PARAM_CONSTRUCT |
                                                          G_PARAM_EXPLICIT_NOTIFY));
 }
-
-G_DEFINE_TYPE (BaseDrawable, base_drawable, G_TYPE_OBJECT)

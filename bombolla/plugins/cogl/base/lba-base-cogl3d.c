@@ -20,6 +20,8 @@
 #include "lba-base-cogl3d.h"
 #include "bombolla/lba-log.h"
 
+static const gchar *global_lba_plugin_name = "BaseCogl3d";
+
 G_DEFINE_TYPE (BaseCogl3d, base_cogl3d, G_TYPE_BASE3D);
 
 static void

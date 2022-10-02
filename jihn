@@ -2,8 +2,6 @@
 #
 # Check that the code follows a consistant code style
 
-set -e
-
 INDENT_PARAMETERS="--line-length85 \
 	--indent-level2 \
 	--no-tabs \
@@ -36,11 +34,11 @@ INDENT_PARAMETERS="--line-length85 \
 build_and_test()
 {
     echo "-- JIHN: Building --"
-    meson build
-    ninja -C build
+    meson build || exit 1
+    ninja -C build  || exit 1
 
     echo "-- JIHN: Running tests --"
-    ninja -C build test
+    ninja -C build test  || exit 1
 }
 
 check_format()
@@ -49,7 +47,7 @@ check_format()
     nf=$1
 
     newfile=`mktemp /tmp/bombolla-jihn-check.XXXXXX`
-    indent ${INDENT_PARAMETERS} $nf -o $newfile 2>> /dev/null
+    indent ${INDENT_PARAMETERS} $nf -o $newfile 2>> /dev/null  || exit 1
     diff -u -p "${nf}" "${newfile}"
     r=$?
     rm "${newfile}"

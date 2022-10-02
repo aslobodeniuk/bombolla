@@ -32,3 +32,13 @@ shared_library('lba-cogl-label',
                dependencies: [bombolla_dep, cogl_pango_dep],
                link_with: [bombolla_basedrawable, bombolla_base3d, bombolla_base_cogl3d]
               )
+
+shared_library('lba-picture',
+               'lba-picture.c',
+               dependencies: [bombolla_dep],
+              )
+
+shared_library('lba-file-stream',
+               'lba-file-stream.c',
+               dependencies: [bombolla_dep],
+              )

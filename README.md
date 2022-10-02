@@ -12,9 +12,8 @@ sudo apt-get install -qq libglib2.0-dev libsoup2.4-dev libgjs-dev libpython3-dev
 sudo pip install meson
 
 git clone git@github.com:aslobodeniuk/bombolla.git
-
-meson build
-ninja -C build
+cd bombolla
+./jihn
 ```
 
 ## Running an example

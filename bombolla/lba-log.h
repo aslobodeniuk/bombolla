@@ -27,4 +27,12 @@
         g_thread_self (), global_lba_plugin_name, __func__,  ##__VA_ARGS__); \
   } while (0)
 
+#  define LBA_ASSERT(cond) do {                   \
+    if (G_UNLIKELY (!(cond))) {                   \
+      LBA_LOG ("FATAL: %s", #cond);               \
+    }                                             \
+  } while (0)
+
+#  define LBA_LOCK(obj) g_rec_mutex_lock (&obj->lock)
+#  define LBA_UNLOCK(obj) g_rec_mutex_unlock (&obj->lock)
 #endif
