@@ -127,6 +127,10 @@ lba_core_dispose (GObject * gobject) {
   }
 
   if (self->ctx) {
+    if (self->ctx->bindings) {
+      g_hash_table_remove_all (self->ctx->bindings);
+      g_hash_table_unref (self->ctx->bindings);
+    }
     if (self->ctx->objects) {
       g_hash_table_remove_all (self->ctx->objects);
       g_hash_table_unref (self->ctx->objects);
@@ -162,6 +166,8 @@ lba_core_proccess_command (GObject * obj, const gchar * str) {
     self->ctx->self = (GObject *) self;
     self->ctx->proccess_command = NULL; // <---------- FIXME
     self->ctx->objects =
+        g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
+    self->ctx->bindings =
         g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
   }
 
@@ -378,4 +384,6 @@ lba_core_class_init (LbaCoreClass * klass) {
                                                         NULL,
                                                         G_PARAM_STATIC_STRINGS |
                                                         G_PARAM_READWRITE));
+
+  lba_core_init_convertion_functions ();
 }

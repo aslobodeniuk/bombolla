@@ -229,13 +229,16 @@ lba_command_dump (BombollaContext * ctx, gchar ** tokens) {
 
 static gboolean
 lba_command_bind (BombollaContext * ctx, gchar ** tokens) {
-  gchar **tmp1 = NULL;
-  gchar **tmp2 = NULL;
-  const gchar *prop_name1;
-  const gchar *prop_name2;
-  const gchar *objname;
-  GObject *obj1;
-  GObject *obj2;
+  gchar *prop_name1 = NULL;
+  gchar *prop_name2 = NULL;
+  GObject *obj1 = NULL;
+  GObject *obj2 = NULL;
+  GParamSpec *pspec1;
+  GParamSpec *pspec2;
+  gboolean ret = FALSE;
+  GBindingFlags flags = G_BINDING_SYNC_CREATE | G_BINDING_DEFAULT;
+  GBinding *binding;
+  gchar *binding_name = NULL;
 
   if (NULL == tokens[1]) {
     g_warning ("Need obj1.prop");
@@ -247,38 +250,75 @@ lba_command_bind (BombollaContext * ctx, gchar ** tokens) {
     return FALSE;
   }
 
-  /* todo: to func "parse obj.prop" */
-  tmp1 = g_strsplit (tokens[1], ".", 2);
-
-  objname = tmp1[0];
-  prop_name1 = tmp1[1];
-  obj1 = g_hash_table_lookup (ctx->objects, objname);
-
-  tmp2 = g_strsplit (tokens[2], ".", 2);
-
-  objname = tmp2[0];
-  prop_name2 = tmp2[1];
-  obj2 = g_hash_table_lookup (ctx->objects, objname);
-
-  if (!obj1 || !obj2 || !prop_name1 || !prop_name2) {
-    g_warning ("fail!");
+  if (NULL != tokens[3]) {
+    g_warning ("Too many arguments for 'bind' command");
     return FALSE;
   }
 
-  /* at this moment obj1 -> obj2 */
-  g_object_unref (g_object_bind_property (obj1,
-                                          prop_name1,
-                                          obj2, prop_name2, G_BINDING_SYNC_CREATE));
-
-  if (tmp1) {
-    g_strfreev (tmp1);
+  if (!lba_core_parse_obj_fld (ctx, tokens[1], &obj1, &prop_name1)) {
+    return FALSE;
   }
 
-  if (tmp2) {
-    g_strfreev (tmp2);
+  if (!lba_core_parse_obj_fld (ctx, tokens[2], &obj2, &prop_name2)) {
+    g_free (prop_name1);
+    return FALSE;
   }
 
-  return TRUE;
+  /* Now we figure out the binding flags:
+   * If one of the properties is read-only, we bind in one direction */
+  pspec1 = g_object_class_find_property (G_OBJECT_GET_CLASS (obj1), prop_name1);
+
+  if (!pspec1) {
+    g_warning ("property [%s] not found", prop_name1);
+    goto done;
+  }
+
+  pspec2 = g_object_class_find_property (G_OBJECT_GET_CLASS (obj2), prop_name2);
+
+  if (!pspec2) {
+    g_warning ("property [%s] not found", prop_name2);
+    goto done;
+  }
+
+  binding_name = g_strdup_printf ("%s_%s", tokens[1], tokens[2]);
+
+  if (((pspec1->flags & G_PARAM_READWRITE) == G_PARAM_READWRITE)
+      && ((pspec2->flags & G_PARAM_READWRITE) == G_PARAM_READWRITE)) {
+    /* easy case: both are rw. Do bidirectional binding */
+    LBA_LOG ("Adding bidirectional binding [%s]<-->[%s]", tokens[1], tokens[2]);
+    flags |= G_BINDING_BIDIRECTIONAL;
+  } else if ((pspec1->flags & G_PARAM_READABLE)
+             && (pspec2->flags & G_PARAM_WRITABLE)) {
+    LBA_LOG ("Adding monodirectional binding [%s]--->[%s]", tokens[1], tokens[2]);
+  } else if ((pspec2->flags & G_PARAM_READABLE)
+             && (pspec1->flags & G_PARAM_WRITABLE)) {
+
+    LBA_LOG ("Adding monodirectional binding [%s]<---[%s]", tokens[1], tokens[2]);
+    binding = g_object_bind_property (obj2, prop_name2, obj1, prop_name1, flags);
+    g_hash_table_insert (ctx->bindings, binding_name, binding);
+    LBA_LOG ("Added binding %s", binding_name);
+    binding_name = NULL;
+    ret = TRUE;
+    goto done;
+  } else {
+    g_warning ("Couldn't bind property [%s](%c%c) to [%s](%c%c)", tokens[1],
+               (pspec1->flags & G_PARAM_READABLE) ? 'r' : '_',
+               (pspec1->flags & G_PARAM_WRITABLE) ? 'w' : '_', tokens[2],
+               (pspec2->flags & G_PARAM_READABLE) ? 'r' : '_',
+               (pspec2->flags & G_PARAM_WRITABLE) ? 'w' : '_');
+    goto done;
+  }
+
+  binding = g_object_bind_property (obj1, prop_name1, obj2, prop_name2, flags);
+  g_hash_table_insert (ctx->bindings, binding_name, binding);
+  LBA_LOG ("Added binding %s", binding_name);
+  binding_name = NULL;
+  ret = TRUE;
+done:
+  g_free (binding_name);
+  g_free (prop_name1);
+  g_free (prop_name2);
+  return ret;
 }
 
 const BombollaCommand commands[] = {

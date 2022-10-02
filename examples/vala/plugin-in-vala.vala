@@ -1,7 +1,48 @@
 public class ValaTest : GLib.Object {
 
+    /* Signals */
     public virtual signal void say_hello() {
        stdout.printf("Hello! Vala is probably the best solution for Bombolla!\n");
+    }
+
+    /* Properties */
+    protected string _str_rw;
+    public virtual string str_rw {
+        get {
+	    return this._str_rw;
+        }
+
+        set {
+            stdout.printf("Vala plugin [%p]: Setting str_rw to %s\n", this, value);
+	    this._str_rw = value;
+        }
+    }
+
+    protected string _str_r;
+    public virtual string str_r {
+        get {
+	    return this._str_r;
+        }
+    }
+
+    protected string _str_w;
+    public virtual string str_w {
+        set {
+            stdout.printf("Vala plugin [%p]: Setting str_w to %s\n", this, value);
+	    this._str_w = value;
+        }
+    }
+
+    protected float _float_rw;
+    public virtual float float_rw {
+        get {
+	    return this._float_rw;
+        }
+
+        set {
+            stdout.printf("Vala plugin [%p]: Setting float_rw to %f\n", this, value);
+	    this._float_rw = value;
+        }
     }
 }
 

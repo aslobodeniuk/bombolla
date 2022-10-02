@@ -43,12 +43,37 @@ fixture_tear_down (Fixture * fixture, gconstpointer user_data) {
 }
 
 static void
+bindings (Fixture * fixture, gconstpointer user_data) {
+  const gchar commands[] = {
+    /* *INDENT-OFF* */
+    "create ValaTest t1\n"
+    "create ValaTest t2\n"
+    "bind t1.str-rw t2.str-rw\n"
+    "bind t1.str-rw t2.str-w\n"
+    "bind t2.str-rw t1.str-r\n"
+    "bind t2.str-w t1.str-r\n"
+    "set t2.str-rw oneeeeee\n"
+    "set t1.str-rw twoooooo\n"
+    "set t2.str-rw threeeee\n"
+    "bind t1.float-rw t2.str-rw\n"
+    "set t2.str-rw 1.234\n"
+    "set t1.float-rw 0.999\n"
+    /* *INDENT-ON* */
+  };
+
+  g_signal_emit_by_name (fixture->obj, "execute", commands);
+
+  /* TODO: now we need a signal in the core to be able to get the objects
+   * or their values */
+}
+
+static void
 plugin_in_vala (Fixture * fixture, gconstpointer user_data) {
   const gchar commands[] = {
     /* *INDENT-OFF* */
-    "create ValaTest t\n"
-    "call t.say_hello\n"
-    "destroy t\n"
+    "create ValaTest t1\n"
+    "call t1.say_hello\n"
+    "destroy t1\n"
     /* *INDENT-ON* */
   };
 
@@ -61,6 +86,9 @@ main (int argc, char *argv[]) {
 
   g_test_add ("/languages/vala/plugin", Fixture, "some-user-data",
               fixture_set_up, plugin_in_vala, fixture_tear_down);
+
+  g_test_add ("/core/commands/bind", Fixture, "some-user-data",
+              fixture_set_up, bindings, fixture_tear_down);
 
   return g_test_run ();
 }

@@ -108,36 +108,35 @@ lba_command_set_str2obj (BombollaContext * ctx,
 }
 
 gboolean
-lba_command_set (BombollaContext * ctx, gchar ** tokens) {
-
-  GValue inp = G_VALUE_INIT;
-  GValue outp = G_VALUE_INIT;
-  const gchar *prop_name;
-  gchar *prop_val = NULL;
-  const gchar *objname;
-  GObject *obj;
-  GParamSpec *prop;
-  char **tmp = NULL;
+lba_core_parse_obj_fld (BombollaContext * ctx, const gchar * str, GObject ** obj,
+                        gchar ** fld) {
+  gchar **tmp;
   gboolean ret = FALSE;
+
+  tmp = g_strsplit (str, ".", 2);
+
+  if (!tmp || !tmp[0] || !tmp[1]) {
+    g_warning ("Couldn't parse [%s]", str);
+    goto error;
+  }
+  *obj = g_hash_table_lookup (ctx->objects, tmp[0]);
+  if (!*obj) {
+    g_warning ("Object [%s] not found", tmp[0]);
+    goto error;
+  }
+
+  *fld = g_strdup (tmp[1]);
+  ret = TRUE;
+error:
+  if (tmp) {
+    g_strfreev (tmp);
+  }
+  return ret;
+}
+
+void
+lba_core_init_convertion_functions (void) {
   static volatile gboolean once;
-  gint i;
-
-  tmp = g_strsplit (tokens[1], ".", 2);
-
-  if (FALSE == (tmp && tmp[0] && tmp[1] && tokens[2])) {
-    g_warning ("wrong syntax");
-    goto done;
-  }
-
-  objname = tmp[0];
-  prop_name = tmp[1];
-
-  obj = g_hash_table_lookup (ctx->objects, objname);
-
-  if (!obj) {
-    g_warning ("object %s not found", objname);
-    goto done;
-  }
 
   if (!once) {
     /* Register basic transform functions for types */
@@ -148,6 +147,28 @@ lba_command_set (BombollaContext * ctx, gchar ** tokens) {
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_GTYPE, _str2gtype);
 
     once = 1;
+  }
+}
+
+gboolean
+lba_command_set (BombollaContext * ctx, gchar ** tokens) {
+
+  GValue inp = G_VALUE_INIT;
+  GValue outp = G_VALUE_INIT;
+  gchar *prop_name = NULL;
+  gchar *prop_val = NULL;
+  GObject *obj = NULL;
+  GParamSpec *prop;
+  gboolean ret = FALSE;
+  gint i;
+
+  if (FALSE == (tokens[1] && tokens[2])) {
+    g_warning ("Wrong syntax for command 'set'");
+    goto done;
+  }
+
+  if (!lba_core_parse_obj_fld (ctx, tokens[1], &obj, &prop_name)) {
+    goto done;
   }
 
   prop_val = g_strdup (tokens[2]);
@@ -187,16 +208,15 @@ lba_command_set (BombollaContext * ctx, gchar ** tokens) {
     goto done;
   }
 
-  g_printf ("setting %s.%s to [%s]\n", objname, prop_name, prop_val);
+  LBA_LOG ("setting %s to [%s]\n", tokens[1], prop_val);
   g_object_set_property (obj, prop_name, &outp);
 
   ret = TRUE;
 done:
-  if (tmp) {
-    g_strfreev (tmp);
-  }
-
   g_free (prop_val);
+  g_free (prop_name);
+  g_value_unset (&inp);
+  g_value_unset (&outp);
 
   return ret;
 }

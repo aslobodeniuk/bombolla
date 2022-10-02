@@ -22,6 +22,7 @@
 
 typedef struct {
   GHashTable *objects;
+  GHashTable *bindings;
   gpointer capturing_on_command;
   GObject *self;
     gboolean (*proccess_command) (GObject * obj, const gchar * str);
@@ -41,5 +42,8 @@ gboolean lba_command_on (BombollaContext * ctx, gchar ** tokens);
 
 /* bombolla-command-set.c */
 gboolean lba_command_set (BombollaContext * ctx, gchar ** tokens);
-
+gboolean
+lba_core_parse_obj_fld (BombollaContext * ctx, const gchar * str, GObject ** obj,
+                        gchar ** fld);
+void lba_core_init_convertion_functions (void);
 #endif
