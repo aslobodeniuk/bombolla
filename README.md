@@ -42,7 +42,7 @@ cat examples/python/use-from-python.py
 
 ### ¿Can I write a plugin in JavaScript?
 
-You can, but for now it's crashing right after usage, because JS's garbage collector cleanups our plugin..
+You can, but for now there is a fatal bug in this part
 
 check
 ```bash

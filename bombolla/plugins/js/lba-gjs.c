@@ -51,6 +51,9 @@ lba_gjs_init (LbaGjs * self) {
     // As you can see, my friend, as you can see...
     char filename[] = "examples/js/plugin-in-js.js";
 
+    // FIXME: there's some bug that makes Gsj suicide through main loop
+    // in a few seconds after running if we don't destroy it right after
+    // evaluating something.
     if (!gjs_context_eval_file (self->js_context, filename, &exit_status, &error)) {
       g_critical ("GJS error [%d], [%s]", exit_status, error->message);
       g_clear_error (&error);
@@ -64,6 +67,7 @@ lba_gjs_dispose (GObject * gobject) {
 
   if (self->js_context) {
     g_object_unref (self->js_context);
+    self->js_context = NULL;
   }
 }
 
@@ -74,6 +78,6 @@ lba_gjs_class_init (LbaGjsClass * klass) {
   object_class->dispose = lba_gjs_dispose;
 }
 
-G_DEFINE_TYPE (LbaGjs, lba_gjs, G_TYPE_OBJECT)
+G_DEFINE_TYPE (LbaGjs, lba_gjs, G_TYPE_OBJECT);
 /* Export plugin */
-    BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (lba_gjs);
+BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (lba_gjs);

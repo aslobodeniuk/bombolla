@@ -37,6 +37,3 @@ const SubclassExample = GObject.registerClass({
 
 
 log("registered class " + SubclassExample.$gtype.name);
-
-// FIXME: seems that GC frees the class instance, so bombolla
-// crashes in 5 seconds after creating SubclassExample
