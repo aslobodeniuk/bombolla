@@ -329,6 +329,49 @@ lba_core_execute (LbaCore * self, const gchar * commands) {
   }
 }
 
+typedef struct _LbaCoreAsyncCmd {
+  gchar *command;
+  LbaCore *core;
+  GSource *source;
+} LbaCoreAsyncCmd;
+
+static void
+lba_core_async_cmd_free (gpointer data) {
+  LbaCoreAsyncCmd *ctx = (LbaCoreAsyncCmd *) data;
+
+  g_free (ctx->command);
+  g_source_unref (ctx->source);
+  g_free (ctx);
+}
+
+static gboolean
+lba_core_async_cmd (gpointer data) {
+  LbaCoreAsyncCmd *ctx = (LbaCoreAsyncCmd *) data;
+
+  lba_core_execute (ctx->core, ctx->command);
+
+  /* TODO: implement "sync" command */
+
+  return G_SOURCE_REMOVE;
+}
+
+void
+lba_core_shedule_async_script (GObject * obj, gchar * command) {
+  LbaCore *self = (LbaCore *) obj;
+  LbaCoreAsyncCmd *ctx = g_new0 (LbaCoreAsyncCmd, 1);
+
+  LBA_LOG ("Shedulling command [%s] for async execution", command);
+
+  ctx->core = self;
+  ctx->command = command;
+  ctx->source = g_idle_source_new ();
+  g_source_set_priority (ctx->source, G_PRIORITY_HIGH);
+
+  g_source_set_callback (ctx->source, lba_core_async_cmd, ctx,
+                         lba_core_async_cmd_free);
+  g_source_attach (ctx->source, NULL);
+}
+
 static void
 lba_core_set_property (GObject * object,
                        guint property_id, const GValue * value, GParamSpec * pspec) {

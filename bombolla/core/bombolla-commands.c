@@ -356,6 +356,33 @@ done:
   return ret;
 }
 
+gchar *
+assemble_line (gchar ** tokens) {
+  gchar *ret;
+  gint i;
+
+  ret = g_strdup (tokens[0]);
+
+  for (i = 1; tokens[i]; i++) {
+    /* FIXME: we recover original string from tokens, it would be better to
+     * just have an original string here an take it. This code has a bit
+     * of problems, for example, tabs won't be recovered. */
+    gchar *tmp;
+
+    tmp = g_strdup_printf ("%s %s", ret, tokens[i]);
+    g_free (ret);
+    ret = tmp;
+  }
+
+  return ret;
+}
+
+static gboolean
+lba_command_async (BombollaContext * ctx, gchar ** tokens) {
+  lba_core_shedule_async_script (ctx->self, assemble_line (tokens + 1));
+  return TRUE;
+}
+
 const BombollaCommand commands[] = {
   { "create", lba_command_create },
   { "destroy", lba_command_destroy },
@@ -364,6 +391,7 @@ const BombollaCommand commands[] = {
   { "set", lba_command_set },
   { "dump", lba_command_dump },
   { "bind", lba_command_bind },
+  { "async", lba_command_async },
   /* End of list */
   { NULL, NULL }
 };
