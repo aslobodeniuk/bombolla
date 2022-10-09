@@ -90,6 +90,26 @@ bindings (Fixture * fixture, gconstpointer user_data) {
 }
 
 static void
+async (Fixture * fixture, gconstpointer user_data) {
+  const gchar commands[] = {
+    /* *INDENT-OFF* */
+    "create ValaTest t1\n"
+    "async set t1.str-rw oneeeeee\n"
+    "sync\n"
+    "destroy t1\n"
+    "async create ValaTest t1\n"
+    "async set t1.str-rw oneeeeee\n"
+    "async destroy t1\n"
+    /* *INDENT-ON* */
+  };
+
+  g_signal_emit_by_name (fixture->obj, "execute", commands);
+
+  /* TODO: now we need a signal in the core to be able to get the objects
+   * or their values */
+}
+
+static void
 plugin_in_vala (Fixture * fixture, gconstpointer user_data) {
   const gchar commands[] = {
     /* *INDENT-OFF* */
@@ -105,16 +125,17 @@ plugin_in_vala (Fixture * fixture, gconstpointer user_data) {
 int
 main (int argc, char *argv[]) {
   g_test_init (&argc, &argv, NULL);
-  if (0) {
-    g_test_add ("/languages/vala/plugin", Fixture, "some-user-data",
-                fixture_set_up, plugin_in_vala, fixture_tear_down);
+  g_test_add ("/languages/vala/plugin", Fixture, "some-user-data",
+              fixture_set_up, plugin_in_vala, fixture_tear_down);
 
-    g_test_add ("/core/commands/bind", Fixture, "some-user-data",
-                fixture_set_up, bindings, fixture_tear_down);
-  }
+  g_test_add ("/core/commands/bind", Fixture, "some-user-data",
+              fixture_set_up, bindings, fixture_tear_down);
 
   g_test_add ("/core/commands/on", Fixture, "some-user-data",
               fixture_set_up, on, fixture_tear_down);
+
+  g_test_add ("/core/commands/async", Fixture, "some-user-data",
+              fixture_set_up, async, fixture_tear_down);
 
   return g_test_run ();
 }

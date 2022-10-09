@@ -47,6 +47,7 @@ lba_core_parse_obj_fld (BombollaContext * ctx, const gchar * str, GObject ** obj
                         gchar ** fld);
 void lba_core_init_convertion_functions (void);
 
-void
-  lba_core_shedule_async_script (GObject * self, gchar * command);
+void lba_core_shedule_async_script (GObject * obj, gchar * command);
+void lba_core_sync_with_async_cmds (GObject * obj);
+
 #endif

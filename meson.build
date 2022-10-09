@@ -7,11 +7,11 @@ bombolla_dep = declare_dependency(
   include_directories : [include_directories('.')],
   dependencies: [dependency('gobject-2.0', version: '>=2.58'),
                  dependency('gio-2.0')],
-  compile_args: ['-Wall', '-Werror']
+  compile_args: ['-Wall', '-Werror', '-Wfatal-errors']
 )
 
 asan_dep = declare_dependency(
-  compile_args: ['-fsanitize=address', '-fno-omit-frame-pointer', '-g'],
+  compile_args: ['-fsanitize=address', '-fno-omit-frame-pointer', '-g', '-O0', '-fno-inline'],
   link_args: ['-fsanitize=address'],
 )
 

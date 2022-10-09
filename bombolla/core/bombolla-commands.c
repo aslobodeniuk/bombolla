@@ -378,6 +378,16 @@ assemble_line (gchar ** tokens) {
 }
 
 static gboolean
+lba_command_sync (BombollaContext * ctx, gchar ** tokens) {
+  if (NULL != tokens[1]) {
+    g_warning ("invalid syntax for 'sync' command");
+  }
+
+  lba_core_sync_with_async_cmds (ctx->self);
+  return TRUE;
+}
+
+static gboolean
 lba_command_async (BombollaContext * ctx, gchar ** tokens) {
   lba_core_shedule_async_script (ctx->self, assemble_line (tokens + 1));
   return TRUE;
@@ -392,6 +402,7 @@ const BombollaCommand commands[] = {
   { "dump", lba_command_dump },
   { "bind", lba_command_bind },
   { "async", lba_command_async },
+  { "sync", lba_command_sync },
   /* End of list */
   { NULL, NULL }
 };

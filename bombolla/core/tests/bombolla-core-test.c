@@ -52,7 +52,6 @@ main (int argc, char *argv[]) {
 
   g_test_add ("/core/test-empty-string", Fixture, NULL,
               fixture_set_up, test_empty_string, fixture_tear_down);
-
   g_test_add ("/core/test2", Fixture, "some-user-data",
               fixture_set_up, test2, fixture_tear_down);
 

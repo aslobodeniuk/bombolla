@@ -46,6 +46,11 @@ typedef struct _LbaCore {
   GThread *mainloop_thr;
   GMainContext *mainctx;
   GMainLoop *mainloop;
+  GMutex lock;
+  GCond cond;
+
+  GMutex async_cmd_guard;
+  GList *async_cmds;
 } LbaCore;
 
 typedef struct _LbaCoreClass {
@@ -70,6 +75,10 @@ lba_core_mainloop (gpointer data) {
 //  self->mainctx = g_main_context_new ();
 //  g_main_context_acquire (self->mainctx);
   self->mainloop = g_main_loop_new (NULL, TRUE);
+
+  g_mutex_lock (&self->lock);
+  g_cond_broadcast (&self->cond);
+  g_mutex_unlock (&self->lock);
 
   /* Proccessing events here until quit event arrives */
   g_main_loop_run (self->mainloop);
@@ -113,7 +122,12 @@ lba_core_stop (LbaCore * self) {
 
 static void
 lba_core_init (LbaCore * self) {
+  g_mutex_init (&self->async_cmd_guard);
+  g_mutex_init (&self->lock);
+  g_cond_init (&self->cond);
 }
+
+void lba_core_sync_with_async_cmds (GObject * obj);
 
 static void
 lba_core_dispose (GObject * gobject) {
@@ -121,6 +135,10 @@ lba_core_dispose (GObject * gobject) {
 
   /* Probably here objects may need to perform some preparations for
    * the destruction */
+
+  if (self->async_cmds) {
+    lba_core_sync_with_async_cmds (gobject);
+  }
 
   if (self->started) {
     lba_core_stop (self);
@@ -136,13 +154,25 @@ lba_core_dispose (GObject * gobject) {
       g_hash_table_unref (self->ctx->objects);
     }
     g_free (self->ctx);
+    self->ctx = NULL;
   }
 
-  /* And now destroy all the objects, and free all the data. */
   g_free (self->plugins_path);
+  self->plugins_path = NULL;
 
   /* Always chain up */
   G_OBJECT_CLASS (lba_core_parent_class)->dispose (gobject);
+}
+
+static void
+lba_core_finalize (GObject * gobject) {
+  LbaCore *self = (LbaCore *) gobject;
+
+  g_mutex_clear (&self->async_cmd_guard);
+  g_mutex_clear (&self->lock);
+  g_cond_clear (&self->cond);
+
+  G_OBJECT_CLASS (lba_core_parent_class)->finalize (gobject);
 }
 
 static gboolean
@@ -199,80 +229,109 @@ done:
 }
 
 static void
-lba_core_scan (LbaCore * self, const gchar * path) {
+lba_core_scan_gtype (LbaCore * self, const gchar * module_filename) {
   GModule *module = NULL;
   gpointer ptr;
   lBaPluginSystemGetGtypeFunc get_type_f;
+  GType plugin_gtype;
+
+  module = g_module_open (module_filename, G_MODULE_BIND_LOCAL);
+  if (!module) {
+    // too noisy
+    //      g_warning ("Failed to load plugin '%s': %s", module_filename,
+    //          g_module_error ());
+    return;
+  }
+
+  if (!g_module_symbol (module, BOMBOLLA_PLUGIN_SYSTEM_ENTRY, &ptr)) {
+    //      g_warning ("File '%s' is not a plugin from my system", module_filename);
+    g_module_close (module);
+    return;
+  }
+
+  /* If module is from plugin system - we don't want to unload it */
+  g_module_make_resident (module);
+
+  get_type_f = (lBaPluginSystemGetGtypeFunc) ptr;
+  plugin_gtype = get_type_f ();
+
+  /* This function does nothing important, only prints everything
+   * it can about the GType it has. It could output something like a
+   * dot graph actually, or so. */
+  LBA_LOG ("Found plugin: type = [%s] file = [%s]", g_type_name (plugin_gtype),
+           module_filename);
+}
+
+static GSList *lba_core_scan_path (const gchar * path, GSList * modules_files);
+
+/* This function is recursive */
+static GSList *
+lba_core_scan_path (const gchar * path, GSList * modules_files) {
+  static const char *LBA_PLUGIN_PREFIX = "liblba-";
+  static const char *LBA_PLUGIN_SUFFIX = G_MODULE_SUFFIX;
+
+  if (!g_file_test (path, G_FILE_TEST_EXISTS)) {
+    g_warning ("Path [%s] doesn't exist", path);
+    return modules_files;
+  }
+
+  if (g_file_test (path, G_FILE_TEST_IS_DIR)) {
+    GError *err;
+    const gchar *file;
+    GDir *dir;
+
+    LBA_LOG ("Scan directory [%s]", path);
+    dir = g_dir_open (path, 0, &err);
+    if (!dir) {
+      g_warning ("Couldn't open [%s]: [%s]", path,
+                 err ? err->message : "no message");
+      if (err)
+        g_error_free (err);
+      return modules_files;
+    }
+
+    while ((file = g_dir_read_name (dir))) {
+      gchar *sub_path = g_build_filename (path, file, NULL);
+
+      /* Step into the directories */
+      if (g_file_test (sub_path, G_FILE_TEST_IS_DIR)) {
+        modules_files = lba_core_scan_path (sub_path, modules_files);
+        g_free (sub_path);
+        continue;
+      }
+
+      /* If not a directory */
+      if (g_str_has_prefix (file, LBA_PLUGIN_PREFIX) &&
+          g_str_has_suffix (file, LBA_PLUGIN_SUFFIX)) {
+        modules_files = g_slist_append (modules_files, sub_path);
+        sub_path = NULL;
+      } else {
+        g_free (sub_path);
+      }
+    }
+
+    g_dir_close (dir);
+  } else {
+    LBA_LOG ("Scan single file [%s]", path);
+    modules_files = g_slist_append (modules_files, g_strdup (path));
+  }
+
+  return modules_files;
+}
+
+static void
+lba_core_scan (LbaCore * self) {
   GSList *modules_files = NULL,
       *l;
-  GDir *dir = NULL;
 
-  if (path) {
-    if (!g_file_test (path, G_FILE_TEST_EXISTS)) {
-      g_warning ("Path doesn't exist\n");
-      return;
-    }
+  g_return_if_fail (self->plugins_path != NULL);
 
-    if (g_file_test (path, G_FILE_TEST_IS_DIR)) {
-      GError *err;
-      const gchar *file;
-
-      dir = g_dir_open (path, 0, &err);
-      if (!dir) {
-        g_warning ("Couldn't open %s: %s", path, err ? err->message : "");
-        if (err)
-          g_error_free (err);
-        return;
-      }
-
-      while ((file = g_dir_read_name (dir))) {
-        if (g_str_has_suffix (file, G_MODULE_SUFFIX)) {
-          modules_files = g_slist_append (modules_files,
-                                          g_build_filename (path, file, NULL));
-        }
-      }
-    } else {
-      modules_files = g_slist_append (modules_files, g_strdup (path));
-    }
-  }
+  modules_files = lba_core_scan_path (self->plugins_path, NULL);
 
   for (l = modules_files; l; l = l->next) {
-    GType plugin_gtype;
-    const gchar *module_filename = (const gchar *)l->data;
-
-    module = g_module_open (module_filename, G_MODULE_BIND_LOCAL);
-    if (!module) {
-      // too noisy
-      //      g_warning ("Failed to load plugin '%s': %s", module_filename,
-      //          g_module_error ());
-      continue;
-    }
-
-    if (!g_module_symbol (module, BOMBOLLA_PLUGIN_SYSTEM_ENTRY, &ptr)) {
-      //      g_warning ("File '%s' is not a plugin from my system", module_filename);
-      g_module_close (module);
-      module = NULL;
-      continue;
-    }
-
-    /* If module is from plugin system - we don't want to unload it */
-    g_module_make_resident (module);
-    module = NULL;
-
-    get_type_f = (lBaPluginSystemGetGtypeFunc) ptr;
-    plugin_gtype = get_type_f ();
-
-    /* This function does nothing important, only prints everything
-     * it can about the GType it has. It could output something like a
-     * dot graph actually, or so. */
-    LBA_LOG ("Found plugin: type = [%s] file = [%s]", g_type_name (plugin_gtype),
-             module_filename);
+    lba_core_scan_gtype (self, (const gchar *)l->data);
   }
 
-  if (module)
-    g_module_close (module);
-  if (dir)
-    g_dir_close (dir);
   g_slist_free_full (modules_files, g_free);
 }
 
@@ -291,24 +350,26 @@ lba_core_execute (LbaCore * self, const gchar * commands) {
         if (!self->plugins_path) {
           gchar *cur_dir = g_get_current_dir ();
 
-          /* Is it really a proper default path ?? */
-          self->plugins_path = g_build_filename (cur_dir, "build", "lib", NULL);
+          LBA_LOG ("No plugin path is set.");
+          self->plugins_path = g_build_filename (cur_dir, "build", NULL);
           g_free (cur_dir);
         }
       }
 
       LBA_LOG ("Scan %s", self->plugins_path);
-      lba_core_scan (self, self->plugins_path);
+      lba_core_scan (self);
 
       once = 1;
     }
 
     /* Start the main loop */
+    g_mutex_lock (&self->lock);
     /* FIXME: custom MainContext would be nice */
     self->mainloop_thr = g_thread_new ("LbaCoreMainLoop", lba_core_mainloop, self);
-
+    g_cond_wait (&self->cond, &self->lock);
     /* Done */
     self->started = TRUE;
+    g_mutex_unlock (&self->lock);
   }
 
   /* Proccessing commands */
@@ -333,6 +394,10 @@ typedef struct _LbaCoreAsyncCmd {
   gchar *command;
   LbaCore *core;
   GSource *source;
+
+  GMutex lock;
+  GCond cond;
+  gboolean done;
 } LbaCoreAsyncCmd;
 
 static void
@@ -341,7 +406,19 @@ lba_core_async_cmd_free (gpointer data) {
 
   g_free (ctx->command);
   g_source_unref (ctx->source);
+  g_mutex_clear (&ctx->lock);
+  g_cond_clear (&ctx->cond);
   g_free (ctx);
+}
+
+static void
+lba_core_async_cmd_done (gpointer data) {
+  LbaCoreAsyncCmd *ctx = (LbaCoreAsyncCmd *) data;
+
+  g_mutex_lock (&ctx->lock);
+  ctx->done = TRUE;
+  g_cond_broadcast (&ctx->cond);
+  g_mutex_unlock (&ctx->lock);
 }
 
 static gboolean
@@ -350,9 +427,31 @@ lba_core_async_cmd (gpointer data) {
 
   lba_core_execute (ctx->core, ctx->command);
 
-  /* TODO: implement "sync" command */
-
   return G_SOURCE_REMOVE;
+}
+
+void
+lba_core_sync_with_async_cmds (GObject * obj) {
+  LbaCore *self = (LbaCore *) obj;
+  GList *it;
+
+  /* To sync we do:
+   * 1. copy a snap of the list of the async commands.
+   * 2. iterate on this snap waiting for each. */
+
+  g_mutex_lock (&self->async_cmd_guard);
+  for (it = self->async_cmds; it != NULL; it = it->next) {
+    LbaCoreAsyncCmd *ctx = (LbaCoreAsyncCmd *) it->data;
+
+    g_mutex_lock (&ctx->lock);
+    while (!ctx->done) {
+      g_cond_wait (&ctx->cond, &ctx->lock);
+    }
+    g_mutex_unlock (&ctx->lock);
+  }
+  g_list_free_full (self->async_cmds, lba_core_async_cmd_free);
+  self->async_cmds = NULL;
+  g_mutex_unlock (&self->async_cmd_guard);
 }
 
 void
@@ -365,10 +464,15 @@ lba_core_shedule_async_script (GObject * obj, gchar * command) {
   ctx->core = self;
   ctx->command = command;
   ctx->source = g_idle_source_new ();
-  g_source_set_priority (ctx->source, G_PRIORITY_HIGH);
+  g_mutex_init (&ctx->lock);
+  g_cond_init (&ctx->cond);
+
+  g_source_set_priority (ctx->source, G_PRIORITY_DEFAULT);
 
   g_source_set_callback (ctx->source, lba_core_async_cmd, ctx,
-                         lba_core_async_cmd_free);
+                         lba_core_async_cmd_done);
+
+  self->async_cmds = g_list_append (self->async_cmds, ctx);
   g_source_attach (ctx->source, NULL);
 }
 
@@ -411,6 +515,7 @@ lba_core_class_init (LbaCoreClass * klass) {
 
   klass->execute = lba_core_execute;
   object_class->dispose = lba_core_dispose;
+  object_class->finalize = lba_core_finalize;
   object_class->set_property = lba_core_set_property;
   object_class->get_property = lba_core_get_property;
 
