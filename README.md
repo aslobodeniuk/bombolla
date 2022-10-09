@@ -30,7 +30,7 @@ Yes, check
 ```bash
 cat examples/plugin-in-python
 
-build/bombolla/tools/shell/bombolla-shell -p build/bombolla/plugins/python/ -i examples/plugin-in-python
+build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-python
 ```
 
 ### ¿Can I call bombolla scripts from python?
@@ -42,11 +42,10 @@ cat examples/python/use-from-python.py
 
 ### ¿Can I write a plugin in JavaScript?
 
-You can, but for now there is a fatal bug in this part
-
-check
+Yes, check
 ```bash
-cat examples/js/plugin-in-js.js
+cat examples/js/lba-plugin-in-js.js
+build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-js
 ```
 
 ### ¿Can I write a plugin in Vala?
@@ -54,4 +53,5 @@ cat examples/js/plugin-in-js.js
 Yes, check
 ```bash
 cat examples/vala/plugin-in-vala.vala
+build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-vala
 ```

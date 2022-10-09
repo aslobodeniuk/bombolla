@@ -60,6 +60,19 @@ _str2bool (const GValue * src_value, GValue * dest_value) {
 }
 
 static void
+_str2int (const GValue * src_value, GValue * dest_value) {
+  guint ret = 0;
+  const gchar *s = g_value_get_string (src_value);
+
+  if (s) {
+    ret = atoi (s);
+  } else
+    g_warning ("couldn't convert string %s to uint", s);
+
+  g_value_set_int (dest_value, ret);
+}
+
+static void
 _str2uint (const GValue * src_value, GValue * dest_value) {
   guint ret = 0;
   const gchar *s = g_value_get_string (src_value);
@@ -141,6 +154,7 @@ lba_core_init_convertion_functions (void) {
   if (!once) {
     /* Register basic transform functions for types */
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_BOOLEAN, _str2bool);
+    g_value_register_transform_func (G_TYPE_STRING, G_TYPE_INT, _str2int);
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_UINT, _str2uint);
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_DOUBLE, _str2double);
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_FLOAT, _str2float);
