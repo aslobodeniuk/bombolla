@@ -3,4 +3,12 @@ async create MyJSWindow w
 async set w.width-request 300
 async set w.height-request 200
 async set w.title hello from bombolla
-async call w.open
+
+sync
+
+on w.my-clicked
+call w.hide
+end
+
+async call w.my-open
+

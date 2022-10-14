@@ -1,4 +1,4 @@
-create LbaPythonScanner s
+create LbaPython s
 
 create __main__+MyFooClass snake
 call snake.say-hello
@@ -7,3 +7,5 @@ set snake.secret Lazyness
 set snake.angryness 50.3
 
 call snake.say-hello
+
+destroy snake

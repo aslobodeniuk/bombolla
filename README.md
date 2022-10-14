@@ -38,6 +38,7 @@ build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-python
 Yes, check
 ```bash
 cat examples/python/use-from-python.py
+python3 examples/python/use-from-python.py
 ```
 
 ### ¿Can I write a plugin in JavaScript?

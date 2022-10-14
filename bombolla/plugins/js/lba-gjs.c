@@ -187,16 +187,16 @@ lba_gjs_init (LbaGjs * self) {
   g_mutex_init (&self->lock);
   g_cond_init (&self->cond);
 
-  if (!once) {
+  if (!self->plugins_path) {
+    self->plugins_path = g_strdup (g_getenv ("LBA_PLUGINS_PATH"));
+
     if (!self->plugins_path) {
-      self->plugins_path = g_strdup (g_getenv ("LBA_PLUGINS_PATH"));
-
-      if (!self->plugins_path) {
-        LBA_LOG ("No plugin path is set. Will scan current directory.");
-        self->plugins_path = g_get_current_dir ();
-      }
+      LBA_LOG ("No plugin path is set. Will scan current directory.");
+      self->plugins_path = g_get_current_dir ();
     }
+  }
 
+  if (!once) {
     lba_gjs_scan (self);
     once = 1;
   }

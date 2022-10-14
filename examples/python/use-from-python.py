@@ -22,16 +22,17 @@ import ctypes
 import importlib
 import os
 
-exlibpath = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '..', 'build', 'lib')
-b = ctypes.CDLL(os.path.join(exlibpath, 'libbombolla-core.so.0'))
+lba_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'build', 'bombolla')
+b = ctypes.CDLL(os.path.join(lba_path, 'core', 'libbombolla-core.so'))
 
 b.lba_core_get_type()
 
 bombolla = GObject.new ("LbaCore")
-bombolla.set_property ("plugins_path", exlibpath)
+bombolla.set_property ("plugins_path", lba_path)
 
 bombolla.emit ("execute",
 "create LbaCoglWindow w\n\
+set w.width 600\n\
 create LbaCoglLabel l\n\
 set l.drawing-scene w\n\
 set l.x 0.1\n\

@@ -1,3 +1,21 @@
+// la Bombolla GObject shell.
+// Copyright (C) 2022 Aleksandr Slobodeniuk
+//
+//   This file is part of bombolla.
+//
+//   Bombolla is free software: you can redistribute it and/or modify
+//   it under the terms of the GNU General Public License as published by
+//   the Free Software Foundation, either version 3 of the License, or
+//   (at your option) any later version.
+//
+//   Bombolla is distributed in the hope that it will be useful,
+//   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//   GNU General Public License for more details.
+//
+//   You should have received a copy of the GNU General Public License
+//   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
+
 imports.gi.versions.Gtk = "3.0";
 
 const GObject = imports.gi.GObject;
@@ -14,8 +32,8 @@ Gtk.init(null);
 const MyWindow = GObject.registerClass({
     GTypeName: 'MyJSWindow',
     Signals: {
-        'open': {},
-	'clicked': {}
+        'my-open': {},
+	'my-clicked': {}
     },
 }, class MyWindow extends Gtk.Window {
     _init() {
@@ -25,12 +43,12 @@ const MyWindow = GObject.registerClass({
         this.add(this.button);
     }
 
-    onButtonClicked() {
+    onButtonClicked (widget) {
         print("Hello World");
-	// this.emit('clicked'); why doesn't it work??
+	widget.get_parent().emit('my-clicked');
     }
 
-    on_open() {
+    on_my_open() {
 	this.show_all();
     }
 });
