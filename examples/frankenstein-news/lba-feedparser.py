@@ -58,9 +58,9 @@ class LbaFeedParser(GObject.GObject):
         GObject.__init__(self)
         self.uri = "https://planet.gnome.org/rss20.xml"
         self.entry = 0
-        
           
     def do_get_property(self, property):
+        print ('getting property %s' % property.name)
         if property.name == 'uri':
             return self.uri
         if property.name == 'entries':
@@ -72,10 +72,11 @@ class LbaFeedParser(GObject.GObject):
         elif property.name == 'published':
             return self.published
         elif property.name == 'summary':
-            return self.summary   
+            return self.summary
         elif property.name == 'link':
             return self.link
         else:
+            print ('unknown property %s' % property.name)
             raise (AttributeError, 'unknown property %s' % property.name)
           
     def do_set_property(self, property, value):
@@ -87,20 +88,28 @@ class LbaFeedParser(GObject.GObject):
             if self.uri:
                 self.do_check_for_updates()
         else:
+            print ('unknown property %s' % property.name)
             raise (AttributeError, 'unknown property %s' % property.name)
           
     def do_check_for_updates(self):
         if self.uri is None:
+            print ("no uri")
             return
 
         self.feed = feedparser.parse(self.uri)
         if len(self.feed.entries) <= self.entry:
+            print("wrong entry: %d" % self.entry)
             return
         entry = self.feed.entries[self.entry]
         self.title = entry.title
         self.published = entry.published
         self.summary = entry.summary
         self.link = entry.link
+
+        self.notify("title")
+        self.notify("published")
+        self.notify("summary")
+        self.notify("link")
 
         print ('Post Title :' + self.title)
 

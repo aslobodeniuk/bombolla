@@ -1,0 +1,11 @@
+create LbaGjs gjs
+create LbaPython py
+async create FrankNewsWindow w
+create __main__+LbaFeedParser feed
+
+sync
+call feed.check-for-updates
+bind feed.title w.title
+
+async call w.my-open
+sync
