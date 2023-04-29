@@ -4,7 +4,8 @@ project('bombolla', 'c', 'vala',
         default_options: ['buildtype=debug',])
 
 bombolla_dep = declare_dependency(
-  include_directories : [include_directories('.')],
+  include_directories : [include_directories('.'),
+                         include_directories('friendly-libs')],
   dependencies: [dependency('gobject-2.0', version: '>=2.58'),
                  dependency('gio-2.0')],
   compile_args: ['-Wall', '-Werror', '-Wfatal-errors']
@@ -18,6 +19,7 @@ asan_dep = declare_dependency(
 cc = meson.get_compiler('c')
 gmodule_dep = dependency('gmodule-2.0')
 
+subdir('friendly-libs')
 subdir('bombolla')
 subdir('examples')
 

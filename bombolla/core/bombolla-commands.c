@@ -19,6 +19,7 @@
 
 #include "bombolla/lba-log.h"
 #include "bombolla/core/bombolla-commands.h"
+#include <gmo/gmo.h>
 
 static gboolean
 lba_command_create (BombollaContext * ctx, gchar ** tokens) {
@@ -393,6 +394,67 @@ lba_command_async (BombollaContext * ctx, gchar ** tokens) {
   return TRUE;
 }
 
+static gboolean
+lba_command_dna (BombollaContext * ctx, gchar ** tokens) {
+  gint t;
+  GType base_type;
+  const gchar *mutant_name = tokens[1];
+  const gchar *base_name = tokens[2];
+
+  if (NULL == mutant_name || NULL == base_name) {
+    goto syntax;
+  }
+
+  base_type = g_type_from_name (base_name);
+
+  if (0 == base_type) {
+    g_warning ("Type '%s' not found", base_name);
+    goto syntax;
+  }
+
+  if (0 != g_type_from_name (mutant_name)) {
+    g_warning ("Type '%s' already exists", mutant_name);
+  }
+
+  if (NULL == tokens[3]) {
+    g_warning ("No mutogenes listed");
+    goto syntax;
+  }
+
+  for (t = 3; tokens[t]; t++) {
+    /* In fact we have to register various intermediate mutant classes in order
+     * to reach the requested one */
+    const gchar *mutogene_name = tokens[t];
+
+    /* Final type */
+    if (tokens[t + 1] == NULL) {
+      base_type = gmo_register_mutant (mutant_name, base_type, mutogene_name);
+    } else {
+      gchar *type_name = g_strdup_printf ("%s_M_%s", base_name, mutogene_name);
+
+      /* If intermediate class already exists, we take the existing one */
+      base_type = g_type_from_name (type_name) ?
+          g_type_from_name (type_name) :
+          gmo_register_mutant (type_name, base_type, mutogene_name);
+      g_free (type_name);
+    }
+
+    if (0 == base_type) {
+      g_warning ("Error occured");
+      return FALSE;
+    }
+
+    g_message ("Have type %s", g_type_name (base_type));
+  }
+
+  return TRUE;
+
+syntax:
+  g_warning ("Syntax error. Expected: "
+             "dna <mutant name> <base type> <mutogene 1> ... <mutogene N>");
+  return FALSE;
+}
+
 const BombollaCommand commands[] = {
   { "create", lba_command_create },
   { "destroy", lba_command_destroy },
@@ -403,6 +465,7 @@ const BombollaCommand commands[] = {
   { "bind", lba_command_bind },
   { "async", lba_command_async },
   { "sync", lba_command_sync },
+  { "dna", lba_command_dna },
   /* End of list */
   { NULL, NULL }
 };
