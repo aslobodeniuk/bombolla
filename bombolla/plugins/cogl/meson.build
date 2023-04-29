@@ -8,6 +8,7 @@ cogl_pango_dep = declare_dependency (
 )
 
 subdir('base')
+subdir('mutogenes')
 
 shared_library('lba-cogl-window',
                'lba-cogl-window.c',
