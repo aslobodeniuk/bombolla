@@ -32,9 +32,9 @@
 
 static GTypeInfo empty_info;
 
-static GQuark
+GQuark
 gmo_info_qrk (void) {
-  return g_quark_from_string ("GMOInfo");
+  return g_quark_from_static_string ("GMOInfo");
 }
 
 static GType
@@ -52,9 +52,11 @@ GType
 gmo_register_mutant (const gchar * mutant_name,
                      const GType base_type, const gchar * mutogene_name) {
   GType t;
+  GType ret;
   GTypeQuery base_info;
-  const GMOInfo *minfo;
+  GMOInfo *minfo;
   GTypeInfo mutant_info;
+  gint i;
 
   g_return_val_if_fail (base_type, 0);
 
@@ -79,7 +81,13 @@ gmo_register_mutant (const gchar * mutant_name,
   mutant_info.class_size += base_info.class_size;
   mutant_info.instance_size += base_info.instance_size;
 
-  return g_type_register_static (base_type, mutant_name, &mutant_info, 0);
+  ret = g_type_register_static (base_type, mutant_name, &mutant_info, 0);
+  g_type_set_qdata (ret, gmo_info_qrk (), minfo);
+  for (i = 0; minfo->ifaces[i].iface_type != NULL; i++) {
+    g_type_add_interface_static (ret, minfo->ifaces[i].iface_type (),
+                                 &minfo->ifaces[i].info);
+  }
+  return ret;
 }
 
 GType
@@ -96,23 +104,49 @@ gmo_register_mutogene (const gchar * mutogene_name, GMOInfo * minfo) {
 }
 
 static GTypeQuery
-gmo_class_get_parent_info (gpointer class) {
+gmo_class_get_parent_info (GType t) {
   GTypeQuery parent_info;
-  GType parent = g_type_parent (G_TYPE_FROM_CLASS (class));
+  GType parent = g_type_parent (t);
 
   g_assert (parent != 0);
   g_type_query (parent, &parent_info);
   return parent_info;
 }
 
-gpointer
-gmo_class_get_mutogene (gpointer class) {
-  return class + gmo_class_get_parent_info (class).class_size;
+static GType
+gmo_class_peek_mutant (gpointer class, const GType mutogene) {
+  GType t = G_TYPE_FROM_CLASS (class);
+
+  g_assert (mutogene != 0);
+  g_assert (t != 0);
+  for (;;) {
+    GMOInfo *info;
+
+    info = g_type_get_qdata (t, gmo_info_qrk ());
+    g_assert (info != 0);
+
+    if (info->type == mutogene)
+      return t;
+
+    t = g_type_parent (t);
+  }
+
+  g_error ("Mutogene '%s' offset not found in type '%s'",
+           g_type_name (mutogene), g_type_name (G_TYPE_FROM_CLASS (class)));
+  return 0;
 }
 
 gpointer
-gmo_instance_get_mutogene (gpointer instance) {
+gmo_class_get_mutogene (gpointer class, const GType mutogene) {
+  return class + gmo_class_get_parent_info (gmo_class_peek_mutant (class, mutogene)
+      ).class_size;
+}
+
+gpointer
+gmo_instance_get_mutogene (gpointer instance, const GType mutogene) {
   return instance +
-      gmo_class_get_parent_info
-      (((GTypeInstance *) instance)->g_class).instance_size;
+      gmo_class_get_parent_info (gmo_class_peek_mutant (((GTypeInstance *)
+                                                         instance)->g_class,
+                                                        mutogene)
+      ).instance_size;
 }

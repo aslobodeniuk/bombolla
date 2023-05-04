@@ -19,17 +19,28 @@
  */
 
 #include <gmo/gmo.h>
+#include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
+#include "bombolla/base/i3d.h"
 
 typedef struct _LbaMutogene3D {
   double x,
     y,
     z;
+  // TODO: lock
 } LbaMutogene3D;
 
 typedef struct _LbaMutogene3DClass {
   int dummy;
 } LbaMutogene3DClass;
+
+static void
+  lba_mutogene_3d_iface_init (LbaI3D * iface);
+
+GMO_DEFINE_MUTOGENE_WITH_CODE (lba_mutogene_3d, LbaMutogene3D, {
+                               .iface_type = lba_i3d_get_type,.info = {
+                               (void (*)(void *, void *))lba_mutogene_3d_iface_init
+                               }});
 
 typedef enum {
   PROP_X = 1,
@@ -38,11 +49,27 @@ typedef enum {
 } LbaMutogene3DProperty;
 
 static void
+lba_mutogene_3d_xyz (GObject * object, gdouble * x, gdouble * y, gdouble * z) {
+  LbaMutogene3D *self = gmo_get_LbaMutogene3D (object);
+
+  if (x)
+    *x = self->x;
+  if (y)
+    *y = self->y;
+  if (z)
+    *z = self->z;
+}
+
+static void
+lba_mutogene_3d_iface_init (LbaI3D * iface) {
+  iface->xyz = lba_mutogene_3d_xyz;
+}
+
+static void
 lba_mutogene_3d_set_property (GObject * object,
                               guint property_id, const GValue * value,
                               GParamSpec * pspec) {
-
-  LbaMutogene3D *self = gmo_instance_get_mutogene (object);
+  LbaMutogene3D *self = gmo_get_LbaMutogene3D (object);
 
   switch ((LbaMutogene3DProperty) property_id) {
   case PROP_X:
@@ -67,7 +94,7 @@ static void
 lba_mutogene_3d_get_property (GObject * object,
                               guint property_id, GValue * value,
                               GParamSpec * pspec) {
-  LbaMutogene3D *self = gmo_instance_get_mutogene (object);
+  LbaMutogene3D *self = gmo_get_LbaMutogene3D (object);
 
   switch ((LbaMutogene3DProperty) property_id) {
   case PROP_X:
@@ -89,7 +116,7 @@ lba_mutogene_3d_get_property (GObject * object,
 }
 
 static void
-lba_mutogene_3d_init (gpointer object, gpointer mutogene) {
+lba_mutogene_3d_init (GObject * object, gpointer mutogene) {
 }
 
 static void
@@ -106,7 +133,7 @@ lba_mutogene_3d_class_init (GObjectClass * object_class, gpointer gmo_class) {
                             -G_MAXDOUBLE, G_MAXDOUBLE,
                             0.5,
                             G_PARAM_STATIC_STRINGS |
-                            G_PARAM_WRITABLE | G_PARAM_CONSTRUCT));
+                            G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
 
   g_object_class_install_property
       (object_class,
@@ -116,7 +143,7 @@ lba_mutogene_3d_class_init (GObjectClass * object_class, gpointer gmo_class) {
                             -G_MAXDOUBLE, G_MAXDOUBLE,
                             0.5,
                             G_PARAM_STATIC_STRINGS |
-                            G_PARAM_WRITABLE | G_PARAM_CONSTRUCT));
+                            G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
 
   g_object_class_install_property
       (object_class,
@@ -126,8 +153,7 @@ lba_mutogene_3d_class_init (GObjectClass * object_class, gpointer gmo_class) {
                             -G_MAXDOUBLE, G_MAXDOUBLE,
                             0.5,
                             G_PARAM_STATIC_STRINGS |
-                            G_PARAM_WRITABLE | G_PARAM_CONSTRUCT));
+                            G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
 }
 
-GMO_DEFINE_MUTOGENE (lba_mutogene_3d, LbaMutogene3D);
 BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (lba_mutogene_3d);
