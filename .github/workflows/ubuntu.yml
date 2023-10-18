@@ -1,13 +1,13 @@
 name: Ubuntu build
 on:
   push:
-    branches: [ maestro ]
+    branches: [ main ]
   pull_request:
-    branches: [ maestro ]
+    branches: [ main ]
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
     - name: bootstrap
       run: |
