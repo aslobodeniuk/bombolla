@@ -26,8 +26,9 @@ typedef struct _LbaICoglInterface {
   GTypeInterface g_iface;
 
   void (*paint) (GObject * obj, CoglFramebuffer * fb, CoglPipeline * pipeline);
-  void (*reopen) (GObject * base, CoglFramebuffer * fb, CoglPipeline * pipeline,
+  void (*reopen) (GObject * obj, CoglFramebuffer * fb, CoglPipeline * pipeline,
                   CoglContext * ctx);
+  void (*get_ctx) (GObject * obj, CoglContext ** ctx, CoglPipeline ** pipeline);
 } LbaICoglInterface;
 
 typedef LbaICoglInterface LbaICogl;

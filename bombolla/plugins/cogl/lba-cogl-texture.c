@@ -17,7 +17,7 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "base/lba-base-cogl3d.h"
+#include "base/icogl.h"
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 
@@ -39,7 +39,7 @@ typedef struct _LbaCoglTexture {
 typedef struct _LbaCoglTextureClass {
   GObjectClass parent;
 
-  void (*set) (LbaCoglTexture * self, BaseCogl3d * obj_3d);
+  void (*set) (LbaCoglTexture * self, GObject * obj);
 } LbaCoglTextureClass;
 
 typedef enum {
@@ -137,24 +137,31 @@ lba_cogl_texture_get_property (GObject * object,
 }
 
 static void
-lba_cogl_texture_set (LbaCoglTexture * self, BaseCogl3d * obj_3d) {
+lba_cogl_texture_set (LbaCoglTexture * self, GObject * obj_3d) {
+  LbaICogl *iface;
+  CoglContext *cogl_ctx;
+  CoglPipeline *cogl_pipeline;
+
   /* NOTE: called in GL thread */
   if (!obj_3d)
     return;
 
+  iface = G_TYPE_INSTANCE_GET_INTERFACE (obj_3d, LBA_ICOGL, LbaICogl);
+  iface->get_ctx (obj_3d, &cogl_ctx, &cogl_pipeline);
+
+  g_assert (cogl_ctx && cogl_pipeline);
+
   LBA_LOCK (self);
   if (!self->texture || self->pic.cookie != self->pic.last_cookie) {
-    if (self->texture) {
-      cogl_object_unref (self->texture);
-    }
-    self->texture = cogl_texture_2d_new_from_data (obj_3d->ctx,
+    g_clear_pointer (&self->texture, cogl_object_unref);
+    self->texture = cogl_texture_2d_new_from_data (cogl_ctx,
                                                    self->pic.w, self->pic.h,
                                                    COGL_PIXEL_FORMAT_RGBA_8888, 0,
                                                    g_bytes_get_data (self->pic.data,
                                                                      NULL), NULL);
   }
 
-  cogl_pipeline_set_layer_texture (obj_3d->pipeline, 0, self->texture);
+  cogl_pipeline_set_layer_texture (cogl_pipeline, 0, self->texture);
   LBA_UNLOCK (self);
 }
 
@@ -221,7 +228,7 @@ lba_cogl_texture_class_init (LbaCoglTextureClass * klass) {
   g_signal_new ("set", G_TYPE_FROM_CLASS (klass),
                 G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
                 G_STRUCT_OFFSET (LbaCoglTextureClass, set), NULL, NULL,
-                NULL, G_TYPE_NONE, 1, G_TYPE_POINTER);
+                NULL, G_TYPE_NONE, 1, G_TYPE_OBJECT);
 }
 
 /* Export plugin */

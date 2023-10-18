@@ -36,9 +36,26 @@ typedef struct _LbaCoglClass {
   int dummy;
 } LbaCoglClass;
 
-// This mutogene expects subclass to implement LbaICogl interface
-GMO_DEFINE_MUTOGENE_WITH_IFACES (lba_cogl, LbaCogl, {
-                                 0});
+static void lba_cogl_icogl_init (LbaICogl * iface);
+
+GMO_DEFINE_MUTOGENE_WITH_IFACES (lba_cogl, LbaCogl, GMO_IFACE (lba, cogl, icogl));
+
+static void
+lba_cogl_get_ctx (GObject * obj, CoglContext ** ctx, CoglPipeline ** pipeline) {
+  LbaCogl *self = gmo_get_LbaCogl (obj);
+
+  if (ctx)
+    *ctx = self->ctx;
+
+  if (pipeline)
+    *pipeline = self->pipeline;
+}
+
+static void
+lba_cogl_icogl_init (LbaICogl * iface) {
+  /* The rest will be implemented by the children */
+  iface->get_ctx = lba_cogl_get_ctx;
+}
 
 static void
 lba_cogl_draw (GObject * obj) {
