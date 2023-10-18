@@ -5,7 +5,7 @@
 Currently bombolla is a space to play with technologies.
 It is some kind of object-oriented shell/DSL that allows to manipulate plugins.
 
-![Screenshot](demo.png)
+![Screenshot](doc/demo.png)
 ## Building
 
 ```bash
