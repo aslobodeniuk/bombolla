@@ -17,4 +17,4 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
     - name: validate
-      run: ./jihn --full-check
+      run: ./Firulais --full-check

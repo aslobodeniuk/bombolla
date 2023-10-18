@@ -25,4 +25,4 @@ gmodule_dep = dependency('gmodule-2.0')
 subdir('bombolla')
 subdir('examples')
 
-run_command('sh', '-c', 'cp jihn .git/hooks/pre-commit')
+run_command('sh', '-c', 'cp Firulais .git/hooks/pre-commit')

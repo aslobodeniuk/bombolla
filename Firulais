@@ -1,6 +1,4 @@
 #!/bin/bash
-#
-# Check that the code follows a consistant code style
 
 INDENT_PARAMETERS="--line-length85 \
 	--indent-level2 \
@@ -33,11 +31,11 @@ INDENT_PARAMETERS="--line-length85 \
 
 build_and_test()
 {
-    echo "-- JIHN: Building --"
+    echo "-- FIRULAIS: Building --"
     meson build || exit 1
     ninja -C build  || exit 1
 
-    echo "-- JIHN: Running tests --"
+    echo "-- FIRULAIS: Running tests --"
     ninja -C build test  || exit 1
 }
 
@@ -46,7 +44,7 @@ check_format()
     # parameter is a file to check
     nf=$1
 
-    newfile=`mktemp /tmp/bombolla-jihn-check.XXXXXX`
+    newfile=`mktemp /tmp/bombolla-Firulais-check.XXXXXX`
     indent ${INDENT_PARAMETERS} $nf -o $newfile 2>> /dev/null  || exit 1
     diff -u -p "${nf}" "${newfile}"
     r=$?
@@ -59,7 +57,7 @@ check_format()
 	echo " Please fix before committing. Don't forget to run git add before trying to commit again.        "
 	echo " If the whole file is to be committed, this should work (run from the top-level directory):      "
 	echo "                                                                                                 "
-	echo "   ./jihn $file; git add $file; git commit"
+	echo "   ./Firulais $file; git add $file; git commit"
 	echo "                                                                                                 "
 	echo "================================================================================================="
         exit 1
@@ -67,31 +65,31 @@ check_format()
 }
 
 if test "x$1" = "x--full-check"; then
-    echo "-- JIHN: CI mode --"
-    echo "-- JIHN: Checking all the files --"
+    echo "-- FIRULAIS: CI mode --"
+    echo "-- FIRULAIS: Checking all the files --"
     for file in `find * . 2>&1 | grep \\\.[ch]\$ | grep -v plugins/cogl/cogl | grep -v "^\\\./build/" | grep -v "^build/"` ; do
 	# nf is the temporary checkout. This makes sure we check against the
 	# revision in the index (and not the checked out version).
-	nf=`mktemp /tmp/bombolla-jihn-check2.XXXXXX`
+	nf=`mktemp /tmp/bombolla-Firulais-check2.XXXXXX`
 	cp ${file} $nf
 	check_format $nf
     done
 
     build_and_test
-    echo "-- Jihn allows this travaller to pass --"
+    echo "-- Firulais allows this travaller to pass --"
     exit 0
 fi
 
 if test "x$1" = "x"; then
-    echo "-- JIHN: Commit-hook mode.. --"
-    echo "-- JIHN: Checking style --"
+    echo "-- FIRULAIS: Commit-hook mode.. --"
+    echo "-- FIRULAIS: Checking style --"
     for file in `git diff-index --cached --name-only HEAD --diff-filter=ACMR| grep "\.[ch]$"` ; do
 	# nf is the temporary checkout. This makes sure we check against the
 	# revision in the index (and not the checked out version).
 	nf=`git checkout-index --temp ${file} | cut -f 1`
 	check_format $nf
     done
-    echo "-- JIHN: Checking style pass --"
+    echo "-- FIRULAIS: Checking style pass --"
 
     build_and_test
 else
