@@ -17,7 +17,7 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "base/lba-basewindow.h"
+#include <bombolla/base/lba-basewindow.h>
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 

@@ -20,7 +20,7 @@
 #include "bombolla/lba-log.h"
 #include "bombolla/base/i3d.h"
 #include "../base/icogl.h"
-#include "../base/lba-basedrawable.h"
+#include <bombolla/base/lba-basedrawable.h>
 #include <gmo/gmo.h>
 
 static const gchar *global_lba_plugin_name = "LbaCogl";
