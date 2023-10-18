@@ -41,7 +41,11 @@ gpointer gmo_class_get_mutogene (gpointer class, const GType mutogene);
 gpointer gmo_instance_get_mutogene (gpointer instance, const GType mutogene);
 GQuark gmo_info_qrk (void);
 
-#  define GMO_DEFINE_MUTOGENE_WITH_CODE(name, Name, ...)            \
+#  define GMO_IFACE(head, body, iface, ...)                               \
+  { .iface_type = head##_##iface##_get_type,                            \
+        .info = { (GInterfaceInitFunc)head##_##body##_##iface##_init, __VA_ARGS__ } }
+
+#  define GMO_DEFINE_MUTOGENE_WITH_IFACES(name, Name, ...)        \
   static void name##_class_init (GObjectClass *, gpointer);       \
   static void name##_init (GObject *, gpointer);                  \
   static Name *gmo_get_##Name (gpointer gmo);                     \
@@ -73,14 +77,14 @@ GQuark gmo_info_qrk (void);
   };                                                                    \
                                                                         \
   GType name##_get_type (void) {                                        \
-  static gsize g_define_type_id = 0;                                    \
-  if (g_once_init_enter (&g_define_type_id)) {                          \
-  g_define_type_id = gmo_register_mutogene (#Name, &name##_info);       \
-  name##_info.type = g_define_type_id;                                  \
-  g_type_set_qdata (name##_info.type, gmo_info_qrk (), &name##_info);   \
+    static gsize g_define_type_id = 0;                                  \
+    if (g_once_init_enter (&g_define_type_id)) {                        \
+      g_define_type_id = gmo_register_mutogene (#Name, &name##_info);   \
+      name##_info.type = g_define_type_id;                              \
+      g_type_set_qdata (name##_info.type, gmo_info_qrk (), &name##_info); \
+    }                                                                   \
+    return g_define_type_id;                                            \
   }                                                                     \
-   return g_define_type_id;                                             \
-   }                                                                    \
                                                                         \
   static Name *gmo_get_##Name (gpointer gmo) {                          \
     return gmo_instance_get_mutogene (gmo, name##_info.type);           \

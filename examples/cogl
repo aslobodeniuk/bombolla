@@ -1,5 +1,7 @@
+dna GmoCoglCube BaseDrawable LbaMutogene3D LbaCogl LbaCoglCube
+
 create LbaCoglWindow w
-create LbaCoglCube c
+create GmoCoglCube c
 create LbaCoglLabel l
 
 create LbaCoglTexture t

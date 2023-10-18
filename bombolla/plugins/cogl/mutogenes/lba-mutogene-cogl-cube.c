@@ -35,12 +35,10 @@ typedef struct _LbaCoglCubeClass {
 } LbaCoglCubeClass;
 
 static void
-  lba_cogl_cube_iface_init (LbaICogl * iface);
+  lba_cogl_cube_icogl_init (LbaICogl * iface);
 
-GMO_DEFINE_MUTOGENE_WITH_CODE (lba_cogl_cube, LbaCoglCube, {
-                               .iface_type = lba_icogl_get_type,.info = {
-                               (void (*)(void *, void *))lba_cogl_cube_iface_init
-                               }});
+GMO_DEFINE_MUTOGENE_WITH_IFACES (lba_cogl_cube, LbaCoglCube,
+                                 GMO_IFACE (lba, cogl_cube, icogl));
 
 static void
 lba_cogl_cube_paint (GObject * obj, CoglFramebuffer * fb, CoglPipeline * pipeline) {
@@ -159,7 +157,7 @@ lba_cogl_cube_class_init (GObjectClass * object_class, gpointer gmo_class) {
 }
 
 static void
-lba_cogl_cube_iface_init (LbaICogl * iface) {
+lba_cogl_cube_icogl_init (LbaICogl * iface) {
   iface->paint = lba_cogl_cube_paint;
   iface->reopen = lba_cogl_cube_reopen;
 }

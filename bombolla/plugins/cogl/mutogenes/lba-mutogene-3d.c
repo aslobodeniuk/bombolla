@@ -35,12 +35,10 @@ typedef struct _LbaMutogene3DClass {
 } LbaMutogene3DClass;
 
 static void
-  lba_mutogene_3d_iface_init (LbaI3D * iface);
+  lba_mutogene_i3d_init (LbaI3D * iface);
 
-GMO_DEFINE_MUTOGENE_WITH_CODE (lba_mutogene_3d, LbaMutogene3D, {
-                               .iface_type = lba_i3d_get_type,.info = {
-                               (void (*)(void *, void *))lba_mutogene_3d_iface_init
-                               }});
+GMO_DEFINE_MUTOGENE_WITH_IFACES (lba_mutogene_3d, LbaMutogene3D,
+                                 GMO_IFACE (lba, mutogene, i3d));
 
 typedef enum {
   PROP_X = 1,
@@ -61,7 +59,7 @@ lba_mutogene_3d_xyz (GObject * object, gdouble * x, gdouble * y, gdouble * z) {
 }
 
 static void
-lba_mutogene_3d_iface_init (LbaI3D * iface) {
+lba_mutogene_i3d_init (LbaI3D * iface) {
   iface->xyz = lba_mutogene_3d_xyz;
 }
 

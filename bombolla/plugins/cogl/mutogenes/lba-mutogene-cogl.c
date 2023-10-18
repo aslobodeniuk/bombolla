@@ -37,8 +37,8 @@ typedef struct _LbaCoglClass {
 } LbaCoglClass;
 
 // This mutogene expects subclass to implement LbaICogl interface
-GMO_DEFINE_MUTOGENE_WITH_CODE (lba_cogl, LbaCogl, {
-                               0});
+GMO_DEFINE_MUTOGENE_WITH_IFACES (lba_cogl, LbaCogl, {
+                                 0});
 
 static void
 lba_cogl_draw (GObject * obj) {
