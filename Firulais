@@ -76,7 +76,7 @@ if test "x$1" = "x--full-check"; then
     done
 
     build_and_test
-    echo "-- Firulais allows this travaller to pass --"
+    echo "-- Firulais allows this traveller to pass --"
     exit 0
 fi
 

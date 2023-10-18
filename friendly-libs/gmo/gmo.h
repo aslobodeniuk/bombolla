@@ -41,7 +41,7 @@ gpointer gmo_class_get_mutogene (gpointer class, const GType mutogene);
 gpointer gmo_instance_get_mutogene (gpointer instance, const GType mutogene);
 GQuark gmo_info_qrk (void);
 
-#  define GMO_IFACE(head, body, iface, ...)                               \
+#  define GMO_IFACE(head, body, iface, ...)                             \
   { .iface_type = head##_##iface##_get_type,                            \
         .info = { (GInterfaceInitFunc)head##_##body##_##iface##_init, __VA_ARGS__ } }
 

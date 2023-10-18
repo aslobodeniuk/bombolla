@@ -161,3 +161,5 @@ base_drawable_class_init (BaseDrawableClass * klass) {
                                                          G_PARAM_CONSTRUCT |
                                                          G_PARAM_EXPLICIT_NOTIFY));
 }
+
+BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (base_drawable);

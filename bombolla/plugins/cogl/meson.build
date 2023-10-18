@@ -19,27 +19,4 @@ shared_library('lba-cogl-window',
 shared_library('lba-cogl-texture',
                'lba-cogl-texture.c',
                dependencies: [bombolla_dep, cogl_dep],
-               link_with: [bombolla_basedrawable, bombolla_base3d, bombolla_base_cogl3d]
-              )
-
-shared_library('lba-cogl-cube',
-               'lba-cogl-cube.c',
-               dependencies: [bombolla_dep, cogl_dep],
-               link_with: [bombolla_basedrawable, bombolla_base3d, bombolla_base_cogl3d]
-              )
-
-shared_library('lba-cogl-label',
-               'lba-cogl-label.c',
-               dependencies: [bombolla_dep, cogl_pango_dep],
-               link_with: [bombolla_basedrawable, bombolla_base3d, bombolla_base_cogl3d]
-              )
-
-shared_library('lba-picture',
-               'lba-picture.c',
-               dependencies: [bombolla_dep],
-              )
-
-shared_library('lba-file-stream',
-               'lba-file-stream.c',
-               dependencies: [bombolla_dep],
               )
