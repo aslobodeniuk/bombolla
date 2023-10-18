@@ -51,11 +51,8 @@ base_drawable_set_property (GObject * object,
 
   switch ((BaseDrawableProperty) property_id) {
   case PROP_TEXTURE:
-    if (self->texture) {
-      g_object_unref (self->texture);
-    }
-
-    self->texture = g_value_get_object (value);
+    g_clear_pointer (&self->texture, g_object_unref);
+    self->texture = g_value_dup_object (value);
     /* Update if new texture is set */
     if (self->enabled && self->scene && self->texture) {
       g_signal_emit_by_name (self->texture, "set", NULL);
@@ -121,9 +118,7 @@ static void
 base_drawable_dispose (GObject * gobject) {
   BaseDrawable *self = (BaseDrawable *) gobject;
 
-  if (self->texture) {
-    g_object_unref (self->texture);
-  }
+  g_clear_pointer (&self->texture, g_object_unref);
   G_OBJECT_CLASS (base_drawable_parent_class)->dispose (gobject);
 }
 
@@ -161,3 +156,5 @@ base_drawable_class_init (BaseDrawableClass * klass) {
                                                          G_PARAM_CONSTRUCT |
                                                          G_PARAM_EXPLICIT_NOTIFY));
 }
+
+BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (base_drawable);

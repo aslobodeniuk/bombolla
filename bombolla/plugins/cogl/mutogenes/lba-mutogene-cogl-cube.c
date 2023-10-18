@@ -1,5 +1,5 @@
 /* la Bombolla GObject shell.
- * Copyright (C) 2020 Aleksandr Slobodeniuk
+ * Copyright (C) 2023 Alexander Slobodeniuk
  *
  *   This file is part of bombolla.
  *
@@ -17,13 +17,13 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "base/lba-base-cogl3d.h"
+#include <gmo/gmo.h>
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
+#include "bombolla/base/i3d.h"
+#include "../base/icogl.h"
 
 typedef struct _LbaCoglCube {
-  BaseCogl3d parent;
-
   CoglPrimitive *prim;
   CoglIndices *indices;
   CoglTexture *texture;
@@ -31,25 +31,29 @@ typedef struct _LbaCoglCube {
 } LbaCoglCube;
 
 typedef struct _LbaCoglCubeClass {
-  BaseCogl3dClass parent;
+  int dummy;
 } LbaCoglCubeClass;
 
 static void
-lba_cogl_cube_paint (BaseCogl3d * base, CoglFramebuffer * fb,
-                     CoglPipeline * pipeline) {
-  Base3d *s3d = (Base3d *) base;
-  LbaCoglCube *self = (LbaCoglCube *) base;
+  lba_cogl_cube_icogl_init (LbaICogl * iface);
 
+GMO_DEFINE_MUTOGENE_WITH_IFACES (lba_cogl_cube, LbaCoglCube,
+                                 GMO_IFACE (lba, cogl_cube, icogl));
+
+static void
+lba_cogl_cube_paint (GObject * obj, CoglFramebuffer * fb, CoglPipeline * pipeline) {
   double x,
     y,
     z;
   int framebuffer_width;
   int framebuffer_height;
   float rotation = 75.0;
+  LbaCoglCube *self = gmo_get_LbaCoglCube (obj);
+  LbaI3D *iface3d = G_TYPE_INSTANCE_GET_INTERFACE (obj,
+                                                   LBA_I3D,
+                                                   LbaI3D);
 
-  x = s3d->x;
-  y = s3d->y;
-  z = s3d->z;
+  iface3d->xyz (obj, &x, &y, &z);
 
   LBA_LOG ("draw (%f, %f, %f)", x, y, z);
 
@@ -80,9 +84,9 @@ lba_cogl_cube_paint (BaseCogl3d * base, CoglFramebuffer * fb,
 }
 
 static void
-lba_cogl_cube_reopen (BaseCogl3d * base, CoglFramebuffer * fb,
+lba_cogl_cube_reopen (GObject * base, CoglFramebuffer * fb,
                       CoglPipeline * pipeline, CoglContext * ctx) {
-  LbaCoglCube *self = (LbaCoglCube *) base;
+  LbaCoglCube *self = gmo_get_LbaCoglCube (base);
 
   /* A cube modelled using 4 vertices for each face.
    *
@@ -145,17 +149,17 @@ lba_cogl_cube_reopen (BaseCogl3d * base, CoglFramebuffer * fb,
 }
 
 static void
-lba_cogl_cube_init (LbaCoglCube * self) {
+lba_cogl_cube_init (GObject * object, gpointer mutogene) {
 }
 
 static void
-lba_cogl_cube_class_init (LbaCoglCubeClass * klass) {
-  BaseCogl3dClass *base_cogl3d_class = (BaseCogl3dClass *) klass;
-
-  base_cogl3d_class->paint = lba_cogl_cube_paint;
-  base_cogl3d_class->reopen = lba_cogl_cube_reopen;
+lba_cogl_cube_class_init (GObjectClass * object_class, gpointer gmo_class) {
 }
 
-G_DEFINE_TYPE (LbaCoglCube, lba_cogl_cube, G_TYPE_BASE_COGL3D);
-/* Export plugin */
+static void
+lba_cogl_cube_icogl_init (LbaICogl * iface) {
+  iface->paint = lba_cogl_cube_paint;
+  iface->reopen = lba_cogl_cube_reopen;
+}
+
 BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (lba_cogl_cube);

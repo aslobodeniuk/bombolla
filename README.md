@@ -14,7 +14,7 @@ sudo pip install meson
 
 git clone git@github.com:aslobodeniuk/bombolla.git
 cd bombolla
-./jihn
+./Firulais
 ```
 
 ## Running an example

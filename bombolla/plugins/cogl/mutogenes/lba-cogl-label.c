@@ -17,13 +17,15 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "base/lba-base-cogl3d.h"
+#include <gmo/gmo.h>
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
+#include "bombolla/base/i3d.h"
+#include "../base/icogl.h"
 #include <cogl-pango/cogl-pango.h>
 
 typedef struct _LbaCoglLabel {
-  BaseCogl3d parent;
+//  BaseCogl3d parent;
 
   CoglPangoFontMap *pango_font_map;
   PangoContext *pango_context;
@@ -42,24 +44,28 @@ typedef struct _LbaCoglLabel {
 } LbaCoglLabel;
 
 typedef struct _LbaCoglLabelClass {
-  BaseCogl3dClass parent;
+//  BaseCogl3dClass parent;
 } LbaCoglLabelClass;
 
 static void
-lba_cogl_label_paint (BaseCogl3d * base, CoglFramebuffer * fb,
-                      CoglPipeline * pipeline) {
-  Base3d *s3d = (Base3d *) base;
-  LbaCoglLabel *self = (LbaCoglLabel *) base;
+  lba_cogl_label_icogl_init (LbaICogl * iface);
 
+GMO_DEFINE_MUTOGENE_WITH_IFACES (lba_cogl_label, LbaCoglLabel,
+                                 GMO_IFACE (lba, cogl_label, icogl));
+
+static void
+lba_cogl_label_paint (GObject * obj, CoglFramebuffer * fb, CoglPipeline * pipeline) {
   double x,
     y,
     z;
   int framebuffer_width;
   int framebuffer_height;
+  LbaCoglLabel *self = gmo_get_LbaCoglLabel (obj);
+  LbaI3D *iface3d = G_TYPE_INSTANCE_GET_INTERFACE (obj,
+                                                   LBA_I3D,
+                                                   LbaI3D);
 
-  x = s3d->x;
-  y = s3d->y;
-  z = s3d->z;
+  iface3d->xyz (obj, &x, &y, &z);
 
   LBA_LOG ("draw (%f, %f, %f)", x, y, z);
 
@@ -91,9 +97,9 @@ lba_cogl_label_update (LbaCoglLabel * self) {
 }
 
 static void
-lba_cogl_label_reopen (BaseCogl3d * base, CoglFramebuffer * fb,
+lba_cogl_label_reopen (GObject * base, CoglFramebuffer * fb,
                        CoglPipeline * pipeline, CoglContext * ctx) {
-  LbaCoglLabel *self = (LbaCoglLabel *) base;
+  LbaCoglLabel *self = gmo_get_LbaCoglLabel (base);
   int framebuffer_width;
   int framebuffer_height;
   float fovy,
@@ -153,7 +159,7 @@ lba_cogl_label_reopen (BaseCogl3d * base, CoglFramebuffer * fb,
 }
 
 static void
-lba_cogl_label_init (LbaCoglLabel * self) {
+lba_cogl_label_init (GObject * object, gpointer mutogene) {
 }
 
 typedef enum {
@@ -168,7 +174,7 @@ static void
 lba_cogl_label_set_property (GObject * object,
                              guint property_id, const GValue * value,
                              GParamSpec * pspec) {
-  LbaCoglLabel *self = (LbaCoglLabel *) object;
+  LbaCoglLabel *self = gmo_get_LbaCoglLabel (object);
 
   switch ((LbaCoglLabelProperty) property_id) {
   case PROP_TEXT:
@@ -201,7 +207,7 @@ lba_cogl_label_set_property (GObject * object,
 static void
 lba_cogl_label_get_property (GObject * object,
                              guint property_id, GValue * value, GParamSpec * pspec) {
-  LbaCoglLabel *self = (LbaCoglLabel *) object;
+  LbaCoglLabel *self = gmo_get_LbaCoglLabel (object);
 
   switch ((LbaCoglLabelProperty) property_id) {
   case PROP_TEXT:
@@ -224,12 +230,8 @@ lba_cogl_label_get_property (GObject * object,
 }
 
 static void
-lba_cogl_label_class_init (LbaCoglLabelClass * klass) {
+lba_cogl_label_class_init (GObjectClass * klass, gpointer gmo_class) {
   GObjectClass *gobj_class = G_OBJECT_CLASS (klass);
-  BaseCogl3dClass *base_cogl3d_class = (BaseCogl3dClass *) klass;
-
-  base_cogl3d_class->paint = lba_cogl_label_paint;
-  base_cogl3d_class->reopen = lba_cogl_label_reopen;
 
   gobj_class->set_property = lba_cogl_label_set_property;
   gobj_class->get_property = lba_cogl_label_get_property;
@@ -265,6 +267,11 @@ lba_cogl_label_class_init (LbaCoglLabelClass * klass) {
                                                       G_PARAM_CONSTRUCT));
 }
 
-G_DEFINE_TYPE (LbaCoglLabel, lba_cogl_label, G_TYPE_BASE_COGL3D)
+static void
+lba_cogl_label_icogl_init (LbaICogl * iface) {
+  iface->paint = lba_cogl_label_paint;
+  iface->reopen = lba_cogl_label_reopen;
+}
+
 /* Export plugin */
-    BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (lba_cogl_label);
+BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (lba_cogl_label);

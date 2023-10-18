@@ -1,6 +1,9 @@
+dna GmoCoglCube BaseDrawable LbaMutogene3D LbaCogl LbaCoglCube
+dna GmoCoglLabel BaseDrawable LbaMutogene3D LbaCogl LbaCoglLabel
+
 create LbaCoglWindow w
-create LbaCoglCube c
-create LbaCoglLabel l
+create GmoCoglCube c
+create GmoCoglLabel l
 
 create LbaCoglTexture t
 set c.texture t
@@ -14,7 +17,7 @@ set l.text Bombolla
 set l.font-size 40
 set l.font-name Chilanka
 
-create LbaCoglLabel l2
+create GmoCoglLabel l2
 set l2.drawing-scene w
 set l2.x 0.1
 set l2.y 0.3
