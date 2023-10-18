@@ -20,7 +20,7 @@ cd bombolla
 ## Running an example
 
 ```bash
-build/bombolla/tools/shell/bombolla-shell -p build/bombolla/plugins/cogl -i examples/cogl
+build/bombolla/tools/shell/bombolla-shell -p build/bombolla/ -i examples/cogl
 ```
 
 ## FAQ
