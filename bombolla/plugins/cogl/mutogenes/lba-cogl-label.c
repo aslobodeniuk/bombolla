@@ -50,8 +50,8 @@ typedef struct _LbaCoglLabelClass {
 static void
   lba_cogl_label_icogl_init (LbaICogl * iface);
 
-GMO_DEFINE_MUTOGENE_WITH_IFACES (lba_cogl_label, LbaCoglLabel,
-                                 GMO_IFACE (lba, cogl_label, icogl));
+GMO_DEFINE_MUTOGENE (lba_cogl_label, LbaCoglLabel,
+                     GMO_ADD_IFACE (lba, cogl_label, icogl));
 
 static void
 lba_cogl_label_paint (GObject * obj, CoglFramebuffer * fb, CoglPipeline * pipeline) {

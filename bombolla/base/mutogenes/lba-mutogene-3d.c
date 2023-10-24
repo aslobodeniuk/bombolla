@@ -37,8 +37,8 @@ typedef struct _LbaMutogene3DClass {
 static void
   lba_mutogene_i3d_init (LbaI3D * iface);
 
-GMO_DEFINE_MUTOGENE_WITH_IFACES (lba_mutogene_3d, LbaMutogene3D,
-                                 GMO_IFACE (lba, mutogene, i3d));
+GMO_DEFINE_MUTOGENE (lba_mutogene_3d, LbaMutogene3D,
+                     GMO_ADD_IFACE (lba, mutogene, i3d));
 
 typedef enum {
   PROP_X = 1,

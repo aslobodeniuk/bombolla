@@ -37,8 +37,8 @@ typedef struct _LbaCoglCubeClass {
 static void
   lba_cogl_cube_icogl_init (LbaICogl * iface);
 
-GMO_DEFINE_MUTOGENE_WITH_IFACES (lba_cogl_cube, LbaCoglCube,
-                                 GMO_IFACE (lba, cogl_cube, icogl));
+GMO_DEFINE_MUTOGENE (lba_cogl_cube, LbaCoglCube,
+                     GMO_ADD_IFACE (lba, cogl_cube, icogl));
 
 static void
 lba_cogl_cube_paint (GObject * obj, CoglFramebuffer * fb, CoglPipeline * pipeline) {

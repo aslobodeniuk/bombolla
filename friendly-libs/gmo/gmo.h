@@ -23,13 +23,20 @@
 
 #  include <glib-object.h>
 
+typedef enum {
+  GMO_ADD_TYPE_IFACE,
+  GMO_ADD_TYPE_FRIEND,
+  GMO_ADD_TYPE_REQ
+} GMOAddType;
+
 typedef struct {
   GTypeInfo info;
   GType type;
   struct {
-    GType (*iface_type) (void);
-    GInterfaceInfo info;
-  } ifaces[];
+    GMOAddType add_type;
+      GType (*gtype) (void);
+    GInterfaceInfo iface_info;
+  } add[];
 } GMOInfo;
 
 GType gmo_register_mutant (const gchar * mutant_name,
@@ -41,11 +48,17 @@ gpointer gmo_class_get_mutogene (gpointer class, const GType mutogene);
 gpointer gmo_instance_get_mutogene (gpointer instance, const GType mutogene);
 GQuark gmo_info_qrk (void);
 
-#  define GMO_IFACE(head, body, iface, ...)                             \
-  { .iface_type = head##_##iface##_get_type,                            \
-        .info = { (GInterfaceInitFunc)head##_##body##_##iface##_init, __VA_ARGS__ } }
+#  define GMO_ADD_FRIEND(name) { .add_type = GMO_ADD_TYPE_FRIEND, .gtype = name##_get_type }
+#  define GMO_ADD_REQ(name) { .add_type = GMO_ADD_TYPE_REQ, .gtype = name##_get_type }
 
-#  define GMO_DEFINE_MUTOGENE_WITH_IFACES(name, Name, ...)        \
+#  define GMO_REQ_VARIANTS_MARKER {.add_type = GMO_ADD_TYPE_REQ, .gtype = (GType (*) (void;) 0xabc }
+#  define GMO_REQ_VARIANTS(...) GMO_REQ_VARIANTS_MARKER, __VA_ARGS__ , GMO_REQ_VARIANTS_MARKER
+
+#  define GMO_ADD_IFACE(head, body, iface, ...)                         \
+  { .add_type = GMO_ADD_TYPE_IFACE, .gtype = head##_##iface##_get_type, \
+        .iface_info = { (GInterfaceInitFunc)head##_##body##_##iface##_init, __VA_ARGS__ } }
+
+#  define GMO_DEFINE_MUTOGENE(name, Name, ...)                    \
   static void name##_class_init (GObjectClass *, gpointer);       \
   static void name##_init (GObject *, gpointer);                  \
   static Name *gmo_get_##Name (gpointer gmo);                     \
@@ -71,9 +84,7 @@ GQuark gmo_info_qrk (void);
       .class_size = sizeof (Name##Class),                               \
       .instance_size = sizeof (Name)                                    \
     },                                                                  \
-    .ifaces = {                                                         \
-      __VA_ARGS__                                                       \
-    }                                                                   \
+    .add = {{0}, __VA_ARGS__, {0}}                                      \
   };                                                                    \
                                                                         \
   GType name##_get_type (void) {                                        \

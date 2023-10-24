@@ -83,9 +83,23 @@ gmo_register_mutant (const gchar * mutant_name,
 
   ret = g_type_register_static (base_type, mutant_name, &mutant_info, 0);
   g_type_set_qdata (ret, gmo_info_qrk (), minfo);
-  for (i = 0; minfo->ifaces[i].iface_type != NULL; i++) {
-    g_type_add_interface_static (ret, minfo->ifaces[i].iface_type (),
-                                 &minfo->ifaces[i].info);
+
+  g_assert (0 == minfo->add[0].gtype);
+  for (i = 1; minfo->add[i].gtype != 0; i++) {
+    switch (minfo->add[i].add_type) {
+    case GMO_ADD_TYPE_IFACE:
+      g_type_add_interface_static (ret, minfo->add[i].gtype (),
+                                   &minfo->add[i].iface_info);
+      break;
+    case GMO_ADD_TYPE_FRIEND:
+      g_critical ("TODO");
+      break;
+    case GMO_ADD_TYPE_REQ:
+      g_critical ("TODO");
+      break;
+    default:
+      g_critical ("Unexpected add type %d", minfo->add[i].add_type);
+    }
   }
   return ret;
 }
