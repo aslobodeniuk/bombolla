@@ -25,8 +25,7 @@
 
 typedef enum {
   GMO_ADD_TYPE_IFACE,
-  GMO_ADD_TYPE_FRIEND,
-  GMO_ADD_TYPE_REQ
+  GMO_ADD_TYPE_DEP,
 } GMOAddType;
 
 typedef struct {
@@ -49,11 +48,10 @@ gpointer gmo_instance_get_mutogene (gpointer instance, const GType mutogene);
 GType gmo_type_peek_mutant (const GType mutant_type, const GType mutogene);
 GQuark gmo_info_qrk (void);
 
-#  define GMO_ADD_FRIEND(name) { .add_type = GMO_ADD_TYPE_FRIEND, .gtype = name##_get_type }
-#  define GMO_ADD_REQ(name) { .add_type = GMO_ADD_TYPE_REQ, .gtype = name##_get_type }
-
-#  define GMO_REQ_VARIANTS_MARKER {.add_type = GMO_ADD_TYPE_REQ, .gtype = (GType (*) (void;) 0xabc }
-#  define GMO_REQ_VARIANTS(...) GMO_REQ_VARIANTS_MARKER, __VA_ARGS__ , GMO_REQ_VARIANTS_MARKER
+#  define GMO_ADD_DEP(name) { .add_type = GMO_ADD_TYPE_DEP, .gtype = name##_get_type }
+#  define GMO_DEP_ANY_SEP_GTYPE ((GType (*) (void;)) 0xabc)
+#  define GMO_DEP_ANY_SEP { .add_type = GMO_ADD_TYPE_DEP, .gtype = GMO_DEP_ANY_SEP_GTYPE }
+#  define GMO_DEP_ANY_OF(...) GMO_DEP_ANY_SEP, __VA_ARGS__ , GMO_DEP_ANY_SEP
 
 #  define GMO_ADD_IFACE(head, body, iface, ...)                         \
   { .add_type = GMO_ADD_TYPE_IFACE, .gtype = head##_##iface##_get_type, \

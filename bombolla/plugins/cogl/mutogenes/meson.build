@@ -1,7 +1,7 @@
 shared_library('lba-mutogene-cogl',
                'lba-mutogene-cogl.c',
                dependencies: [bombolla_dep, cogl_pango_dep],
-               link_with: [lba_base, bombolla_icogl]
+               link_with: [lba_base, bombolla_icogl, bombolla_basedrawable]
               )
 
 shared_library('lba-mutogene-cogl-cube',

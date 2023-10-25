@@ -30,6 +30,8 @@
 
 #include <gmo/gmo.h>
 
+#define G_TYPE_IS_MUTOGENE(t) (G_TYPE_FUNDAMENTAL (t) == gmo_base_get_type ())
+
 static GTypeInfo empty_info;
 
 GQuark
@@ -50,9 +52,10 @@ gmo_base_get_type (void) {
 
 GType
 gmo_register_mutant (const gchar * mutant_name,
-                     const GType base_type, const gchar * mutogene_name) {
+                     const GType parent_type, const gchar * mutogene_name) {
   GType t;
   GType ret;
+  GType base_type = parent_type;
   GTypeQuery base_info;
   GMOInfo *minfo;
   GTypeInfo mutant_info;
@@ -90,15 +93,50 @@ gmo_register_mutant (const gchar * mutant_name,
     case GMO_ADD_TYPE_IFACE:
       g_type_add_interface_static (ret, minfo->add[i].gtype (),
                                    &minfo->add[i].iface_info);
-      break;
-    case GMO_ADD_TYPE_FRIEND:
-      g_critical
-          ("TODO: Friend means this Mutogene brings this one too, automatically."
-           " Friend will be added to the inheritance tree before the actual mutogene.");
-      break;
-    case GMO_ADD_TYPE_REQ:
-      g_critical ("TODO: Requirement means that the base type MUST be of this type."
-                  " Can also require one of multiple types in the list.");
+      continue;
+    case GMO_ADD_TYPE_DEP:
+      if (minfo->add[i].gtype == GMO_DEP_ANY_SEP_GTYPE) {
+        g_error ("Variant dependencies not supported yet");
+      } else {
+        /*
+         * If the dep is GObject..
+         * If the dep is Interface..
+         * If the dep is Mutogene..
+         */
+        GType dep_type = minfo->add[i].gtype ();
+
+        if (G_TYPE_IS_OBJECT (dep_type)) {
+          /* GObject:
+           * If the dep is GObject, then we check if the base_type
+           * IS this type too. If it is, then the check have passed.
+           * If the base_type is not that type, then we have a problem,
+           * Houston.. But we are cool, and we check if "dep type" is actually
+           * something of the base_type. Because if so, OR if the base_type is just zero,
+           * then we just replace base_type by the dep type.
+           * Setting various GObject types as a dependency doesn't make sence, but this
+           * case will work too, as a side effect...
+           */
+
+          if (base_type == 0 || g_type_is_a (dep_type, base_type)) {
+            base_type = dep_type;
+            continue;
+          }
+
+          if (g_type_is_a (base_type, dep_type)) {
+            /* Base type is a dep_type, and more, everything is ok!
+             * Done with this check, let's jump to the next dep. */
+            continue;
+          }
+
+          g_critical ("Mutogene %s needs %s, but this dependency is not satisfied",
+                      mutogene_name, g_type_name (dep_type));
+          return 0;
+        }
+
+        if (G_TYPE_IS_MUTOGENE (dep_type)) {
+          g_error ("Mutogene dependency. TODO.");
+        }
+      }
       break;
     default:
       g_critical ("Unexpected add type %d", minfo->add[i].add_type);

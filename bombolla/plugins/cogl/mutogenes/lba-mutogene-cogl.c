@@ -38,7 +38,8 @@ typedef struct _LbaCoglClass {
 
 static void lba_cogl_icogl_init (LbaICogl * iface);
 
-GMO_DEFINE_MUTOGENE (lba_cogl, LbaCogl, GMO_ADD_IFACE (lba, cogl, icogl));
+GMO_DEFINE_MUTOGENE (lba_cogl, LbaCogl, GMO_ADD_IFACE (lba, cogl, icogl),
+                     GMO_ADD_DEP (base_drawable));
 
 static void
 lba_cogl_get_ctx (GObject * obj, CoglContext ** ctx, CoglPipeline ** pipeline) {
