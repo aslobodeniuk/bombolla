@@ -92,10 +92,13 @@ gmo_register_mutant (const gchar * mutant_name,
                                    &minfo->add[i].iface_info);
       break;
     case GMO_ADD_TYPE_FRIEND:
-      g_critical ("TODO");
+      g_critical
+          ("TODO: Friend means this Mutogene brings this one too, automatically."
+           " Friend will be added to the inheritance tree before the actual mutogene.");
       break;
     case GMO_ADD_TYPE_REQ:
-      g_critical ("TODO");
+      g_critical ("TODO: Requirement means that the base type MUST be of this type."
+                  " Can also require one of multiple types in the list.");
       break;
     default:
       g_critical ("Unexpected add type %d", minfo->add[i].add_type);
@@ -127,9 +130,9 @@ gmo_class_get_parent_info (GType t) {
   return parent_info;
 }
 
-static GType
-gmo_class_peek_mutant (gpointer class, const GType mutogene) {
-  GType t = G_TYPE_FROM_CLASS (class);
+GType
+gmo_type_peek_mutant (const GType mutant_type, const GType mutogene) {
+  GType t = mutant_type;
 
   g_assert (mutogene != 0);
   g_assert (t != 0);
@@ -146,8 +149,13 @@ gmo_class_peek_mutant (gpointer class, const GType mutogene) {
   }
 
   g_error ("Mutogene '%s' offset not found in type '%s'",
-           g_type_name (mutogene), g_type_name (G_TYPE_FROM_CLASS (class)));
+           g_type_name (mutogene), g_type_name (mutant_type));
   return 0;
+}
+
+static GType
+gmo_class_peek_mutant (gpointer class, const GType mutogene) {
+  return gmo_type_peek_mutant (G_TYPE_FROM_CLASS (class), mutogene);
 }
 
 gpointer

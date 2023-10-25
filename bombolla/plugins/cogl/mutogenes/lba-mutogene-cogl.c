@@ -149,8 +149,7 @@ lba_cogl_dispose (GObject * gobject) {
 
   g_mutex_clear (&self->lock);
 
-  /* Always chain up */
-  G_OBJECT_CLASS (lba_cogl_parent_class)->dispose (gobject);
+  GMO_CHAINUP (gobject, lba_cogl, GObject)->dispose (gobject);
 }
 
 static void
