@@ -167,8 +167,7 @@ gmo_class_get_mutogene (gpointer class, const GType mutogene) {
 gpointer
 gmo_instance_get_mutogene (gpointer instance, const GType mutogene) {
   return instance +
-      gmo_class_get_parent_info (gmo_class_peek_mutant (((GTypeInstance *)
-                                                         instance)->g_class,
-                                                        mutogene)
+      gmo_class_get_parent_info (gmo_type_peek_mutant
+                                 (G_TYPE_FROM_INSTANCE (instance), mutogene)
       ).instance_size;
 }
