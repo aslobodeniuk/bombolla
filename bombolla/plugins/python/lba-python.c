@@ -231,7 +231,7 @@ lba_python_init (LbaPython * self) {
   static volatile gboolean once;
 
   if (!self->plugins_path) {
-    self->plugins_path = g_strdup (g_getenv ("LBA_PLUGINS_PATH"));
+    self->plugins_path = g_strdup (g_getenv ("LBA_PYTHON_PLUGINS_PATH"));
 
     if (!self->plugins_path) {
       LBA_LOG ("No plugin path is set. Will scan current directory.");

@@ -1,11 +1,67 @@
-create LbaGjs gjs
+dna GmoCoglCube BaseDrawable LbaMutogene3D LbaCogl LbaCoglCube
+dna GmoCoglLabel BaseDrawable LbaMutogene2D LbaCogl LbaCoglLabel
+
+create LbaCoglWindow w
+create GmoCoglLabel l
+create GmoCoglLabel l2
+
+set l2.drawing-scene w
+set l.drawing-scene w
+
+set l.x 0
+set l.y 0
+set l.text Bombolla
+set l.font-size 24
+set l.font-name Chilanka
+
+set l2.x 0
+set l2.y 0.1
+set l2.text is the best shell
+set l2.font-size 18
+set l.font-name Chilanka
+
+set w.width 1920
+set w.height 1080
+call w.open
+
+# Now the Python bastard
 create LbaPython py
-async create FrankNewsWindow w
 create __main__+LbaFeedParser feed
 
-sync
-call feed.check-for-updates
-bind feed.title w.title
+set feed.uri https://planet.gnome.org/rss20.xml
 
-async call w.my-open
+# NOTE/TODO it seems that we can only properly
+# call python from the main thread
+# calling it drom other threads deadlocks in python,
+# as it seems... That is why we wait until it finished it's job
+# and then happily take it's results
+
+bind l.text feed.title
+bind l2.text feed.summary
+call w.request-redraw
+
+
+# Not ready to properly connect JS to Python because both are picky
+# regarding the threading. But JS to C easily.
+create LbaGjs js
+
+# Try to do something not from default GMainContext and JS crashes
+async create MyJSWindow jsw
 sync
+
+# Curious side effect: because we have executed "Gtk.init(null);"
+# in JS, now we can easily and safely manipulate classes of Gtk
+# here direcly from bombolla-shell. From any thread.
+
+create GtkWindow gtkw
+call gtkw.show
+set gtkw.title Hey, suddenly just some GtkWindow appeared
+
+on jsw.my-clicked
+set l.font-size 70
+set l2.font-size 50
+call w.request-redraw
+call gtkw.hide
+end
+
+async call jsw.my-open

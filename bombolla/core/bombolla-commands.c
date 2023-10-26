@@ -396,6 +396,11 @@ lba_command_async (BombollaContext * ctx, gchar ** tokens) {
 }
 
 static gboolean
+lba_comment (BombollaContext * ctx, gchar ** tokens) {
+  return TRUE;
+}
+
+static gboolean
 lba_command_dna (BombollaContext * ctx, gchar ** tokens) {
   gint t;
   GType base_type;
@@ -469,6 +474,7 @@ const BombollaCommand commands[] = {
   { "async", lba_command_async },
   { "sync", lba_command_sync },
   { "dna", lba_command_dna },
+  { "#", lba_comment },
   /* End of list */
   { NULL, NULL }
 };

@@ -188,7 +188,7 @@ lba_gjs_init (LbaGjs * self) {
   g_cond_init (&self->cond);
 
   if (!self->plugins_path) {
-    self->plugins_path = g_strdup (g_getenv ("LBA_PLUGINS_PATH"));
+    self->plugins_path = g_strdup (g_getenv ("LBA_JS_PLUGINS_PATH"));
 
     if (!self->plugins_path) {
       LBA_LOG ("No plugin path is set. Will scan current directory.");
