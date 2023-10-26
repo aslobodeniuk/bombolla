@@ -432,7 +432,7 @@ lba_command_dna (BombollaContext * ctx, gchar ** tokens) {
       base_type = gmo_register_mutant (mutant_name, base_type, mutogene_name);
       base_name = g_type_name (base_type);
     } else {
-      gchar *type_name = g_strdup_printf ("%s_M_%s", base_name, mutogene_name);
+      gchar *type_name = g_strdup_printf ("%s+%s", base_name, mutogene_name);
 
       /* If intermediate class already exists, we take the existing one */
       base_type = g_type_from_name (type_name) ?
