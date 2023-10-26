@@ -20,13 +20,11 @@
 #include <gmo/gmo.h>
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
-#include "bombolla/base/i3d.h"
+#include "bombolla/base/i2d.h"
 #include "../base/icogl.h"
 #include <cogl-pango/cogl-pango.h>
 
 typedef struct _LbaCoglLabel {
-//  BaseCogl3d parent;
-
   CoglPangoFontMap *pango_font_map;
   PangoContext *pango_context;
   PangoFontDescription *pango_font_desc;
@@ -44,7 +42,6 @@ typedef struct _LbaCoglLabel {
 } LbaCoglLabel;
 
 typedef struct _LbaCoglLabelClass {
-//  BaseCogl3dClass parent;
 } LbaCoglLabelClass;
 
 static void
@@ -56,18 +53,17 @@ GMO_DEFINE_MUTOGENE (lba_cogl_label, LbaCoglLabel,
 static void
 lba_cogl_label_paint (GObject * obj, CoglFramebuffer * fb, CoglPipeline * pipeline) {
   double x,
-    y,
-    z;
+    y;
   int framebuffer_width;
   int framebuffer_height;
   LbaCoglLabel *self = gmo_get_LbaCoglLabel (obj);
-  LbaI3D *iface3d = G_TYPE_INSTANCE_GET_INTERFACE (obj,
-                                                   LBA_I3D,
-                                                   LbaI3D);
+  LbaI2D *iface2d = G_TYPE_INSTANCE_GET_INTERFACE (obj,
+                                                   LBA_I2D,
+                                                   LbaI2D);
 
-  iface3d->xyz (obj, &x, &y, &z);
+  iface2d->xy (obj, &x, &y);
 
-  LBA_LOG ("draw (%f, %f, %f)", x, y, z);
+  LBA_LOG ("draw (%f, %f)", x, y);
 
   framebuffer_width = cogl_framebuffer_get_width (fb);
   framebuffer_height = cogl_framebuffer_get_height (fb);

@@ -1,5 +1,5 @@
 dna GmoCoglCube BaseDrawable LbaMutogene3D LbaCogl LbaCoglCube
-dna GmoCoglLabel BaseDrawable LbaMutogene3D LbaCogl LbaCoglLabel
+dna GmoCoglLabel BaseDrawable LbaMutogene2D LbaCogl LbaCoglLabel
 
 create LbaCoglWindow w
 create GmoCoglCube c
