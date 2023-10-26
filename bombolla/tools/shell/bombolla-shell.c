@@ -116,6 +116,7 @@ main (int argc, char **argv) {
     a[strlen (a) - 1] = 0;
 
     if (a[0] == 'q') {
+      g_signal_emit_by_name (core, "execute", "sync");
       break;
     }
 

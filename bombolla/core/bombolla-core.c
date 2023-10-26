@@ -146,7 +146,8 @@ lba_core_dispose (GObject * gobject) {
 
   if (self->ctx) {
     if (self->ctx->bindings) {
-      g_hash_table_remove_all (self->ctx->bindings);
+      // The bindings actually belong to the object, and are
+      // automatically destroyed when the objects are destroyed
       g_hash_table_unref (self->ctx->bindings);
     }
     if (self->ctx->objects) {
@@ -198,8 +199,12 @@ lba_core_proccess_line (GObject * obj, const gchar * str) {
     self->ctx->proccess_command = lba_core_proccess_line;
     self->ctx->objects =
         g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
+
+    // The bindings actually belong to the object, and are
+    // automatically destroyed when the objects are destroyed.
+    // The only point of storing them is the "unbind" command
     self->ctx->bindings =
-        g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
+        g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
   }
 
   /* FIXME: that's hackish */
