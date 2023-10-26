@@ -346,6 +346,7 @@ lba_command_bind (BombollaContext * ctx, gchar ** tokens) {
                      g_strdup (binding_name));
   g_object_weak_ref (obj2, lba_core_obj_has_binding_weak_ref,
                      g_strdup (binding_name));
+  // FIXME: get rid of this hash table: "binding" is transfer-none
   g_hash_table_insert (ctx->bindings, binding_name, binding);
   LBA_LOG ("Added binding %s", binding_name);
   binding_name = NULL;
@@ -429,6 +430,7 @@ lba_command_dna (BombollaContext * ctx, gchar ** tokens) {
     /* Final type */
     if (tokens[t + 1] == NULL) {
       base_type = gmo_register_mutant (mutant_name, base_type, mutogene_name);
+      base_name = g_type_name (base_type);
     } else {
       gchar *type_name = g_strdup_printf ("%s_M_%s", base_name, mutogene_name);
 
@@ -437,6 +439,7 @@ lba_command_dna (BombollaContext * ctx, gchar ** tokens) {
           g_type_from_name (type_name) :
           gmo_register_mutant (type_name, base_type, mutogene_name);
       g_free (type_name);
+      base_name = g_type_name (base_type);
     }
 
     if (0 == base_type) {
