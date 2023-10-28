@@ -43,7 +43,14 @@ lba_command_create (BombollaContext * ctx, gchar ** tokens) {
     g_warning ("%s", request_failure_msg);
     return FALSE;
   } else {
-    GObject *obj = g_object_new (obj_type, NULL);
+    GObject *obj;
+
+    /* If the type is mutogene, then we might be able to instantiate
+     * the mutant. If it's not abstract. */
+    if (G_TYPE_IS_MUTOGENE (obj_type))
+      obj_type = gmo_register_mutant (NULL, G_TYPE_OBJECT, obj_type);
+
+    obj = g_object_new (obj_type, NULL);
 
     if (obj) {
       g_object_set_data (obj, "bombolla-commands-ctx", ctx);
@@ -398,19 +405,15 @@ lba_command_dna (BombollaContext * ctx, gchar ** tokens) {
     /* In fact we have to register various intermediate mutant classes in order
      * to reach the requested one */
     const gchar *mutogene_name = tokens[t];
+    GType mutogene_type = g_type_from_name (mutogene_name);
 
     /* Final type */
     if (tokens[t + 1] == NULL) {
-      base_type = gmo_register_mutant (mutant_name, base_type, mutogene_name);
+      base_type = gmo_register_mutant (mutant_name, base_type, mutogene_type);
       base_name = g_type_name (base_type);
     } else {
-      gchar *type_name = g_strdup_printf ("%s+%s", base_name, mutogene_name);
-
-      /* If intermediate class already exists, we take the existing one */
-      base_type = g_type_from_name (type_name) ?
-          g_type_from_name (type_name) :
-          gmo_register_mutant (type_name, base_type, mutogene_name);
-      g_free (type_name);
+      /* Intermediate type */
+      base_type = gmo_register_mutant (NULL, base_type, mutogene_type);
       base_name = g_type_name (base_type);
     }
 

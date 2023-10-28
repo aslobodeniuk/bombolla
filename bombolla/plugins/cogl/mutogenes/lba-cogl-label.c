@@ -1,5 +1,5 @@
 /* la Bombolla GObject shell.
- * Copyright (C) 2020 Aleksandr Slobodeniuk
+ * Copyright (C) 2023 Alexander Slobodeniuk
  *
  *   This file is part of bombolla.
  *
@@ -44,11 +44,15 @@ typedef struct _LbaCoglLabel {
 typedef struct _LbaCoglLabelClass {
 } LbaCoglLabelClass;
 
+GType lba_cogl_get_type (void);
+GType lba_mutogene_2d_get_type (void);
+
 static void
   lba_cogl_label_icogl_init (LbaICogl * iface);
 
 GMO_DEFINE_MUTOGENE (lba_cogl_label, LbaCoglLabel,
-                     GMO_ADD_IFACE (lba, cogl_label, icogl));
+                     GMO_ADD_IFACE (lba, cogl_label, icogl),
+                     GMO_ADD_DEP (lba_cogl), GMO_ADD_DEP (lba_mutogene_2d));
 
 static void
 lba_cogl_label_paint (GObject * obj, CoglFramebuffer * fb, CoglPipeline * pipeline) {

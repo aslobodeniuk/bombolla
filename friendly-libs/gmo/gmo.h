@@ -38,8 +38,11 @@ typedef struct {
   } add[];
 } GMOInfo;
 
+#  define G_TYPE_IS_MUTOGENE(t) (G_TYPE_FUNDAMENTAL (t) == gmo_fundamental_get_type ())
+
+GType gmo_fundamental_get_type (void);
 GType gmo_register_mutant (const gchar * mutant_name,
-                           const GType base_type, const gchar * mutogene_name);
+                           GType base_type, GType mutogene);
 
 GType gmo_register_mutogene (const gchar * mutogene_name, GMOInfo * minfo);
 
