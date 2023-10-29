@@ -40,9 +40,12 @@ GType lba_mutogene_3d_get_type (void);
 static void
   lba_cogl_cube_icogl_init (LbaICogl * iface);
 
+/* *INDENT-OFF* */ 
 GMO_DEFINE_MUTOGENE (lba_cogl_cube, LbaCoglCube,
-                     GMO_ADD_IFACE (lba, cogl_cube, icogl),
-                     GMO_ADD_DEP (lba_cogl), GMO_ADD_DEP (lba_mutogene_3d));
+    GMO_IMPLEMENTS_IFACE (lba, cogl_cube, icogl),
+    GMO_ADD_DEP (lba_cogl),
+    GMO_ADD_DEP (lba_mutogene_3d));
+/* *INDENT-ON* */ 
 
 static void
 lba_cogl_cube_paint (GObject * obj, CoglFramebuffer * fb, CoglPipeline * pipeline) {

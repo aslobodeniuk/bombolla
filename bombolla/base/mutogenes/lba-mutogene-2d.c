@@ -36,7 +36,7 @@ static void
   lba_mutogene_i2d_init (LbaI2D * iface);
 
 GMO_DEFINE_MUTOGENE (lba_mutogene_2d, LbaMutogene2D,
-                     GMO_ADD_IFACE (lba, mutogene, i2d));
+                     GMO_IMPLEMENTS_IFACE (lba, mutogene, i2d));
 
 typedef enum {
   PROP_X = 1,

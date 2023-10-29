@@ -50,9 +50,12 @@ GType lba_mutogene_2d_get_type (void);
 static void
   lba_cogl_label_icogl_init (LbaICogl * iface);
 
+/* *INDENT-OFF* */ 
 GMO_DEFINE_MUTOGENE (lba_cogl_label, LbaCoglLabel,
-                     GMO_ADD_IFACE (lba, cogl_label, icogl),
-                     GMO_ADD_DEP (lba_cogl), GMO_ADD_DEP (lba_mutogene_2d));
+                     GMO_IMPLEMENTS_IFACE (lba, cogl_label, icogl),
+                     GMO_ADD_DEP (lba_cogl),
+                     GMO_ADD_DEP (lba_mutogene_2d));
+/* *INDENT-ON* */ 
 
 static void
 lba_cogl_label_paint (GObject * obj, CoglFramebuffer * fb, CoglPipeline * pipeline) {

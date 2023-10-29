@@ -97,7 +97,7 @@ gmo_register_mutant (const gchar * mutant_name, GType base_type, GType t) {
   for (i = 1; minfo->add[i].gtype != 0; i++) {
     switch (minfo->add[i].add_type) {
     case GMO_ADD_TYPE_IFACE:
-      /* Will proccess after type regostration */
+      /* Will proccess after type registration */
       continue;
     case GMO_ADD_TYPE_DEP:
       if (minfo->add[i].gtype == GMO_DEP_ANY_SEP_GTYPE) {

@@ -56,7 +56,7 @@ GQuark gmo_info_qrk (void);
 #  define GMO_DEP_ANY_SEP { .add_type = GMO_ADD_TYPE_DEP, .gtype = GMO_DEP_ANY_SEP_GTYPE }
 #  define GMO_DEP_ANY_OF(...) GMO_DEP_ANY_SEP, __VA_ARGS__ , GMO_DEP_ANY_SEP
 
-#  define GMO_ADD_IFACE(head, body, iface, ...)                         \
+#  define GMO_IMPLEMENTS_IFACE(head, body, iface, ...)                         \
   { .add_type = GMO_ADD_TYPE_IFACE, .gtype = head##_##iface##_get_type, \
         .iface_info = { (GInterfaceInitFunc)head##_##body##_##iface##_init, __VA_ARGS__ } }
 
