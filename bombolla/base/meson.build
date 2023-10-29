@@ -1,6 +1,6 @@
 lba_base = shared_library('lba-base',
                           include_directories : [include_directories('.')],
-                          dependencies: [dependency('gobject-2.0', version: '>=2.58'), gmo_dep, bombolla_dep],
+                          dependencies: [bombolla_dep, gmo_dep],
                           sources: files(['i2d.c', 'i3d.c']),
                          )
 

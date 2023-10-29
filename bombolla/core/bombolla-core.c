@@ -190,7 +190,7 @@ lba_core_proccess_line (GObject * obj, const gchar * str) {
   }
 
   if (!self->ctx || !self->ctx->capturing_on_command) {
-    LBA_LOG ("processing '%s'\n", str);
+    LBA_LOG ("processing '%s'", str);
   }
 
   if (!self->ctx) {

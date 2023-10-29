@@ -22,6 +22,8 @@
 #include <gjs/gjs.h>
 
 typedef struct _LbaGjs LbaGjs;
+
+/* TODO: split into mutogenes: PluginSystem + Async + Gjs */
 struct _LbaGjs {
   GObject parent;
 
@@ -236,7 +238,7 @@ lba_gjs_class_init (LbaGjsClass * klass) {
   GObjectClass *object_class = (GObjectClass *) klass;
 
   object_class->dispose = lba_gjs_dispose;
-  object_class->dispose = lba_gjs_finalize;
+  object_class->finalize = lba_gjs_finalize;
 }
 
 /* Export plugin */

@@ -20,6 +20,9 @@
 #include "bombolla/lba-log.h"
 #include "bombolla/core/bombolla-commands.h"
 
+/* HACK: Needed to use LBA_LOG */
+static const gchar *global_lba_plugin_name = "LbaCore::Command";
+
 typedef struct {
   GSList *commands_list;
   GObject *self;
@@ -40,7 +43,7 @@ lba_command_on_cb (GClosure * closure,
   BombollaOnCommandCtx *ctx;
 
   /* Execute stored commands */
-  LBA_LOG ("on something of %d parameters\n", n_param_values);
+  LBA_LOG ("on something of %d parameters", n_param_values);
 
   /* Closure data is our pointer to the list */
   user_data = closure->data;

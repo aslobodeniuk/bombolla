@@ -21,6 +21,9 @@
 #include "bombolla/core/bombolla-commands.h"
 #include <gmo/gmo.h>
 
+/* HACK: Needed to use LBA_LOG */
+static const gchar *global_lba_plugin_name = "LbaCore::Command";
+
 static gboolean
 lba_command_create (BombollaContext * ctx, gchar ** tokens) {
   const gchar *typename = tokens[1];
@@ -39,7 +42,7 @@ lba_command_create (BombollaContext * ctx, gchar ** tokens) {
   }
 
   if (request_failure_msg) {
-    /* FIXME: LBA_LOG */
+    /* FIXME: LBA_LOG_WARNING ?? */
     g_warning ("%s", request_failure_msg);
     return FALSE;
   } else {
@@ -56,8 +59,7 @@ lba_command_create (BombollaContext * ctx, gchar ** tokens) {
       g_object_set_data (obj, "bombolla-commands-ctx", ctx);
       g_hash_table_insert (ctx->objects, (gpointer) g_strdup (varname), obj);
 
-      /* FIXME: LBA_LOG */
-      g_printf ("%s %s created\n", typename, varname);
+      LBA_LOG ("%s %s created", typename, varname);
     }
   }
 
@@ -73,7 +75,7 @@ lba_command_destroy (BombollaContext * ctx, gchar ** tokens) {
 
   if (obj) {
     g_hash_table_remove (ctx->objects, varname);
-    g_printf ("%s destroyed\n", varname);
+    LBA_LOG ("%s destroyed", varname);
     return TRUE;
   }
 
@@ -107,7 +109,7 @@ lba_command_call (BombollaContext * ctx, gchar ** tokens) {
     goto done;
   }
 
-  g_printf ("calling %s ()\n", signal_name);
+  LBA_LOG ("calling %s ()", signal_name);
 
   g_signal_emit_by_name (obj, signal_name, NULL);
 

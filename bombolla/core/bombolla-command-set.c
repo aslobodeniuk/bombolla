@@ -20,6 +20,9 @@
 #include "bombolla/lba-log.h"
 #include "bombolla/core/bombolla-commands.h"
 
+/* HACK: Needed to use LBA_LOG */
+static const gchar *global_lba_plugin_name = "LbaCore::Command";
+
 static void
 _str2float (const GValue * src_value, GValue * dest_value) {
   gfloat ret = 0;
@@ -222,7 +225,7 @@ lba_command_set (BombollaContext * ctx, gchar ** tokens) {
     goto done;
   }
 
-  LBA_LOG ("setting %s to [%s]\n", tokens[1], prop_val);
+  LBA_LOG ("setting %s to [%s]", tokens[1], prop_val);
   g_object_set_property (obj, prop_name, &outp);
 
   ret = TRUE;
