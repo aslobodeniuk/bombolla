@@ -133,15 +133,8 @@ static void
 lba_core_dispose (GObject * gobject) {
   LbaCore *self = (LbaCore *) gobject;
 
-  /* Probably here objects may need to perform some preparations for
-   * the destruction */
-
   if (self->async_cmds) {
     lba_core_sync_with_async_cmds (gobject);
-  }
-
-  if (self->started) {
-    lba_core_stop (self);
   }
 
   if (self->ctx) {
@@ -154,8 +147,13 @@ lba_core_dispose (GObject * gobject) {
       g_hash_table_remove_all (self->ctx->objects);
       g_hash_table_unref (self->ctx->objects);
     }
+
     g_free (self->ctx);
     self->ctx = NULL;
+  }
+
+  if (self->started) {
+    lba_core_stop (self);
   }
 
   g_free (self->plugins_path);
