@@ -35,7 +35,6 @@ const FrankNewsWindow = GObject.registerClass({
     GTypeName: 'FrankNewsWindow',
     Signals: {
         'my-open': {},
-	'my-clicked': {}
     },
     Properties: {
         'my-summary': GObject.param_spec_string('my-summary', 'my-summary', 'my-summary', 'something',

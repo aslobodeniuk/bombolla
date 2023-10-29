@@ -60,9 +60,10 @@ build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-vala
 
 ### So, ok I can write in many languages. Can I connect them in between?
 
-Yes. There's some example in which we create some rough app, that parses an RSS feed,
-renders it natively with Cogl, but also it's controlled by a UI written in JS.
-(Warning, Frankenstein example is still very rough)
+Yes. There's a "Frankenstein" example, that parses an RSS feed with Python,
+and then renders it through the UI written in JS.
+Check [examples/frankenstein-news/frank.lba](examples/frankenstein-news/frank.lba) to see bombolla commands.
+(Warning, Frankenstein example is still very rough, it doesn't parse the summary)
 ```bash
-LBA_PYTHON_PLUGINS_PATH=$(pwd)/examples/frankenstein-news LBA_JS_PLUGINS_PATH=$(pwd)/examples/js gdb --args build/bombolla/tools/shell/bombolla-shell -p build/bombolla/ -i examples/frankenstein-news/frank.lba
+LBA_PYTHON_PLUGINS_PATH=$(pwd)/examples/frankenstein-news LBA_JS_PLUGINS_PATH=$(pwd)/examples/frankenstein-news build/bombolla/tools/shell/bombolla-shell -p build/bombolla/ -i examples/frankenstein-news/frank.lba
 ```
