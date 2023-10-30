@@ -29,13 +29,16 @@ typedef enum {
 } GMOAddType;
 
 typedef struct {
+  GMOAddType add_type;
+    GType (*gtype) (void);
+  GInterfaceInfo iface_info;
+} GMOParams;
+
+typedef struct {
   GTypeInfo info;
   GType type;
-  struct {
-    GMOAddType add_type;
-      GType (*gtype) (void);
-    GInterfaceInfo iface_info;
-  } add[];
+  const GMOParams *params;
+  gushort num_params;
 } GMOInfo;
 
 #  define G_TYPE_IS_MUTOGENE(t) (G_TYPE_FUNDAMENTAL (t) == gmo_fundamental_get_type ())
@@ -48,11 +51,12 @@ GType gmo_register_mutogene (const gchar * mutogene_name, GMOInfo * minfo);
 
 gpointer gmo_class_get_mutogene (gpointer class, const GType mutogene);
 gpointer gmo_instance_get_mutogene (gpointer instance, const GType mutogene);
+
 GType gmo_type_peek_mutant (const GType mutant_type, const GType mutogene);
 GQuark gmo_info_qrk (void);
 
 #  define GMO_ADD_DEP(name) { .add_type = GMO_ADD_TYPE_DEP, .gtype = name##_get_type }
-#  define GMO_DEP_ANY_SEP_GTYPE ((GType (*) (void;)) 0xabc)
+#  define GMO_DEP_ANY_SEP_GTYPE ((GType (*) (void)) 0xabc)
 #  define GMO_DEP_ANY_SEP { .add_type = GMO_ADD_TYPE_DEP, .gtype = GMO_DEP_ANY_SEP_GTYPE }
 #  define GMO_DEP_ANY_OF(...) GMO_DEP_ANY_SEP, __VA_ARGS__ , GMO_DEP_ANY_SEP
 
@@ -77,6 +81,8 @@ GQuark gmo_info_qrk (void);
     name##_init (G_OBJECT (instance), gmo_get_##Name (instance));       \
   }                                                                     \
                                                                         \
+  static const GMOParams name##_mutogene_params[] = {__VA_ARGS__};      \
+                                                                        \
   static GMOInfo name##_info = {                                        \
     .info = {                                                           \
       .class_init = name##_proxy_class_init,                            \
@@ -84,7 +90,8 @@ GQuark gmo_info_qrk (void);
       .class_size = sizeof (Name##Class),                               \
       .instance_size = sizeof (Name)                                    \
     },                                                                  \
-    .add = {{0}, __VA_ARGS__, {0}}                                      \
+    .params = name##_mutogene_params,                                   \
+    .num_params = G_N_ELEMENTS (name##_mutogene_params)                 \
   };                                                                    \
                                                                         \
   GType name##_get_type (void) {                                        \

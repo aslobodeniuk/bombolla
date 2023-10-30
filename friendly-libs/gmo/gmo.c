@@ -93,14 +93,15 @@ gmo_register_mutant (const gchar * mutant_name, GType base_type, GType t) {
   minfo = g_type_get_qdata (t, gmo_info_qrk ());
   g_return_val_if_fail (minfo, 0);
 
-  g_return_val_if_fail (0 == minfo->add[0].gtype, 0);
-  for (i = 1; minfo->add[i].gtype != 0; i++) {
-    switch (minfo->add[i].add_type) {
+  for (i = 0; i < minfo->num_params; i++) {
+    const GMOParams *param = &minfo->params[i];
+
+    switch (param->add_type) {
     case GMO_ADD_TYPE_IFACE:
       /* Will proccess after type registration */
       continue;
     case GMO_ADD_TYPE_DEP:
-      if (minfo->add[i].gtype == GMO_DEP_ANY_SEP_GTYPE) {
+      if (param->gtype == GMO_DEP_ANY_SEP_GTYPE) {
         g_error ("Variant dependencies not supported yet");
       } else {
         /*
@@ -108,7 +109,7 @@ gmo_register_mutant (const gchar * mutant_name, GType base_type, GType t) {
          * If the dep is Interface..
          * If the dep is Mutogene..
          */
-        GType dep_type = minfo->add[i].gtype ();
+        GType dep_type = param->gtype ();
 
         if (G_TYPE_IS_OBJECT (dep_type)) {
           /* GObject:
@@ -174,7 +175,7 @@ gmo_register_mutant (const gchar * mutant_name, GType base_type, GType t) {
       }
       break;
     default:
-      g_critical ("Unexpected add type %d", minfo->add[i].add_type);
+      g_critical ("Unexpected add type %d", param->add_type);
     }
   }
 
@@ -200,10 +201,10 @@ gmo_register_mutant (const gchar * mutant_name, GType base_type, GType t) {
 
     g_type_set_qdata (ret, gmo_info_qrk (), minfo);
 
-    for (i = 1; minfo->add[i].gtype != 0; i++) {
-      if (minfo->add[i].add_type == GMO_ADD_TYPE_IFACE) {
-        g_type_add_interface_static (ret, minfo->add[i].gtype (),
-                                     &minfo->add[i].iface_info);
+    for (i = 0; i < minfo->num_params; i++) {
+      if (minfo->params[i].add_type == GMO_ADD_TYPE_IFACE) {
+        g_type_add_interface_static (ret, minfo->params[i].gtype (),
+                                     &minfo->params[i].iface_info);
       }
     }
   }

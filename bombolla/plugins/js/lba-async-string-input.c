@@ -36,10 +36,7 @@ typedef struct _LbaAsyncStringInputClass {
   void (*input_string) (GObject *, const gchar *);
 } LbaAsyncStringInputClass;
 
-GMO_DEFINE_MUTOGENE (lba_async_string_input, LbaAsyncStringInput,
-                     /* FIXME: can we omit this 0 ?? */
-                     {
-                     0});
+GMO_DEFINE_MUTOGENE (lba_async_string_input, LbaAsyncStringInput);
 
 enum {
   SIGNAL_INPUT_STRING,
