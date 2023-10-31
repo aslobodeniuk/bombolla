@@ -26,3 +26,8 @@ subdir('bombolla')
 subdir('examples')
 
 run_command('sh', '-c', 'cp Firulais .git/hooks/pre-commit')
+
+devenv = environment()
+devenv.prepend('PATH', meson.current_build_dir() / 'bombolla' / 'tools' / 'shell')
+devenv.prepend('LBA_PLUGINS_PATH', meson.current_build_dir() / 'bombolla')
+meson.add_devenv(devenv)
