@@ -36,10 +36,14 @@ base_drawable_scene_on_draw_cb (GObject * scene, BaseDrawable * self) {
 
   if (self->enabled) {
     if (self->texture) {
-      g_signal_emit_by_name (self->texture, "set", G_OBJECT (self));
+      g_signal_emit_by_name (self->texture, "set", self);
     }
 
     klass->draw (self);
+
+    if (self->texture) {
+      g_signal_emit_by_name (self->texture, "unset", self);
+    }
   }
 }
 
@@ -55,7 +59,7 @@ base_drawable_set_property (GObject * object,
     self->texture = g_value_dup_object (value);
     /* Update if new texture is set */
     if (self->enabled && self->scene && self->texture) {
-      g_signal_emit_by_name (self->texture, "set", NULL);
+//      g_signal_emit_by_name (self->texture, "set", NULL);
       g_signal_emit_by_name (self->scene, "request-redraw", NULL);
     }
     break;

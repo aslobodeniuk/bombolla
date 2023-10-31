@@ -40,17 +40,13 @@ typedef struct _LbaCoglTextureClass {
   GObjectClass parent;
 
   void (*set) (LbaCoglTexture * self, GObject * obj);
+  void (*unset) (LbaCoglTexture * self, GObject * obj);
 } LbaCoglTextureClass;
 
 typedef enum {
   PROP_PICTURE_OBJECT = 1,
   N_PROPERTIES
 } LbaCoglTextureProperty;
-
-enum {
-  SIGNAL_SET,
-  LAST_SIGNAL
-};
 
 G_DEFINE_TYPE (LbaCoglTexture, lba_cogl_texture, G_TYPE_OBJECT);
 
@@ -134,6 +130,26 @@ lba_cogl_texture_get_property (GObject * object,
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
     break;
   }
+}
+
+static void
+lba_cogl_texture_unset (LbaCoglTexture * self, GObject * obj_3d) {
+  LbaICogl *iface;
+  CoglContext *cogl_ctx;
+  CoglPipeline *cogl_pipeline;
+
+  /* NOTE: called in GL thread */
+  if (!obj_3d)
+    return;
+
+  iface = G_TYPE_INSTANCE_GET_INTERFACE (obj_3d, LBA_ICOGL, LbaICogl);
+  iface->get_ctx (obj_3d, &cogl_ctx, &cogl_pipeline);
+
+  g_assert (cogl_ctx && cogl_pipeline);
+
+  LBA_LOCK (self);
+  cogl_pipeline_set_layer_texture (cogl_pipeline, 0, NULL);
+  LBA_UNLOCK (self);
 }
 
 static void
@@ -224,11 +240,18 @@ lba_cogl_texture_class_init (LbaCoglTextureClass * klass) {
                                                         G_PARAM_CONSTRUCT));
 
   klass->set = lba_cogl_texture_set;
+  klass->unset = lba_cogl_texture_unset;
 
   g_signal_new ("set", G_TYPE_FROM_CLASS (klass),
                 G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
                 G_STRUCT_OFFSET (LbaCoglTextureClass, set), NULL, NULL,
                 NULL, G_TYPE_NONE, 1, G_TYPE_OBJECT);
+
+  g_signal_new ("unset", G_TYPE_FROM_CLASS (klass),
+                G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+                G_STRUCT_OFFSET (LbaCoglTextureClass, unset), NULL, NULL,
+                NULL, G_TYPE_NONE, 1, G_TYPE_OBJECT);
+
 }
 
 /* Export plugin */

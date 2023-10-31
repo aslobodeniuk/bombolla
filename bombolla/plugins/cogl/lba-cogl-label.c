@@ -21,7 +21,7 @@
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 #include "bombolla/base/i2d.h"
-#include "../base/icogl.h"
+#include "base/icogl.h"
 #include <cogl-pango/cogl-pango.h>
 
 typedef struct _LbaCoglLabel {

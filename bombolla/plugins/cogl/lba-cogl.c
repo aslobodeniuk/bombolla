@@ -18,11 +18,10 @@
  */
 
 #include "bombolla/lba-log.h"
-#include "../base/icogl.h"
+#include "base/icogl.h"
 #include <bombolla/base/lba-basedrawable.h>
 #include <gmo/gmo.h>
 
-static const gchar *global_lba_plugin_name = "LbaCogl";
 typedef struct _LbaCogl {
   CoglFramebuffer *fb;
   CoglPipeline *pipeline;

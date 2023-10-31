@@ -21,7 +21,7 @@
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 #include "bombolla/base/i3d.h"
-#include "../base/icogl.h"
+#include "base/icogl.h"
 
 typedef struct _LbaCoglCube {
   CoglPrimitive *prim;
