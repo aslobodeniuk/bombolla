@@ -49,20 +49,10 @@ GMO_DEFINE_MUTOGENE (lba_cogl_cube, LbaCoglCube,
 
 static void
 lba_cogl_cube_paint (GObject * obj, CoglFramebuffer * fb, CoglPipeline * pipeline) {
-  double x,
-    y,
-    z;
   int framebuffer_width;
   int framebuffer_height;
   float rotation = 75.0;
   LbaCoglCube *self = gmo_get_LbaCoglCube (obj);
-  LbaI3D *iface3d = G_TYPE_INSTANCE_GET_INTERFACE (obj,
-                                                   LBA_I3D,
-                                                   LbaI3D);
-
-  iface3d->xyz (obj, &x, &y, &z);
-
-  LBA_LOG ("draw (%f, %f, %f)", x, y, z);
 
   framebuffer_width = cogl_framebuffer_get_width (fb);
   framebuffer_height = cogl_framebuffer_get_height (fb);
@@ -94,51 +84,81 @@ static void
 lba_cogl_cube_reopen (GObject * base, CoglFramebuffer * fb,
                       CoglPipeline * pipeline, CoglContext * ctx) {
   LbaCoglCube *self = gmo_get_LbaCoglCube (base);
+  LbaI3D *iface3d = G_TYPE_INSTANCE_GET_INTERFACE (base,
+                                                   LBA_I3D,
+                                                   LbaI3D);
+  double x,
+    y,
+    z;
+
+  iface3d->xyz (base, &x, &y, &z);
+  LBA_LOG ("reopen (%f, %f, %f)", x, y, z);
 
   /* A cube modelled using 4 vertices for each face.
    *
    * We use an index buffer when drawing the cube later so the GPU will
    * actually read each face as 2 separate triangles.
    */
-  static CoglVertexP3T2 vertices[] = {
+  CoglVertexP3T2 vertices[] = {
     /* Front face */
-    { /* pos = */ -1.0f, -1.0f, 1.0f, /* tex coords = */ 0.0f, 1.0f },
-    { /* pos = */ 1.0f, -1.0f, 1.0f, /* tex coords = */ 1.0f, 1.0f },
-    { /* pos = */ 1.0f, 1.0f, 1.0f, /* tex coords = */ 1.0f, 0.0f },
-    { /* pos = */ -1.0f, 1.0f, 1.0f, /* tex coords = */ 0.0f, 0.0f },
+    { /* pos = */ (x - 1.0f), (y - 1.0f), (z + 1.0f), /* tex coords = */ 0.0f,
+     1.0f },
+    { /* pos = */ (x + 1.0f), (y - 1.0f), (z + 1.0f), /* tex coords = */ 1.0f,
+     1.0f },
+    { /* pos = */ (x + 1.0f), (y + 1.0f), (z + 1.0f), /* tex coords = */ 1.0f,
+     0.0f },
+    { /* pos = */ (x - 1.0f), (y + 1.0f), (z + 1.0f), /* tex coords = */ 0.0f,
+     0.0f },
 
     /* Back face */
-    { /* pos = */ -1.0f, -1.0f, -1.0f, /* tex coords = */ 1.0f, 0.0f },
-    { /* pos = */ -1.0f, 1.0f, -1.0f, /* tex coords = */ 1.0f, 1.0f },
-    { /* pos = */ 1.0f, 1.0f, -1.0f, /* tex coords = */ 0.0f, 1.0f },
-    { /* pos = */ 1.0f, -1.0f, -1.0f, /* tex coords = */ 0.0f, 0.0f },
+    { /* pos = */ (x - 1.0f), (y - 1.0f), (z - 1.0f), /* tex coords = */ 1.0f,
+     0.0f },
+    { /* pos = */ (x - 1.0f), (y + 1.0f), (z - 1.0f), /* tex coords = */ 1.0f,
+     1.0f },
+    { /* pos = */ (x + 1.0f), (y + 1.0f), (z - 1.0f), /* tex coords = */ 0.0f,
+     1.0f },
+    { /* pos = */ (x + 1.0f), (y - 1.0f), (z - 1.0f), /* tex coords = */ 0.0f,
+     0.0f },
 
     /* Top face */
-    { /* pos = */ -1.0f, 1.0f, -1.0f, /* tex coords = */ 0.0f, 1.0f },
-    { /* pos = */ -1.0f, 1.0f, 1.0f, /* tex coords = */ 0.0f, 0.0f },
-    { /* pos = */ 1.0f, 1.0f, 1.0f, /* tex coords = */ 1.0f, 0.0f },
-    { /* pos = */ 1.0f, 1.0f, -1.0f, /* tex coords = */ 1.0f, 1.0f },
+    { /* pos = */ (x - 1.0f), (y + 1.0f), (z - 1.0f), /* tex coords = */ 0.0f,
+     1.0f },
+    { /* pos = */ (x - 1.0f), (y + 1.0f), (z + 1.0f), /* tex coords = */ 0.0f,
+     0.0f },
+    { /* pos = */ (x + 1.0f), (y + 1.0f), (z + 1.0f), /* tex coords = */ 1.0f,
+     0.0f },
+    { /* pos = */ (x + 1.0f), (y + 1.0f), (z - 1.0f), /* tex coords = */ 1.0f,
+     1.0f },
 
     /* Bottom face */
-    { /* pos = */ -1.0f, -1.0f, -1.0f, /* tex coords = */ 1.0f, 1.0f },
-    { /* pos = */ 1.0f, -1.0f, -1.0f, /* tex coords = */ 0.0f, 1.0f },
-    { /* pos = */ 1.0f, -1.0f, 1.0f, /* tex coords = */ 0.0f, 0.0f },
-    { /* pos = */ -1.0f, -1.0f, 1.0f, /* tex coords = */ 1.0f, 0.0f },
+    { /* pos = */ (x - 1.0f), (y - 1.0f), (z - 1.0f), /* tex coords = */ 1.0f,
+     1.0f },
+    { /* pos = */ (x + 1.0f), (y - 1.0f), (z - 1.0f), /* tex coords = */ 0.0f,
+     1.0f },
+    { /* pos = */ (x + 1.0f), (y - 1.0f), (z + 1.0f), /* tex coords = */ 0.0f,
+     0.0f },
+    { /* pos = */ (x - 1.0f), (y - 1.0f), (z + 1.0f), /* tex coords = */ 1.0f,
+     0.0f },
 
     /* Right face */
-    { /* pos = */ 1.0f, -1.0f, -1.0f, /* tex coords = */ 1.0f, 0.0f },
-    { /* pos = */ 1.0f, 1.0f, -1.0f, /* tex coords = */ 1.0f, 1.0f },
-    { /* pos = */ 1.0f, 1.0f, 1.0f, /* tex coords = */ 0.0f, 1.0f },
-    { /* pos = */ 1.0f, -1.0f, 1.0f, /* tex coords = */ 0.0f, 0.0f },
+    { /* pos = */ (x + 1.0f), (y - 1.0f), (z - 1.0f), /* tex coords = */ 1.0f,
+     0.0f },
+    { /* pos = */ (x + 1.0f), (y + 1.0f), (z - 1.0f), /* tex coords = */ 1.0f,
+     1.0f },
+    { /* pos = */ (x + 1.0f), (y + 1.0f), (z + 1.0f), /* tex coords = */ 0.0f,
+     1.0f },
+    { /* pos = */ (x + 1.0f), (y - 1.0f), (z + 1.0f), /* tex coords = */ 0.0f,
+     0.0f },
 
     /* Left face */
-    { /* pos = */ -1.0f, -1.0f, -1.0f, /* tex coords = */ 0.0f, 0.0f },
-    { /* pos = */ -1.0f, -1.0f, 1.0f, /* tex coords = */ 1.0f, 0.0f },
-    { /* pos = */ -1.0f, 1.0f, 1.0f, /* tex coords = */ 1.0f, 1.0f },
-    { /* pos = */ -1.0f, 1.0f, -1.0f, /* tex coords = */ 0.0f, 1.0f }
+    { /* pos = */ (x - 1.0f), (y - 1.0f), (z - 1.0f), /* tex coords = */ 0.0f,
+     0.0f },
+    { /* pos = */ (x - 1.0f), (y - 1.0f), (z + 1.0f), /* tex coords = */ 1.0f,
+     0.0f },
+    { /* pos = */ (x - 1.0f), (y + 1.0f), (z + 1.0f), /* tex coords = */ 1.0f,
+     1.0f },
+    { /* pos = */ (x - 1.0f), (y + 1.0f), (z - 1.0f), /* tex coords = */ 0.0f, 1.0f }
   };
-
-  LBA_LOG ("reopening");
 
   /* rectangle indices allow the GPU to interpret a list of quads (the
    * faces of our cube) as a list of triangles.

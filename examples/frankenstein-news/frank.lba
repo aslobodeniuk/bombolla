@@ -20,4 +20,4 @@ async call jsw.my-open
 
 # FIXME: yes for now it crashes on quit, that's because Python class
 # should be destroyed from the GMainContext thread and also before the
-LbaPython.
+# LbaPython.

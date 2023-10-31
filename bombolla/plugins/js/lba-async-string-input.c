@@ -119,7 +119,8 @@ lba_async_string_input_class_init (GObjectClass * object_class, gpointer gmo_cla
   lba_async_string_input_signals[SIGNAL_INPUT_STRING] =
       g_signal_new ("input-string", G_TYPE_FROM_CLASS (object_class),
                     G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
-                    /* FIXME: resolve in gmo.h. We install signal to the object_class */
+                    /* FIXME: resolve in gmo.h. We install signal to the object_class.
+                     * GMO_CLASS_OFFSET() ?? */
                     (gmo_class - (gpointer) object_class) +
                     G_STRUCT_OFFSET (LbaAsyncStringInputClass, input_string),
                     NULL, NULL,
