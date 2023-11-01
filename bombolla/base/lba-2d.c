@@ -101,11 +101,12 @@ lba_mutogene_2d_get_property (GObject * object,
 }
 
 static void
-lba_mutogene_2d_init (GObject * object, gpointer mutogene) {
+lba_mutogene_2d_init (GObject * object, LbaMutogene2D * self) {
 }
 
 static void
-lba_mutogene_2d_class_init (GObjectClass * object_class, gpointer gmo_class) {
+lba_mutogene_2d_class_init (GObjectClass * object_class,
+                            LbaMutogene2DClass * gmo_class) {
 
   object_class->set_property = lba_mutogene_2d_set_property;
   object_class->get_property = lba_mutogene_2d_get_property;

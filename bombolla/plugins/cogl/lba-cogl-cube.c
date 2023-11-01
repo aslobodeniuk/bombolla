@@ -176,11 +176,11 @@ lba_cogl_cube_reopen (GObject * base, CoglFramebuffer * fb,
 }
 
 static void
-lba_cogl_cube_init (GObject * object, gpointer mutogene) {
+lba_cogl_cube_init (GObject * object, LbaCoglCube * mutogene) {
 }
 
 static void
-lba_cogl_cube_class_init (GObjectClass * object_class, gpointer gmo_class) {
+lba_cogl_cube_class_init (GObjectClass * object_class, LbaCoglCubeClass * gmo_class) {
 }
 
 static void

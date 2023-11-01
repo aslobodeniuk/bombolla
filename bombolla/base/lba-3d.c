@@ -114,11 +114,12 @@ lba_mutogene_3d_get_property (GObject * object,
 }
 
 static void
-lba_mutogene_3d_init (GObject * object, gpointer mutogene) {
+lba_mutogene_3d_init (GObject * object, LbaMutogene3D * self) {
 }
 
 static void
-lba_mutogene_3d_class_init (GObjectClass * object_class, gpointer gmo_class) {
+lba_mutogene_3d_class_init (GObjectClass * object_class,
+                            LbaMutogene3DClass * gmo_class) {
 
   object_class->set_property = lba_mutogene_3d_set_property;
   object_class->get_property = lba_mutogene_3d_get_property;

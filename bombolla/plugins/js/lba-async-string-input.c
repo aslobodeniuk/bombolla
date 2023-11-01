@@ -47,7 +47,7 @@ enum {
 static guint lba_async_string_input_signals[LAST_SIGNAL] = { 0 };
 
 static void
-lba_async_string_input_init (GObject * object, gpointer mutogene) {
+lba_async_string_input_init (GObject * object, LbaAsyncStringInput * mutogene) {
 }
 
 static void
@@ -110,7 +110,8 @@ lba_async_string_input_input_string (GObject * gobject, const gchar * input) {
 }
 
 static void
-lba_async_string_input_class_init (GObjectClass * object_class, gpointer gmo_class) {
+lba_async_string_input_class_init (GObjectClass * object_class,
+                                   LbaAsyncStringInputClass * gmo_class) {
 
   LbaAsyncStringInputClass *klass = (LbaAsyncStringInputClass *) gmo_class;
 
@@ -121,7 +122,7 @@ lba_async_string_input_class_init (GObjectClass * object_class, gpointer gmo_cla
                     G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
                     /* FIXME: resolve in gmo.h. We install signal to the object_class.
                      * GMO_CLASS_OFFSET() ?? */
-                    (gmo_class - (gpointer) object_class) +
+                    ((gpointer) gmo_class - (gpointer) object_class) +
                     G_STRUCT_OFFSET (LbaAsyncStringInputClass, input_string),
                     NULL, NULL,
                     g_cclosure_marshal_VOID__STRING,

@@ -21,7 +21,7 @@
 #include "bombolla/core/bombolla-commands.h"
 
 /* HACK: Needed to use LBA_LOG */
-static const gchar *global_lba_plugin_name = "LbaCore::Command";
+static const gchar *global_lba_plugin_name = "LbaCore";
 
 typedef struct {
   GSList *commands_list;

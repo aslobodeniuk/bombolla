@@ -21,7 +21,7 @@
 #include "bombolla/core/bombolla-commands.h"
 
 /* HACK: Needed to use LBA_LOG */
-static const gchar *global_lba_plugin_name = "LbaCore::Command";
+static const gchar *global_lba_plugin_name = "LbaCore";
 
 static void
 _str2float (const GValue * src_value, GValue * dest_value) {

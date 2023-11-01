@@ -22,7 +22,7 @@
 #include <gmo/gmo.h>
 
 /* HACK: Needed to use LBA_LOG */
-static const gchar *global_lba_plugin_name = "LbaCore::Command";
+static const gchar *global_lba_plugin_name = "LbaCore";
 
 static gboolean
 lba_command_create (BombollaContext * ctx, gchar ** tokens) {

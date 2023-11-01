@@ -3,21 +3,30 @@
 # calling it from any other threads deadlocks.
 # Same with JS, so we do everything through the main loop
 
-async create LbaPython py
-async create __main__+LbaFeedParser feed
+dna LbaPythonAsync LbaPython LbaAsync
+async create LbaPythonAsync py
+sync
+# Put Async mixin on top of it so the dispose & finalize will be async
+dna LbaFeedParserAsync __main__+LbaFeedParser LbaAsync
+
+async create LbaFeedParserAsync feed
 
 # this one already does it thought the GMainLoop.
 create LbaGjs js
 
+# Put Async mixin on top of it so the dispose & finalize will be async
+# dna FrankNewsWindowAsync FrankNewsWindow LbaAsync
 async create FrankNewsWindow jsw
-sync
 
 async call feed.check-for-updates
 async bind jsw.title feed.title
 async bind jsw.my-summary feed.summary
-
 async call jsw.my-open
 
-# FIXME: yes for now it crashes on quit, that's because Python class
-# should be destroyed from the GMainContext thread and also before the
-# LbaPython.
+sync
+
+# FIXME: destroying feed from hash table crashes, and mutogene LbaAsync
+# doesn't seem to fix that.. So the issue is that when we "destroy" the feed first,
+# in fact we only unref it, and it doesn't go through GObject.
+
+async destroy feed

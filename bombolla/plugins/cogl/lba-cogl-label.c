@@ -162,7 +162,7 @@ lba_cogl_label_reopen (GObject * base, CoglFramebuffer * fb,
 }
 
 static void
-lba_cogl_label_init (GObject * object, gpointer mutogene) {
+lba_cogl_label_init (GObject * object, LbaCoglLabel * self) {
 }
 
 typedef enum {
@@ -233,7 +233,7 @@ lba_cogl_label_get_property (GObject * object,
 }
 
 static void
-lba_cogl_label_class_init (GObjectClass * klass, gpointer gmo_class) {
+lba_cogl_label_class_init (GObjectClass * klass, LbaCoglLabelClass * gmo_class) {
   GObjectClass *gobj_class = G_OBJECT_CLASS (klass);
 
   gobj_class->set_property = lba_cogl_label_set_property;

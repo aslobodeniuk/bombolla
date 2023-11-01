@@ -65,8 +65,8 @@ GQuark gmo_info_qrk (void);
         .iface_info = { (GInterfaceInitFunc)head##_##body##_##iface##_init, __VA_ARGS__ } }
 
 #  define GMO_DEFINE_MUTOGENE(name, Name, ...)                    \
-  static void name##_class_init (GObjectClass *, gpointer);       \
-  static void name##_init (GObject *, gpointer);                  \
+  static void name##_class_init (GObjectClass *, Name##Class*);   \
+  static void name##_init (GObject *, Name *);                    \
   static Name *gmo_get_##Name (gpointer gmo);                     \
   static Name##Class *gmo_class_get_##Name (gpointer gmo);        \
   static void                                                     \
@@ -133,5 +133,9 @@ GQuark gmo_info_qrk (void);
             G_TYPE_FROM_INSTANCE(gmo),                                  \
             name##_info.type)                                           \
           )))
-
+/* TODO: way faster solution - cache the pointers in the GMOMutogene base struct.
+ * Pointers to cache: gobject, gobject_class, gobject_parent_class, gmo_info.
+ *
+ * 2: rename to BMixin ?? Mutogene is too long. Also if it is a mixin...
+ */
 #endif /* _GMO_H */

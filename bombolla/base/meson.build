@@ -10,4 +10,20 @@ bombolla_basewindow = shared_library('lba-basewindow', 'lba-basewindow.c',
 bombolla_basedrawable = shared_library('lba-basedrawable', 'lba-basedrawable.c',
               dependencies: bombolla_dep)
 
-subdir('mutogenes')
+lba_3d = shared_library('lba-3d',
+               'lba-3d.c',
+               dependencies: [bombolla_dep],
+               link_with: [lba_base]
+              )
+
+lba_2d = shared_library('lba-2d',
+               'lba-2d.c',
+               dependencies: [bombolla_dep],
+               link_with: [lba_base]
+              )
+
+lba_async = shared_library('lba-async',
+               'lba-async.c',
+               dependencies: [bombolla_dep],
+               link_with: [lba_base]
+              )

@@ -18,7 +18,7 @@
  */
 
 #include "bombolla/lba-log.h"
-#include "base/icogl.h"
+#include "icogl.h"
 #include <bombolla/base/lba-basedrawable.h>
 #include <gmo/gmo.h>
 
@@ -137,9 +137,7 @@ lba_cogl_has_drawing_scene (GObject * gobject, GParamSpec * pspec,
 }
 
 static void
-lba_cogl_init (GObject * obj, gpointer mutogene) {
-  LbaCogl *self = mutogene;
-
+lba_cogl_init (GObject * obj, LbaCogl * self) {
   g_mutex_init (&self->lock);
   g_signal_connect (obj, "notify::drawing-scene",
                     G_CALLBACK (lba_cogl_has_drawing_scene), NULL);
@@ -155,7 +153,7 @@ lba_cogl_dispose (GObject * gobject) {
 }
 
 static void
-lba_cogl_class_init (GObjectClass * gobject_class, gpointer mutogene) {
+lba_cogl_class_init (GObjectClass * gobject_class, LbaCoglClass * mutogene_class) {
   BaseDrawableClass *base_drawable_class = (BaseDrawableClass *) gobject_class;
 
   base_drawable_class->draw = (void (*)(BaseDrawable *))lba_cogl_draw;
