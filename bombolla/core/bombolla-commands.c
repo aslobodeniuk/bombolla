@@ -124,10 +124,17 @@ done:
 
 static void
 lba_command_dump_type (GType plugin_type) {
-  GTypeQuery query;
+  GTypeQuery query = { 0 };
 
   g_type_query (plugin_type, &query);
-  g_printf ("GType name = '%s'\n", query.type_name);
+  if (query.type)
+    g_printf ("Dumping GType '%s'\n", query.type_name);
+
+  if (G_TYPE_IS_MUTOGENE (plugin_type)) {
+    g_printf ("Mutogene %s\n", g_type_name (plugin_type));
+    lba_command_dump_type (gmo_register_mutant (NULL, G_TYPE_OBJECT, plugin_type));
+    return;
+  }
 
   if (G_TYPE_IS_OBJECT (plugin_type)) {
     GParamSpec **properties;
