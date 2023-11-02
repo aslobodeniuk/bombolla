@@ -230,8 +230,15 @@ lba_command_dump (BombollaContext * ctx, gchar ** tokens) {
   t = g_type_from_name (tokens[1]);
 
   if (0 == t) {
-    g_warning ("Type %s not found", tokens[1]);
-    return FALSE;
+    GObject *obj;
+
+    obj = g_hash_table_lookup (ctx->objects, tokens[1]);
+    if (!obj) {
+      g_warning ("Neither type nor an object '%s' haven't been found", tokens[1]);
+      return FALSE;
+    }
+
+    t = G_OBJECT_TYPE (obj);
   }
 
   lba_command_dump_type (t);
@@ -356,6 +363,17 @@ assemble_line (gchar ** tokens) {
 }
 
 static gboolean
+lba_command_log (BombollaContext * ctx, gchar ** tokens) {
+  if (NULL == tokens[1] || NULL != tokens[2]) {
+    g_warning ("invalid syntax for 'log' command");
+  }
+
+  g_printf ("Warning: using g_setenv, that is not thread safe");
+  g_setenv ("G_MESSAGES_DEBUG", tokens[1], TRUE);
+  return TRUE;
+}
+
+static gboolean
 lba_command_sync (BombollaContext * ctx, gchar ** tokens) {
   if (NULL != tokens[1]) {
     g_warning ("invalid syntax for 'sync' command");
@@ -446,6 +464,7 @@ const BombollaCommand commands[] = {
   { "async", lba_command_async },
   { "sync", lba_command_sync },
   { "dna", lba_command_dna },
+  { "log", lba_command_log },
   { "#", lba_comment },
   /* End of list */
   { NULL, NULL }
