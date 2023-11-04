@@ -19,7 +19,7 @@
 
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
-#include "bombolla/core/bombolla-commands.h"
+#include "commands/lba-commands.h"
 #include <glib/gstdio.h>
 #include <gmodule.h>
 #include <string.h>

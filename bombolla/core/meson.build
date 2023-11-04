@@ -1,7 +1,7 @@
-src = files(['bombolla-core.c',
-             'bombolla-commands.c',
-             'bombolla-command-on.c',
-             'bombolla-command-set.c'])
+src = files(['lba-core.c',
+             'commands/lba-commands.c',
+             'commands/lba-command-on.c',
+             'commands/lba-command-set.c'])
 
 # To share statically with the test that will build it with asan
 bombolla_core_dep = declare_dependency(

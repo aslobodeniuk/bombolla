@@ -1,6 +1,6 @@
 project('bombolla', 'c', 'vala',
         version: '0.0.0',
-        meson_version: '>= 0.56',
+        meson_version: '>= 0.58',
         default_options: ['buildtype=debug',])
 
 subdir('friendly-libs')

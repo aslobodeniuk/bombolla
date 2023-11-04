@@ -18,7 +18,7 @@
  */
 
 #include "bombolla/lba-log.h"
-#include "bombolla/core/bombolla-commands.h"
+#include "lba-commands.h"
 #include <gmo/gmo.h>
 
 /* HACK: Needed to use LBA_LOG */
