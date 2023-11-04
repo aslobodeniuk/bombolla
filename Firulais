@@ -93,5 +93,11 @@ if test "x$1" = "x"; then
 
     build_and_test
 else
+    if test "x$1" = "xenv"; then
+	echo "-- FIRULAIS: entering the env wrapper --"
+	meson devenv -C build
+	exit 0
+    fi
+
     indent ${INDENT_PARAMETERS} $@
 fi
