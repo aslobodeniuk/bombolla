@@ -1,7 +1,7 @@
 lba_base = shared_library('lba-base',
                           include_directories : [include_directories('.')],
                           dependencies: [bombolla_dep, gmo_dep],
-                          sources: files(['i2d.c', 'i3d.c']),
+                          sources: files(['i2d.c', 'i3d.c', 'lba-module-scanner.c']),
                          )
 
 bombolla_basewindow = shared_library('lba-basewindow', 'lba-basewindow.c',

@@ -26,7 +26,7 @@ static const gchar *global_lba_plugin_name = "LbaCore";
 typedef struct {
   GSList *commands_list;
   GObject *self;
-    gboolean (*proccess_command) (GObject * self, const gchar * command);
+    gboolean (*proccess_command) (gpointer self, const gchar * command);
 } BombollaOnCommandCtx;
 
 /* Callback for "on" command. It's designed to use parameters

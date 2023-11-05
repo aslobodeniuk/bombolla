@@ -19,7 +19,9 @@
 
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
+#include "bombolla/base/lba-module-scanner.h"
 #include "commands/lba-commands.h"
+#include <gmo/gmo.h>
 #include <glib/gstdio.h>
 #include <gmodule.h>
 #include <string.h>
@@ -30,17 +32,13 @@ enum {
   LAST_SIGNAL
 };
 
-typedef enum {
-  PROP_PLUGINS_PATH = 1
-} LbaCoreProperty;
-
 static guint lba_core_signals[LAST_SIGNAL] = { 0 };
 
 typedef struct _LbaCore {
-  GObject parent;
-
-  gchar *plugins_path;
   BombollaContext *ctx;
+  /* FIXME: to BMixin */
+  GObject *papi;
+  /* ---------------- */
 
   gboolean started;
   GThread *mainloop_thr;
@@ -54,13 +52,10 @@ typedef struct _LbaCore {
 } LbaCore;
 
 typedef struct _LbaCoreClass {
-  GObjectClass parent;
-
-  void (*execute) (LbaCore *, const gchar *);
-
+  void (*execute) (GObject *, const gchar *);
 } LbaCoreClass;
 
-G_DEFINE_TYPE (LbaCore, lba_core, G_TYPE_OBJECT);
+GMO_DEFINE_MUTOGENE (lba_core, LbaCore, GMO_ADD_DEP (lba_module_scanner));
 
 /* HACK: Needed to use LBA_LOG */
 static const gchar *global_lba_plugin_name = "LbaCore";
@@ -121,20 +116,22 @@ lba_core_stop (LbaCore * self) {
 }
 
 static void
-lba_core_init (LbaCore * self) {
+lba_core_init (GObject * object, LbaCore * self) {
+  self->papi = object;
+
   g_mutex_init (&self->async_cmd_guard);
   g_mutex_init (&self->lock);
   g_cond_init (&self->cond);
 }
 
-void lba_core_sync_with_async_cmds (GObject * obj);
+void lba_core_sync_with_async_cmds (gpointer core);
 
 static void
 lba_core_dispose (GObject * gobject) {
-  LbaCore *self = (LbaCore *) gobject;
+  LbaCore *self = gmo_get_LbaCore (gobject);
 
   if (self->async_cmds) {
-    lba_core_sync_with_async_cmds (gobject);
+    lba_core_sync_with_async_cmds (self);
   }
 
   if (self->ctx) {
@@ -156,30 +153,26 @@ lba_core_dispose (GObject * gobject) {
     lba_core_stop (self);
   }
 
-  g_free (self->plugins_path);
-  self->plugins_path = NULL;
-
-  /* Always chain up */
-  G_OBJECT_CLASS (lba_core_parent_class)->dispose (gobject);
+  GMO_CHAINUP (gobject, lba_core, GObject)->dispose (gobject);
 }
 
 static void
 lba_core_finalize (GObject * gobject) {
-  LbaCore *self = (LbaCore *) gobject;
+  LbaCore *self = gmo_get_LbaCore (gobject);
 
   g_mutex_clear (&self->async_cmd_guard);
   g_mutex_clear (&self->lock);
   g_cond_clear (&self->cond);
 
-  G_OBJECT_CLASS (lba_core_parent_class)->finalize (gobject);
+  GMO_CHAINUP (gobject, lba_core, GObject)->finalize (gobject);
 }
 
 static gboolean
-lba_core_proccess_line (GObject * obj, const gchar * str) {
+lba_core_proccess_line (gpointer obj, const gchar * str) {
+  LbaCore *self = (LbaCore *) obj;
   gboolean ret = TRUE;
   char **tokens;
   const BombollaCommand *command;
-  LbaCore *self = (LbaCore *) obj;
 
   tokens = g_strsplit (str, " ", 0);
 
@@ -232,22 +225,22 @@ done:
 }
 
 static void
-lba_core_scan_gtype (LbaCore * self, const gchar * module_filename) {
+lba_core_load_module (GObject * gobj, const gchar * module_filename) {
   GModule *module = NULL;
   gpointer ptr;
   lBaPluginSystemGetGtypeFunc get_type_f;
   GType plugin_gtype;
 
+  g_return_if_fail (module_filename);
+
   module = g_module_open (module_filename, G_MODULE_BIND_LOCAL);
   if (!module) {
-    // too noisy
-    //      g_warning ("Failed to load plugin '%s': %s", module_filename,
-    //          g_module_error ());
+    LBA_LOG ("Failed to load plugin '%s': %s", module_filename, g_module_error ());
     return;
   }
 
   if (!g_module_symbol (module, BOMBOLLA_PLUGIN_SYSTEM_ENTRY, &ptr)) {
-    //      g_warning ("File '%s' is not a plugin from my system", module_filename);
+    LBA_LOG ("File '%s' is not a bombolla plugin", module_filename);
     g_module_close (module);
     return;
   }
@@ -265,106 +258,12 @@ lba_core_scan_gtype (LbaCore * self, const gchar * module_filename) {
            module_filename);
 }
 
-static GSList *lba_core_scan_path (const gchar * path, GSList * modules_files);
-
-/* This function is recursive */
-static GSList *
-lba_core_scan_path (const gchar * path, GSList * modules_files) {
-  static const char *LBA_PLUGIN_PREFIX = "liblba-";
-  static const char *LBA_PLUGIN_SUFFIX = G_MODULE_SUFFIX;
-
-  if (!g_file_test (path, G_FILE_TEST_EXISTS)) {
-    g_warning ("Path [%s] doesn't exist", path);
-    return modules_files;
-  }
-
-  if (g_file_test (path, G_FILE_TEST_IS_DIR)) {
-    GError *err;
-    const gchar *file;
-    GDir *dir;
-
-    LBA_LOG ("Scan directory [%s]", path);
-    dir = g_dir_open (path, 0, &err);
-    if (!dir) {
-      g_warning ("Couldn't open [%s]: [%s]", path,
-                 err ? err->message : "no message");
-      if (err)
-        g_error_free (err);
-      return modules_files;
-    }
-
-    while ((file = g_dir_read_name (dir))) {
-      gchar *sub_path = g_build_filename (path, file, NULL);
-
-      /* Step into the directories */
-      if (g_file_test (sub_path, G_FILE_TEST_IS_DIR)) {
-        modules_files = lba_core_scan_path (sub_path, modules_files);
-        g_free (sub_path);
-        continue;
-      }
-
-      /* If not a directory */
-      if (g_str_has_prefix (file, LBA_PLUGIN_PREFIX) &&
-          g_str_has_suffix (file, LBA_PLUGIN_SUFFIX)) {
-        modules_files = g_slist_append (modules_files, sub_path);
-        sub_path = NULL;
-      } else {
-        g_free (sub_path);
-      }
-    }
-
-    g_dir_close (dir);
-  } else {
-    LBA_LOG ("Scan single file [%s]", path);
-    modules_files = g_slist_append (modules_files, g_strdup (path));
-  }
-
-  return modules_files;
-}
-
-static void
-lba_core_scan (LbaCore * self) {
-  GSList *modules_files = NULL,
-      *l;
-
-  g_return_if_fail (self->plugins_path != NULL);
-
-  modules_files = lba_core_scan_path (self->plugins_path, NULL);
-
-  for (l = modules_files; l; l = l->next) {
-    lba_core_scan_gtype (self, (const gchar *)l->data);
-  }
-
-  g_slist_free_full (modules_files, g_free);
-}
-
 /* TODO: return FALSE if execution fails */
 static void
-lba_core_execute (LbaCore * self, const gchar * commands) {
+lba_core_execute (GObject * gobject, const gchar * commands) {
+  LbaCore *self = gmo_get_LbaCore (gobject);
+
   if (!self->started) {
-    /* Start main loop and scan the plugins */
-    static volatile gboolean once;
-
-    if (!once) {
-      /* Scan for plugins */
-      if (!self->plugins_path) {
-        self->plugins_path = g_strdup (g_getenv ("LBA_PLUGINS_PATH"));
-
-        if (!self->plugins_path) {
-          gchar *cur_dir = g_get_current_dir ();
-
-          LBA_LOG ("No plugin path is set.");
-          self->plugins_path = g_build_filename (cur_dir, "build", NULL);
-          g_free (cur_dir);
-        }
-      }
-
-      LBA_LOG ("Scan %s", self->plugins_path);
-      lba_core_scan (self);
-
-      once = 1;
-    }
-
     /* Start the main loop */
     g_mutex_lock (&self->lock);
     /* FIXME: custom MainContext would be nice */
@@ -385,7 +284,7 @@ lba_core_execute (LbaCore * self, const gchar * commands) {
     lines = g_strsplit (commands, "\n", 0);
 
     for (i = 0; lines[i]; i++) {
-      if (!lba_core_proccess_line ((GObject *) self, lines[i]))
+      if (!lba_core_proccess_line (self, lines[i]))
         break;
     }
 
@@ -428,14 +327,14 @@ static gboolean
 lba_core_async_cmd (gpointer data) {
   LbaCoreAsyncCmd *ctx = (LbaCoreAsyncCmd *) data;
 
-  lba_core_execute (ctx->core, ctx->command);
+  lba_core_execute (ctx->core->papi, ctx->command);
 
   return G_SOURCE_REMOVE;
 }
 
 void
-lba_core_sync_with_async_cmds (GObject * obj) {
-  LbaCore *self = (LbaCore *) obj;
+lba_core_sync_with_async_cmds (gpointer core) {
+  LbaCore *self = (LbaCore *) core;
   GList *it;
 
   /* To sync we do:
@@ -480,63 +379,46 @@ lba_core_shedule_async_script (GObject * obj, gchar * command) {
 }
 
 static void
-lba_core_set_property (GObject * object,
-                       guint property_id, const GValue * value, GParamSpec * pspec) {
-  LbaCore *self = (LbaCore *) object;
+lba_core_class_init (GObjectClass * object_class, LbaCoreClass * klass) {
+  LbaModuleScannerClass *lms_class;
 
-  switch ((LbaCoreProperty) property_id) {
-  case PROP_PLUGINS_PATH:
-    g_free (self->plugins_path);
-    self->plugins_path = g_value_dup_string (value);
-    break;
-  default:
-    /* We don't have any other property... */
-    G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-    break;
-  }
-}
-
-static void
-lba_core_get_property (GObject * object,
-                       guint property_id, GValue * value, GParamSpec * pspec) {
-  LbaCore *self = (LbaCore *) object;
-
-  switch ((LbaCoreProperty) property_id) {
-  case PROP_PLUGINS_PATH:
-    g_value_set_string (value, self->plugins_path);
-    break;
-  default:
-    /* We don't have any other property... */
-    G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-    break;
-  }
-}
-
-static void
-lba_core_class_init (LbaCoreClass * klass) {
-  GObjectClass *object_class = (GObjectClass *) klass;
-
-  klass->execute = lba_core_execute;
   object_class->dispose = lba_core_dispose;
   object_class->finalize = lba_core_finalize;
-  object_class->set_property = lba_core_set_property;
-  object_class->get_property = lba_core_get_property;
+
+  klass->execute = lba_core_execute;
 
   /* TODO: change to bool_string, need some syntax checking */
   lba_core_signals[SIGNAL_EXECUTE] =
-      g_signal_new ("execute", G_TYPE_FROM_CLASS (klass),
+      g_signal_new ("execute", G_TYPE_FROM_CLASS (object_class),
                     G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
-                    G_STRUCT_OFFSET (LbaCoreClass, execute), NULL, NULL,
+                    /* FIXME: resolve in gmo.h. We install signal to the object_class.
+                     * GMO_CLASS_OFFSET() ?? */
+                    ((gpointer) klass - (gpointer) object_class) +
+                    G_STRUCT_OFFSET (LbaCoreClass, execute),
+                    ////////////////////////////////////////////
+                    NULL, NULL,
                     g_cclosure_marshal_VOID__STRING,
                     G_TYPE_NONE, 1, G_TYPE_STRING, G_TYPE_NONE);
 
-  g_object_class_install_property (object_class, PROP_PLUGINS_PATH,
-                                   g_param_spec_string ("plugins-path",
-                                                        "Plugins path",
-                                                        "Path to scan the plugins",
-                                                        NULL,
-                                                        G_PARAM_STATIC_STRINGS |
-                                                        G_PARAM_READWRITE));
-
   lba_core_init_convertion_functions ();
+
+  lms_class =
+      (LbaModuleScannerClass *) gmo_class_get_mutogene (object_class,
+                                                        lba_module_scanner_get_type
+                                                        ());
+
+  lms_class->plugin_path_env = "LBA_PLUGINS_PATH";
+  lms_class->plugin_prefix = "liblba-";
+  lms_class->plugin_suffix = G_MODULE_SUFFIX;
+  lms_class->have_file = lba_core_load_module;
+}
+
+/* FIXME: better name */
+GType
+lba_core_get_type2 (void) {
+  static GType ret;
+
+  return ret ? ret : (ret =
+                      gmo_register_mutant (NULL, G_TYPE_OBJECT,
+                                           lba_core_get_type ()));
 }

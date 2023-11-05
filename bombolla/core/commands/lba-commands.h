@@ -24,8 +24,9 @@ typedef struct {
   GHashTable *objects;
   GHashTable *bindings;
   gpointer capturing_on_command;
-  GObject *self;
-    gboolean (*proccess_command) (GObject * obj, const gchar * str);
+
+  gpointer self;
+    gboolean (*proccess_command) (gpointer self, const gchar * str);
 
 } BombollaContext;
 
@@ -48,6 +49,6 @@ lba_core_parse_obj_fld (BombollaContext * ctx, const gchar * str, GObject ** obj
 void lba_core_init_convertion_functions (void);
 
 void lba_core_shedule_async_script (GObject * obj, gchar * command);
-void lba_core_sync_with_async_cmds (GObject * obj);
+void lba_core_sync_with_async_cmds (gpointer core);
 
 #endif
