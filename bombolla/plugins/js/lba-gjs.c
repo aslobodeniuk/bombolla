@@ -20,6 +20,8 @@
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 #include <gjs/gjs.h>
+#include "bombolla/base/lba-module-scanner.h"
+#include <gmo/gmo.h>
 
 typedef struct _LbaGjs LbaGjs;
 
@@ -28,8 +30,6 @@ struct _LbaGjs {
   GObject parent;
 
   GjsContext *js_context;
-
-  gchar *plugins_path;
 
   GMutex lock;
   GCond cond;
@@ -41,7 +41,7 @@ typedef struct _LbaGjsClass {
   GObjectClass parent;
 } LbaGjsClass;
 
-G_DEFINE_TYPE (LbaGjs, lba_gjs, G_TYPE_OBJECT);
+GMO_DEFINE_MUTOGENE (lba_gjs, LbaGjs, GMO_ADD_DEP (lba_module_scanner));
 
 static void
 lba_gjs_async_cmd_free (gpointer data) {
@@ -67,64 +67,6 @@ lba_gjs_sync_call_through_main_loop (LbaGjs * self, GSourceFunc cmd) {
   g_source_attach (self->async_ctx, NULL);
   g_cond_wait (&self->cond, &self->lock);
   g_mutex_unlock (&self->lock);
-}
-
-static GSList *lba_gjs_modules_scan_path (const gchar * path,
-                                          GSList * modules_files);
-
-/* This function is recursive */
-static GSList *
-lba_gjs_modules_scan_path (const gchar * path, GSList * modules_files) {
-  static const char *LBA_GJS_PLUGIN_PREFIX = "lba-";
-  static const char *LBA_GJS_PLUGIN_SUFFIX = ".js";
-
-  if (!g_file_test (path, G_FILE_TEST_EXISTS)) {
-    g_warning ("Path [%s] doesn't exist", path);
-    return modules_files;
-  }
-
-  if (g_file_test (path, G_FILE_TEST_IS_DIR)) {
-    GError *err;
-    const gchar *file;
-    GDir *dir;
-
-    LBA_LOG ("Scan directory [%s]", path);
-    dir = g_dir_open (path, 0, &err);
-    if (!dir) {
-      g_warning ("Couldn't open [%s]: [%s]", path,
-                 err ? err->message : "no message");
-      if (err)
-        g_error_free (err);
-      return modules_files;
-    }
-
-    while ((file = g_dir_read_name (dir))) {
-      gchar *sub_path = g_build_filename (path, file, NULL);
-
-      /* Step into the directories */
-      if (g_file_test (sub_path, G_FILE_TEST_IS_DIR)) {
-        modules_files = lba_gjs_modules_scan_path (sub_path, modules_files);
-        g_free (sub_path);
-        continue;
-      }
-
-      /* If not a directory */
-      if (g_str_has_prefix (file, LBA_GJS_PLUGIN_PREFIX) &&
-          g_str_has_suffix (file, LBA_GJS_PLUGIN_SUFFIX)) {
-        modules_files = g_slist_append (modules_files, sub_path);
-        sub_path = NULL;
-      } else {
-        g_free (sub_path);
-      }
-    }
-
-    g_dir_close (dir);
-  } else {
-    LBA_LOG ("Scan single file [%s]", path);
-    modules_files = g_slist_append (modules_files, g_strdup (path));
-  }
-
-  return modules_files;
 }
 
 static gboolean
@@ -166,42 +108,20 @@ lba_gjs_async_eval_file (gpointer data) {
 }
 
 static void
-lba_gjs_scan (LbaGjs * self) {
-  GSList *modules_files = NULL,
-      *l;
+lba_gjs_load_module (GObject * gobj, const gchar * module_filename) {
+  LbaGjs *self = gmo_get_LbaGjs (gobj);
 
-  g_return_if_fail (self->plugins_path != NULL);
+  g_return_if_fail (module_filename);
 
-  modules_files = lba_gjs_modules_scan_path (self->plugins_path, NULL);
-
-  for (l = modules_files; l; l = l->next) {
-    self->module_to_scan = (gchar *) l->data;
-    lba_gjs_sync_call_through_main_loop (self, lba_gjs_async_eval_file);
-  }
+  self->module_to_scan = module_filename;
+  lba_gjs_sync_call_through_main_loop (self, lba_gjs_async_eval_file);
   self->module_to_scan = NULL;
-  g_slist_free_full (modules_files, g_free);
 }
 
 static void
-lba_gjs_init (LbaGjs * self) {
-  static volatile gboolean once;
-
+lba_gjs_init (GObject * object, LbaGjs * self) {
   g_mutex_init (&self->lock);
   g_cond_init (&self->cond);
-
-  if (!self->plugins_path) {
-    self->plugins_path = g_strdup (g_getenv ("LBA_JS_PLUGINS_PATH"));
-
-    if (!self->plugins_path) {
-      LBA_LOG ("No plugin path is set. Will scan current directory.");
-      self->plugins_path = g_get_current_dir ();
-    }
-  }
-
-  if (!once) {
-    lba_gjs_scan (self);
-    once = 1;
-  }
 }
 
 static gboolean
@@ -218,27 +138,39 @@ lba_gjs_async_dispose (gpointer data) {
 
 static void
 lba_gjs_dispose (GObject * gobject) {
-  LbaGjs *self = (LbaGjs *) gobject;
+  LbaGjs *self = gmo_get_LbaGjs (gobject);
 
   lba_gjs_sync_call_through_main_loop (self, lba_gjs_async_dispose);
-  G_OBJECT_CLASS (lba_gjs_parent_class)->dispose (gobject);
+
+  GMO_CHAINUP (gobject, lba_gjs, GObject)->dispose (gobject);
 }
 
 static void
 lba_gjs_finalize (GObject * gobject) {
-  LbaGjs *self = (LbaGjs *) gobject;
+  LbaGjs *self = gmo_get_LbaGjs (gobject);
 
   g_mutex_clear (&self->lock);
   g_cond_clear (&self->cond);
-  G_OBJECT_CLASS (lba_gjs_parent_class)->finalize (gobject);
+
+  GMO_CHAINUP (gobject, lba_gjs, GObject)->finalize (gobject);
 }
 
 static void
-lba_gjs_class_init (LbaGjsClass * klass) {
-  GObjectClass *object_class = (GObjectClass *) klass;
+lba_gjs_class_init (GObjectClass * object_class, LbaGjsClass * klass) {
+  LbaModuleScannerClass *lms_class;
 
   object_class->dispose = lba_gjs_dispose;
   object_class->finalize = lba_gjs_finalize;
+
+  lms_class =
+      (LbaModuleScannerClass *) gmo_class_get_mutogene (object_class,
+                                                        lba_module_scanner_get_type
+                                                        ());
+
+  lms_class->plugin_path_env = "LBA_JS_PLUGINS_PATH";
+  lms_class->plugin_prefix = "lba-";
+  lms_class->plugin_suffix = ".js";
+  lms_class->have_file = lba_gjs_load_module;
 }
 
 /* Export plugin */
