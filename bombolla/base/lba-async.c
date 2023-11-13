@@ -23,6 +23,14 @@
 #include "bombolla/lba-log.h"
 #include "bombolla/base/i2d.h"
 
+typedef struct {
+  GType type;
+  guint n_construct_properties;
+  GObjectConstructParam *construct_properties;
+  GObjectClass *parent_klass;
+  GObject *return_object;
+} LbaAsyncConstructorInfo;
+
 typedef struct _LbaAsync {
   /* TODO: move to GMOMutogene struct */
   GObject *mami;
@@ -31,6 +39,9 @@ typedef struct _LbaAsync {
   GMutex lock;
   GCond cond;
   GSource *async_ctx;
+
+  /* Special case: GObject constructor */
+  LbaAsyncConstructorInfo *constructor_info;
 } LbaAsync;
 
 typedef struct _LbaAsyncClass {
@@ -52,16 +63,16 @@ lba_async_cmd_free (gpointer gobject) {
 }
 
 static void
-lba_async_call_through_main_loop (LbaAsync * self, GSourceFunc cmd, gpointer data) {
+lba_async_call_through_main_loop (LbaAsync * self, GSourceFunc cmd) {
   g_warn_if_fail (self->async_ctx == NULL);
 
   if (g_main_context_is_owner (NULL)) {
     LBA_LOG ("Already in the MainContext. Calling synchronously");
-    cmd (data);
+    cmd (self);
   } else {
     self->async_ctx = g_idle_source_new ();
     g_source_set_priority (self->async_ctx, G_PRIORITY_HIGH);
-    g_source_set_callback (self->async_ctx, cmd, data, lba_async_cmd_free);
+    g_source_set_callback (self->async_ctx, cmd, self, lba_async_cmd_free);
 
     /* Attach the source and wait for it to finish */
     g_mutex_lock (&self->lock);
@@ -83,8 +94,8 @@ static void
 lba_async_dispose (GObject * gobject) {
   LbaAsync *self = gmo_get_LbaAsync (gobject);
 
-  LBA_LOG ("Disposing [%s]", g_type_name (G_OBJECT_TYPE (gobject)));
-  lba_async_call_through_main_loop (self, lba_async_dispose_cmd, self);
+  LBA_LOG ("Schedulling [%s]->dispose", G_OBJECT_TYPE_NAME (gobject));
+  lba_async_call_through_main_loop (self, lba_async_dispose_cmd);
 }
 
 static gboolean
@@ -99,8 +110,8 @@ static void
 lba_async_finalize (GObject * gobject) {
   LbaAsync *self = gmo_get_LbaAsync (gobject);
 
-  LBA_LOG ("Finalizing [%s]", g_type_name (G_OBJECT_TYPE (gobject)));
-  lba_async_call_through_main_loop (self, lba_async_finalize_cmd, self);
+  LBA_LOG ("Scheduling [%s]->finalize", G_OBJECT_TYPE_NAME (gobject));
+  lba_async_call_through_main_loop (self, lba_async_finalize_cmd);
 
   /* Now can clean our own stuff */
   g_mutex_clear (&self->lock);
@@ -108,11 +119,132 @@ lba_async_finalize (GObject * gobject) {
   g_warn_if_fail (self->async_ctx == NULL);
 }
 
+static gboolean
+lba_async_constructed_cmd (gpointer ptr) {
+  LbaAsync *self = (LbaAsync *) ptr;
+
+  GMO_CHAINUP (self->mami, lba_async, GObject)->constructed (self->mami);
+  return G_SOURCE_REMOVE;
+}
+
+static void
+lba_async_constructed (GObject * gobject) {
+  LbaAsync *self = gmo_get_LbaAsync (gobject);
+
+  LBA_LOG ("Scheduling [%s]->constructed", G_OBJECT_TYPE_NAME (gobject));
+  lba_async_call_through_main_loop (self, lba_async_constructed_cmd);
+}
+
+static gboolean
+lba_async_constructor_cmd (gpointer ptr) {
+  LbaAsync *self = (LbaAsync *) ptr;
+  LbaAsyncConstructorInfo *info = self->constructor_info;
+
+  g_return_val_if_fail (info, G_SOURCE_REMOVE);
+  g_return_val_if_fail (info->type, G_SOURCE_REMOVE);
+  g_return_val_if_fail (info->parent_klass, G_SOURCE_REMOVE);
+  g_return_val_if_fail (info->n_construct_properties
+                        || info->construct_properties, G_SOURCE_REMOVE);
+  g_return_val_if_fail (info->return_object == NULL, G_SOURCE_REMOVE);
+
+  info->return_object =
+      info->parent_klass->constructor (info->type, info->n_construct_properties,
+                                       info->construct_properties);
+  return G_SOURCE_REMOVE;
+}
+
+static GObject *
+lba_async_constructor (GType type, guint n_construct_properties,
+                       GObjectConstructParam * construct_properties) {
+  GObjectClass *parent_klass;
+
+  parent_klass =
+      g_type_class_peek (g_type_parent
+                         (gmo_type_peek_mutant (type, lba_async_info.type)));
+
+  if (g_main_context_is_owner (NULL)) {
+    return parent_klass->constructor (type, n_construct_properties,
+                                      construct_properties);
+  } else {
+    GObject *ret;
+
+    /* Here we need a tricky chainup. Async and without an instance.
+     * For now we are choosing a quick hack. */
+    LbaAsync tmp = { 0 };
+    tmp.constructor_info = g_new0 (LbaAsyncConstructorInfo, 1);
+    tmp.constructor_info->type = type;
+    tmp.constructor_info->n_construct_properties = n_construct_properties;
+    /* NOTE: will crash if construct_properties point on stack, will have to
+     * do a copy then.. */
+    tmp.constructor_info->construct_properties = construct_properties;
+    tmp.constructor_info->parent_klass = parent_klass;
+
+    lba_async_init (NULL, &tmp);
+    lba_async_call_through_main_loop (&tmp, lba_async_constructor_cmd);
+
+    /* can't do finalize */
+    g_mutex_clear (&tmp.lock);
+    g_cond_clear (&tmp.cond);
+    ret = tmp.constructor_info->return_object;
+    g_free (tmp.constructor_info);
+
+    g_warn_if_fail (ret != NULL);
+    return ret;
+  }
+}
+
 static void
 lba_async_class_init (GObjectClass * gobject_class, LbaAsyncClass * self_class) {
 
+  /* seldom overidden */
+  /* overridable methods */
+  /* void       (*set_property)         (GObject        *object, */
+  /*                                        guint           property_id, */
+  /*                                        const GValue   *value, */
+  /*                                        GParamSpec     *pspec); */
+  /* void       (*get_property)         (GObject        *object, */
+  /*                                        guint           property_id, */
+  /*                                        GValue         *value, */
+  /*                                        GParamSpec     *pspec); */
+
+  /* void       (*dispatch_properties_changed) (GObject      *object, */
+  /*                                   guint         n_pspecs, */
+  /*                                   GParamSpec  **pspecs); */
+  /* signals */
+  /* void            (*notify)                  (GObject *object, */
+  /*                               GParamSpec *pspec); */
+
+  gobject_class->constructor = lba_async_constructor;
+  gobject_class->constructed = lba_async_constructed;
   gobject_class->dispose = lba_async_dispose;
   gobject_class->finalize = lba_async_finalize;
+
+  /* TODO:
+   * --------------------------------------------
+   GParamSpec ** g_object_class_list_properties (GObjectClass *oclass, guint *n_properties);
+
+   + foreach:
+
+   void g_object_class_override_property (GObjectClass *oclass, guint property_id, const gchar *name);
+
+   +
+   Then chainup though parent_klass->get/set_property
+   ----------------------------------------------
+   guint *
+   g_signal_list_ids (GType itype,
+   guint *n_ids);
+
+   void
+   g_signal_query (guint signal_id,
+   GSignalQuery *query);
+
+   void
+   g_signal_override_class_handler (const gchar *signal_name,
+   GType instance_type,
+   GCallback class_handler);
+
+   g_signal_chain_from_overridden_handler ()
+   * */
 }
 
 static void
