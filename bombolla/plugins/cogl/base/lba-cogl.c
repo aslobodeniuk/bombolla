@@ -20,7 +20,7 @@
 #include "bombolla/lba-log.h"
 #include "icogl.h"
 #include <bombolla/base/lba-basedrawable.h>
-#include <gmo/gmo.h>
+#include <bmixin/bmixin.h>
 
 typedef struct _LbaCogl {
   CoglFramebuffer *fb;
@@ -37,14 +37,14 @@ typedef struct _LbaCoglClass {
 static void lba_cogl_icogl_init (LbaICogl * iface);
 
 /* *INDENT-OFF* */ 
-GMO_DEFINE_MUTOGENE (lba_cogl, LbaCogl,
-    GMO_IMPLEMENTS_IFACE (lba, cogl, icogl),
-    GMO_ADD_DEP (base_drawable));
+BM_DEFINE_MIXIN (lba_cogl, LbaCogl,
+    BM_IMPLEMENTS_IFACE (lba, cogl, icogl),
+    BM_ADD_DEP (base_drawable));
 /* *INDENT-ON* */ 
 
 static void
 lba_cogl_get_ctx (GObject * obj, CoglContext ** ctx, CoglPipeline ** pipeline) {
-  LbaCogl *self = gmo_get_LbaCogl (obj);
+  LbaCogl *self = bm_get_LbaCogl (obj);
 
   if (ctx)
     *ctx = self->ctx;
@@ -61,7 +61,7 @@ lba_cogl_icogl_init (LbaICogl * iface) {
 
 static void
 lba_cogl_draw (GObject * obj) {
-  LbaCogl *self = gmo_get_LbaCogl (obj);
+  LbaCogl *self = bm_get_LbaCogl (obj);
   LbaICogl *iface;
 
   LBA_LOG ("draw");
@@ -86,7 +86,7 @@ lba_cogl_draw (GObject * obj) {
 static void
 lba_cogl_scene_reopen (GObject * scene, gpointer user_data) {
   LbaICogl *iface;
-  LbaCogl *self = gmo_get_LbaCogl (user_data);
+  LbaCogl *self = bm_get_LbaCogl (user_data);
 
   LBA_LOG ("reopen");
   iface = G_TYPE_INSTANCE_GET_INTERFACE (user_data, LBA_ICOGL, LbaICogl);
@@ -145,15 +145,15 @@ lba_cogl_init (GObject * obj, LbaCogl * self) {
 
 static void
 lba_cogl_dispose (GObject * gobject) {
-  LbaCogl *self = gmo_get_LbaCogl (gobject);
+  LbaCogl *self = bm_get_LbaCogl (gobject);
 
   g_mutex_clear (&self->lock);
 
-  GMO_CHAINUP (gobject, lba_cogl, GObject)->dispose (gobject);
+  BM_CHAINUP (gobject, lba_cogl, GObject)->dispose (gobject);
 }
 
 static void
-lba_cogl_class_init (GObjectClass * gobject_class, LbaCoglClass * mutogene_class) {
+lba_cogl_class_init (GObjectClass * gobject_class, LbaCoglClass * mixin_class) {
   BaseDrawableClass *base_drawable_class = (BaseDrawableClass *) gobject_class;
 
   base_drawable_class->draw = (void (*)(BaseDrawable *))lba_cogl_draw;

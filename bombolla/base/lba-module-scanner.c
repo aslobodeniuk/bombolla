@@ -21,7 +21,7 @@
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 #include "lba-module-scanner.h"
-#include <gmo/gmo.h>
+#include <bmixin/bmixin.h>
 
 typedef enum {
   PROP_PLUGINS_PATH = 1
@@ -31,7 +31,7 @@ typedef struct _LbaModuleScanner {
   gchar *plugin_path;
 } LbaModuleScanner;
 
-GMO_DEFINE_MUTOGENE (lba_module_scanner, LbaModuleScanner);
+BM_DEFINE_MIXIN (lba_module_scanner, LbaModuleScanner);
 
 static GSList *lba_module_scanner_scan_path (LbaModuleScannerClass * klass,
                                              const gchar * path,
@@ -121,8 +121,8 @@ lba_module_scanner_constructed (GObject * gobject) {
   /* FIXME: bmixin_get_LbaModuleScannerClass??
    * Ptr on Class can be cached in BMixin structure */
   LbaModuleScannerClass *klass =
-      gmo_class_get_LbaModuleScanner (G_OBJECT_GET_CLASS (gobject));
-  LbaModuleScanner *self = gmo_get_LbaModuleScanner (gobject);
+      bm_class_get_LbaModuleScanner (G_OBJECT_GET_CLASS (gobject));
+  LbaModuleScanner *self = bm_get_LbaModuleScanner (gobject);
 
   /* need "scan" signal?? */
   if (!self->plugin_path) {
@@ -141,18 +141,18 @@ lba_module_scanner_constructed (GObject * gobject) {
 
 static void
 lba_module_scanner_finalize (GObject * gobject) {
-  LbaModuleScanner *self = gmo_get_LbaModuleScanner (gobject);
+  LbaModuleScanner *self = bm_get_LbaModuleScanner (gobject);
 
   g_free (self->plugin_path);
 
-  GMO_CHAINUP (gobject, lba_module_scanner, GObject)->finalize (gobject);
+  BM_CHAINUP (gobject, lba_module_scanner, GObject)->finalize (gobject);
 }
 
 static void
 lba_module_scanner_set_property (GObject * object,
                                  guint property_id, const GValue * value,
                                  GParamSpec * pspec) {
-  LbaModuleScanner *self = gmo_get_LbaModuleScanner (object);
+  LbaModuleScanner *self = bm_get_LbaModuleScanner (object);
 
   switch ((LbaModuleScannerProperty) property_id) {
   case PROP_PLUGINS_PATH:
@@ -170,7 +170,7 @@ static void
 lba_module_scanner_get_property (GObject * object,
                                  guint property_id, GValue * value,
                                  GParamSpec * pspec) {
-  LbaModuleScanner *self = gmo_get_LbaModuleScanner (object);
+  LbaModuleScanner *self = bm_get_LbaModuleScanner (object);
 
   switch ((LbaModuleScannerProperty) property_id) {
   case PROP_PLUGINS_PATH:

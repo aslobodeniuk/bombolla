@@ -18,7 +18,7 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gmo/gmo.h>
+#include <bmixin/bmixin.h>
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 #include "bombolla/base/i2d.h"
@@ -32,7 +32,7 @@ typedef struct {
 } LbaAsyncConstructorInfo;
 
 typedef struct _LbaAsync {
-  /* TODO: move to GMOMutogene struct */
+  /* TODO: move to BMixin struct */
   GObject *mami;
   /* -------------------------------- */
 
@@ -49,7 +49,7 @@ typedef struct _LbaAsyncClass {
 
 /* TODO: this mixin should always go as the last in the inheiritance tree.
  * We should add some kind of flag to it's type that would provide that feature. */
-GMO_DEFINE_MUTOGENE (lba_async, LbaAsync);
+BM_DEFINE_MIXIN (lba_async, LbaAsync);
 
 static void
 lba_async_cmd_free (gpointer gobject) {
@@ -86,13 +86,13 @@ static gboolean
 lba_async_dispose_cmd (gpointer ptr) {
   LbaAsync *self = (LbaAsync *) ptr;
 
-  GMO_CHAINUP (self->mami, lba_async, GObject)->dispose (self->mami);
+  BM_CHAINUP (self->mami, lba_async, GObject)->dispose (self->mami);
   return G_SOURCE_REMOVE;
 }
 
 static void
 lba_async_dispose (GObject * gobject) {
-  LbaAsync *self = gmo_get_LbaAsync (gobject);
+  LbaAsync *self = bm_get_LbaAsync (gobject);
 
   LBA_LOG ("Schedulling [%s]->dispose", G_OBJECT_TYPE_NAME (gobject));
   lba_async_call_through_main_loop (self, lba_async_dispose_cmd);
@@ -102,13 +102,13 @@ static gboolean
 lba_async_finalize_cmd (gpointer ptr) {
   LbaAsync *self = (LbaAsync *) ptr;
 
-  GMO_CHAINUP (self->mami, lba_async, GObject)->finalize (self->mami);
+  BM_CHAINUP (self->mami, lba_async, GObject)->finalize (self->mami);
   return G_SOURCE_REMOVE;
 }
 
 static void
 lba_async_finalize (GObject * gobject) {
-  LbaAsync *self = gmo_get_LbaAsync (gobject);
+  LbaAsync *self = bm_get_LbaAsync (gobject);
 
   LBA_LOG ("Scheduling [%s]->finalize", G_OBJECT_TYPE_NAME (gobject));
   lba_async_call_through_main_loop (self, lba_async_finalize_cmd);
@@ -123,13 +123,13 @@ static gboolean
 lba_async_constructed_cmd (gpointer ptr) {
   LbaAsync *self = (LbaAsync *) ptr;
 
-  GMO_CHAINUP (self->mami, lba_async, GObject)->constructed (self->mami);
+  BM_CHAINUP (self->mami, lba_async, GObject)->constructed (self->mami);
   return G_SOURCE_REMOVE;
 }
 
 static void
 lba_async_constructed (GObject * gobject) {
-  LbaAsync *self = gmo_get_LbaAsync (gobject);
+  LbaAsync *self = bm_get_LbaAsync (gobject);
 
   LBA_LOG ("Scheduling [%s]->constructed", G_OBJECT_TYPE_NAME (gobject));
   lba_async_call_through_main_loop (self, lba_async_constructed_cmd);
@@ -160,7 +160,7 @@ lba_async_constructor (GType type, guint n_construct_properties,
 
   parent_klass =
       g_type_class_peek (g_type_parent
-                         (gmo_type_peek_mutant (type, lba_async_info.type)));
+                         (bm_type_peek_mixed_type (type, lba_async_info.type)));
 
   if (g_main_context_is_owner (NULL)) {
     return parent_klass->constructor (type, n_construct_properties,

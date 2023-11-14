@@ -18,7 +18,7 @@
  */
 
 #include <glib-object.h>
-#include <gmo/gmo.h>
+#include <bmixin/bmixin.h>
 
 /* Declare this magic symbols explicitly */
 GType lba_core_get_type2 (void);
@@ -38,8 +38,8 @@ fixture_set_up (Fixture * fixture, gconstpointer user_data) {
   fixture->core = g_object_new (lba_core_get_type2 (), NULL);
 
   /* Doesn't warn on running multiple times */
-  async_type = gmo_register_mutant (NULL, G_TYPE_OBJECT,
-                                    lba_async_string_input_get_type ());
+  async_type = bm_register_mixed_type (NULL, G_TYPE_OBJECT,
+                                       lba_async_string_input_get_type ());
   fixture->inp = g_object_new (async_type, NULL);
 }
 

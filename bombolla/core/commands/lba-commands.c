@@ -19,7 +19,7 @@
 
 #include "bombolla/lba-log.h"
 #include "lba-commands.h"
-#include <gmo/gmo.h>
+#include <bmixin/bmixin.h>
 
 /* HACK: Needed to use LBA_LOG */
 static const gchar *global_lba_plugin_name = "LbaCore";
@@ -48,10 +48,10 @@ lba_command_create (BombollaContext * ctx, gchar ** tokens) {
   } else {
     GObject *obj;
 
-    /* If the type is mutogene, then we might be able to instantiate
-     * the mutant. If it's not abstract. */
-    if (G_TYPE_IS_MUTOGENE (obj_type))
-      obj_type = gmo_register_mutant (NULL, G_TYPE_OBJECT, obj_type);
+    /* If the type is mixin, then we might be able to instantiate
+     * the mixed_type. If it's not abstract. */
+    if (G_TYPE_IS_BMIXIN (obj_type))
+      obj_type = bm_register_mixed_type (NULL, G_TYPE_OBJECT, obj_type);
 
     obj = g_object_new (obj_type, NULL);
 
@@ -130,9 +130,10 @@ lba_command_dump_type (GType plugin_type) {
   if (query.type)
     g_printf ("Dumping GType '%s'\n", query.type_name);
 
-  if (G_TYPE_IS_MUTOGENE (plugin_type)) {
-    g_printf ("Mutogene %s\n", g_type_name (plugin_type));
-    lba_command_dump_type (gmo_register_mutant (NULL, G_TYPE_OBJECT, plugin_type));
+  if (G_TYPE_IS_BMIXIN (plugin_type)) {
+    g_printf ("Mixin %s\n", g_type_name (plugin_type));
+    lba_command_dump_type (bm_register_mixed_type
+                           (NULL, G_TYPE_OBJECT, plugin_type));
     return;
   }
 
@@ -405,10 +406,10 @@ static gboolean
 lba_command_dna (BombollaContext * ctx, gchar ** tokens) {
   gint t;
   GType base_type;
-  const gchar *mutant_name = tokens[1];
+  const gchar *mixed_type_name = tokens[1];
   const gchar *base_name = tokens[2];
 
-  if (NULL == mutant_name || NULL == base_name) {
+  if (NULL == mixed_type_name || NULL == base_name) {
     goto syntax;
   }
 
@@ -419,28 +420,28 @@ lba_command_dna (BombollaContext * ctx, gchar ** tokens) {
     goto syntax;
   }
 
-  if (0 != g_type_from_name (mutant_name)) {
-    g_warning ("Type '%s' already exists", mutant_name);
+  if (0 != g_type_from_name (mixed_type_name)) {
+    g_warning ("Type '%s' already exists", mixed_type_name);
   }
 
   if (NULL == tokens[3]) {
-    g_warning ("No mutogenes listed");
+    g_warning ("No mixins listed");
     goto syntax;
   }
 
   for (t = 3; tokens[t]; t++) {
-    /* In fact we have to register various intermediate mutant classes in order
+    /* In fact we have to register various intermediate mixed_type classes in order
      * to reach the requested one */
-    const gchar *mutogene_name = tokens[t];
-    GType mutogene_type = g_type_from_name (mutogene_name);
+    const gchar *mixin_name = tokens[t];
+    GType mixin_type = g_type_from_name (mixin_name);
 
     /* Final type */
     if (tokens[t + 1] == NULL) {
-      base_type = gmo_register_mutant (mutant_name, base_type, mutogene_type);
+      base_type = bm_register_mixed_type (mixed_type_name, base_type, mixin_type);
       base_name = g_type_name (base_type);
     } else {
       /* Intermediate type */
-      base_type = gmo_register_mutant (NULL, base_type, mutogene_type);
+      base_type = bm_register_mixed_type (NULL, base_type, mixin_type);
       base_name = g_type_name (base_type);
     }
 
@@ -456,7 +457,7 @@ lba_command_dna (BombollaContext * ctx, gchar ** tokens) {
 
 syntax:
   g_warning ("Syntax error. Expected: "
-             "dna <mutant name> <base type> <mutogene 1> ... <mutogene N>");
+             "dna <mixed type name> <base type> <mixin 1> ... <mixin N>");
   return FALSE;
 }
 

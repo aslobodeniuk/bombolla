@@ -6,7 +6,7 @@ shared_library('lba-gjs',
 
 async_string_input = shared_library('lba-async-string-input',
                'lba-async-string-input.c',
-               dependencies: [bombolla_dep, gmo_dep]
+               dependencies: [bombolla_dep, bmixin_dep]
               )
 
 subdir ('tests')

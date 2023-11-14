@@ -17,7 +17,7 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gmo/gmo.h>
+#include <bmixin/bmixin.h>
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 #include "bombolla/base/i3d.h"
@@ -35,16 +35,16 @@ typedef struct _LbaCoglCubeClass {
 } LbaCoglCubeClass;
 
 GType lba_cogl_get_type (void);
-GType lba_mutogene_3d_get_type (void);
+GType lba_mixin_3d_get_type (void);
 
 static void
   lba_cogl_cube_icogl_init (LbaICogl * iface);
 
 /* *INDENT-OFF* */ 
-GMO_DEFINE_MUTOGENE (lba_cogl_cube, LbaCoglCube,
-    GMO_IMPLEMENTS_IFACE (lba, cogl_cube, icogl),
-    GMO_ADD_DEP (lba_cogl),
-    GMO_ADD_DEP (lba_mutogene_3d));
+BM_DEFINE_MIXIN (lba_cogl_cube, LbaCoglCube,
+    BM_IMPLEMENTS_IFACE (lba, cogl_cube, icogl),
+    BM_ADD_DEP (lba_cogl),
+    BM_ADD_DEP (lba_mixin_3d));
 /* *INDENT-ON* */ 
 
 static void
@@ -52,7 +52,7 @@ lba_cogl_cube_paint (GObject * obj, CoglFramebuffer * fb, CoglPipeline * pipelin
   int framebuffer_width;
   int framebuffer_height;
   float rotation = 75.0;
-  LbaCoglCube *self = gmo_get_LbaCoglCube (obj);
+  LbaCoglCube *self = bm_get_LbaCoglCube (obj);
 
   framebuffer_width = cogl_framebuffer_get_width (fb);
   framebuffer_height = cogl_framebuffer_get_height (fb);
@@ -83,7 +83,7 @@ lba_cogl_cube_paint (GObject * obj, CoglFramebuffer * fb, CoglPipeline * pipelin
 static void
 lba_cogl_cube_reopen (GObject * base, CoglFramebuffer * fb,
                       CoglPipeline * pipeline, CoglContext * ctx) {
-  LbaCoglCube *self = gmo_get_LbaCoglCube (base);
+  LbaCoglCube *self = bm_get_LbaCoglCube (base);
   LbaI3D *iface3d = G_TYPE_INSTANCE_GET_INTERFACE (base,
                                                    LBA_I3D,
                                                    LbaI3D);
@@ -176,11 +176,12 @@ lba_cogl_cube_reopen (GObject * base, CoglFramebuffer * fb,
 }
 
 static void
-lba_cogl_cube_init (GObject * object, LbaCoglCube * mutogene) {
+lba_cogl_cube_init (GObject * object, LbaCoglCube * mixin) {
 }
 
 static void
-lba_cogl_cube_class_init (GObjectClass * object_class, LbaCoglCubeClass * gmo_class) {
+lba_cogl_cube_class_init (GObjectClass * object_class,
+                          LbaCoglCubeClass * mixin_class) {
 }
 
 static void

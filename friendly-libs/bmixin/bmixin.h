@@ -1,4 +1,4 @@
-/* GObject Class Mutation
+/* BMixin - "Bombolla Mixin" - GObject-based mixins
  *
  * Copyright (C) 2023 Alexander Slobodeniuk <aleksandr.slobodeniuk@gmx.es>
  *
@@ -18,124 +18,122 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef _GMO_H
-#  define _GMO_H
+#ifndef _BMIXIN_H
+#  define _BMIXIN_H
 
 #  include <glib-object.h>
 
 typedef enum {
-  GMO_ADD_TYPE_IFACE,
-  GMO_ADD_TYPE_DEP,
-} GMOAddType;
+  BM_ADD_TYPE_IFACE,
+  BM_ADD_TYPE_DEP,
+} BMAddType;
 
 typedef struct {
-  GMOAddType add_type;
+  BMAddType add_type;
     GType (*gtype) (void);
   GInterfaceInfo iface_info;
-} GMOParams;
+} BMParams;
 
 typedef struct {
   GTypeInfo info;
   GType type;
-  const GMOParams *params;
+  const BMParams *params;
   gushort num_params;
-} GMOInfo;
+} BMInfo;
 
-#  define G_TYPE_IS_MUTOGENE(t) (G_TYPE_FUNDAMENTAL (t) == gmo_fundamental_get_type ())
+#  define G_TYPE_IS_BMIXIN(t) (G_TYPE_FUNDAMENTAL (t) == bm_fundamental_get_type ())
 
-GType gmo_fundamental_get_type (void);
-GType gmo_register_mutant (const gchar * mutant_name,
-                           GType base_type, GType mutogene);
+GType bm_fundamental_get_type (void);
+GType bm_register_mixed_type (const gchar * mixed_type_name,
+                              GType base_type, GType mixin);
 
-GType gmo_register_mutogene (const gchar * mutogene_name, GMOInfo * minfo);
+GType bm_register_mixin (const gchar * mixin_name, BMInfo * minfo);
 
-gpointer gmo_class_get_mutogene (gpointer class, const GType mutogene);
-gpointer gmo_instance_get_mutogene (gpointer instance, const GType mutogene);
+gpointer bm_class_get_mixin (gpointer class, GType mixin);
+gpointer bm_instance_get_mixin (gpointer instance, GType mixin);
 
-GType gmo_type_peek_mutant (const GType mutant_type, const GType mutogene);
-GQuark gmo_info_qrk (void);
+GType bm_type_peek_mixed_type (const GType mixed_type, const GType mixin);
+GQuark bmixin_info_qrk (void);
 
-#  define GMO_ADD_DEP(name) { .add_type = GMO_ADD_TYPE_DEP, .gtype = name##_get_type }
-#  define GMO_DEP_ANY_SEP_GTYPE ((GType (*) (void)) 0xabc)
-#  define GMO_DEP_ANY_SEP { .add_type = GMO_ADD_TYPE_DEP, .gtype = GMO_DEP_ANY_SEP_GTYPE }
-#  define GMO_DEP_ANY_OF(...) GMO_DEP_ANY_SEP, __VA_ARGS__ , GMO_DEP_ANY_SEP
+#  define BM_ADD_DEP(name) { .add_type = BM_ADD_TYPE_DEP, .gtype = name##_get_type }
+#  define BM_DEP_ANY_SEP_GTYPE ((GType (*) (void)) 0xabc)
+#  define BM_DEP_ANY_SEP { .add_type = BM_ADD_TYPE_DEP, .gtype = BM_DEP_ANY_SEP_GTYPE }
+#  define BM_DEP_ANY_OF(...) BM_DEP_ANY_SEP, __VA_ARGS__ , BM_DEP_ANY_SEP
 
-#  define GMO_IMPLEMENTS_IFACE(head, body, iface, ...)                         \
-  { .add_type = GMO_ADD_TYPE_IFACE, .gtype = head##_##iface##_get_type, \
+#  define BM_IMPLEMENTS_IFACE(head, body, iface, ...)                   \
+  { .add_type = BM_ADD_TYPE_IFACE, .gtype = head##_##iface##_get_type,  \
         .iface_info = { (GInterfaceInitFunc)head##_##body##_##iface##_init, __VA_ARGS__ } }
 
-#  define GMO_DEFINE_MUTOGENE(name, Name, ...)                    \
+#  define BM_DEFINE_MIXIN(name, Name, ...)                        \
   static void name##_class_init (GObjectClass *, Name##Class*);   \
   static void name##_init (GObject *, Name *);                    \
-  static Name *gmo_get_##Name (gpointer gmo);                     \
-  static Name##Class *gmo_class_get_##Name (gpointer gmo);        \
+  static Name *bm_get_##Name (gpointer gobject);                  \
+  static Name##Class *bm_class_get_##Name (gpointer gobject);     \
   static void                                                     \
   name##_proxy_class_init (gpointer class, gpointer p)            \
   {                                                               \
-    name##_class_init (class, gmo_class_get_##Name (class));      \
+    name##_class_init (class, bm_class_get_##Name (class));       \
   }                                                               \
                                                                   \
   static void                                                     \
   name##_proxy_init (GTypeInstance * instance, gpointer p)              \
   {                                                                     \
-    name##_init (G_OBJECT (instance), gmo_get_##Name (instance));       \
+    name##_init (G_OBJECT (instance), bm_get_##Name (instance));        \
   }                                                                     \
                                                                         \
-  static const GMOParams name##_mutogene_params[] = {__VA_ARGS__};      \
+  static const BMParams name##_bmixin_params[] = {__VA_ARGS__};         \
                                                                         \
-  static GMOInfo name##_info = {                                        \
+  static BMInfo name##_info = {                                         \
     .info = {                                                           \
       .class_init = name##_proxy_class_init,                            \
       .instance_init = name##_proxy_init,                               \
       .class_size = sizeof (Name##Class),                               \
       .instance_size = sizeof (Name)                                    \
     },                                                                  \
-    .params = name##_mutogene_params,                                   \
-    .num_params = G_N_ELEMENTS (name##_mutogene_params)                 \
+    .params = name##_bmixin_params,                                     \
+    .num_params = G_N_ELEMENTS (name##_bmixin_params)                   \
   };                                                                    \
                                                                         \
   GType name##_get_type (void) {                                        \
     static gsize g_define_type_id = 0;                                  \
     if (g_once_init_enter (&g_define_type_id)) {                        \
-      g_define_type_id = gmo_register_mutogene (#Name, &name##_info);   \
+      g_define_type_id = bm_register_mixin (#Name, &name##_info);       \
       name##_info.type = g_define_type_id;                              \
-      g_type_set_qdata (name##_info.type, gmo_info_qrk (), &name##_info); \
+      g_type_set_qdata (name##_info.type, bmixin_info_qrk (), &name##_info); \
     }                                                                   \
     return g_define_type_id;                                            \
   }                                                                     \
                                                                         \
-  static Name *gmo_get_##Name (gpointer gmo) {                          \
-    return gmo_instance_get_mutogene (gmo, name##_info.type);           \
+  static Name *bm_get_##Name (gpointer gobject) {                       \
+    return bm_instance_get_mixin (gobject, name##_info.type);        \
   }                                                                     \
-  static Name##Class *gmo_class_get_##Name (gpointer gmo) {             \
-    return gmo_class_get_mutogene (gmo, name##_info.type);              \
+  static Name##Class *bm_class_get_##Name (gpointer gobject) {          \
+    return bm_class_get_mixin (gobject, name##_info.type);           \
   }                                                                     \
 
 /**
- * GMO_CHAINUP:
+ * BM_CHAINUP:
  *
- * @gmo: instance of the GObject (not mutogene private data)
- * @name: identifyer of the mutogene we are going to chainup from
+ * @gobject: instance of the GObject (not bmixin private data)
+ * @name: identifyer of the mixin we are going to chainup from
  * @Parent: return value will be casted to the Parent+Class
  *
  * Returns: the parent class - previous class in the inheiritance
- * tree, relatively to the mutogene, identified by @name.
+ * tree, relatively to the mixin, identified by @name.
  *
  * ```C
- *   GMO_CHAINUP (gobject, lba_cogl, GObject)->dispose (gobject);
+ *   BM_CHAINUP (gobject, lba_cogl, GObject)->dispose (gobject);
  * ```
  */
-#  define GMO_CHAINUP(gmo, name, Parent)                                \
+#  define BM_CHAINUP(gobject, name, Parent)                             \
   ((Parent##Class*)                                                     \
       g_type_class_peek (                                               \
         g_type_parent (                                                 \
-          gmo_type_peek_mutant (                                        \
-            G_TYPE_FROM_INSTANCE(gmo),                                  \
+          bm_type_peek_mixed_type (                                     \
+            G_TYPE_FROM_INSTANCE(gobject),                              \
             name##_info.type)                                           \
           )))
-/* TODO: way faster solution - cache the pointers in the GMOMutogene base struct.
+/* TODO: way faster solution - cache the pointers in the BMixin base struct.
  * Pointers to cache: gobject, gobject_class, gobject_parent_class, gmo_info.
- *
- * 2: rename to BMixin ?? Mutogene is too long. Also if it is a mixin...
  */
-#endif /* _GMO_H */
+#endif /* _BMIXIN_H */

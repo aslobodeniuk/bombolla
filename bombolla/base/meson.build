@@ -1,6 +1,6 @@
 lba_base = shared_library('lba-base',
                           include_directories : [include_directories('.')],
-                          dependencies: [bombolla_dep, gmo_dep],
+                          dependencies: [bombolla_dep, bmixin_dep],
                           sources: files(['i2d.c', 'i3d.c', 'lba-module-scanner.c']),
                          )
 

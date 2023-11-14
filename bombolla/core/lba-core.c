@@ -21,7 +21,7 @@
 #include "bombolla/lba-log.h"
 #include "bombolla/base/lba-module-scanner.h"
 #include "commands/lba-commands.h"
-#include <gmo/gmo.h>
+#include <bmixin/bmixin.h>
 #include <glib/gstdio.h>
 #include <gmodule.h>
 #include <string.h>
@@ -55,7 +55,7 @@ typedef struct _LbaCoreClass {
   void (*execute) (GObject *, const gchar *);
 } LbaCoreClass;
 
-GMO_DEFINE_MUTOGENE (lba_core, LbaCore, GMO_ADD_DEP (lba_module_scanner));
+BM_DEFINE_MIXIN (lba_core, LbaCore, BM_ADD_DEP (lba_module_scanner));
 
 /* HACK: Needed to use LBA_LOG */
 static const gchar *global_lba_plugin_name = "LbaCore";
@@ -128,7 +128,7 @@ void lba_core_sync_with_async_cmds (gpointer core);
 
 static void
 lba_core_dispose (GObject * gobject) {
-  LbaCore *self = gmo_get_LbaCore (gobject);
+  LbaCore *self = bm_get_LbaCore (gobject);
 
   if (self->async_cmds) {
     lba_core_sync_with_async_cmds (self);
@@ -153,18 +153,18 @@ lba_core_dispose (GObject * gobject) {
     lba_core_stop (self);
   }
 
-  GMO_CHAINUP (gobject, lba_core, GObject)->dispose (gobject);
+  BM_CHAINUP (gobject, lba_core, GObject)->dispose (gobject);
 }
 
 static void
 lba_core_finalize (GObject * gobject) {
-  LbaCore *self = gmo_get_LbaCore (gobject);
+  LbaCore *self = bm_get_LbaCore (gobject);
 
   g_mutex_clear (&self->async_cmd_guard);
   g_mutex_clear (&self->lock);
   g_cond_clear (&self->cond);
 
-  GMO_CHAINUP (gobject, lba_core, GObject)->finalize (gobject);
+  BM_CHAINUP (gobject, lba_core, GObject)->finalize (gobject);
 }
 
 static gboolean
@@ -261,7 +261,7 @@ lba_core_load_module (GObject * gobj, const gchar * module_filename) {
 /* TODO: return FALSE if execution fails */
 static void
 lba_core_execute (GObject * gobject, const gchar * commands) {
-  LbaCore *self = gmo_get_LbaCore (gobject);
+  LbaCore *self = bm_get_LbaCore (gobject);
 
   if (!self->started) {
     /* Start the main loop */
@@ -392,7 +392,7 @@ lba_core_class_init (GObjectClass * object_class, LbaCoreClass * klass) {
       g_signal_new ("execute", G_TYPE_FROM_CLASS (object_class),
                     G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
                     /* FIXME: resolve in gmo.h. We install signal to the object_class.
-                     * GMO_CLASS_OFFSET() ?? */
+                     * BM_CLASS_OFFSET() ?? */
                     ((gpointer) klass - (gpointer) object_class) +
                     G_STRUCT_OFFSET (LbaCoreClass, execute),
                     ////////////////////////////////////////////
@@ -403,9 +403,8 @@ lba_core_class_init (GObjectClass * object_class, LbaCoreClass * klass) {
   lba_core_init_convertion_functions ();
 
   lms_class =
-      (LbaModuleScannerClass *) gmo_class_get_mutogene (object_class,
-                                                        lba_module_scanner_get_type
-                                                        ());
+      (LbaModuleScannerClass *) bm_class_get_mixin (object_class,
+                                                    lba_module_scanner_get_type ());
 
   lms_class->plugin_path_env = "LBA_PLUGINS_PATH";
   lms_class->plugin_prefix = "liblba-";
@@ -419,6 +418,6 @@ lba_core_get_type2 (void) {
   static GType ret;
 
   return ret ? ret : (ret =
-                      gmo_register_mutant (NULL, G_TYPE_OBJECT,
-                                           lba_core_get_type ()));
+                      bm_register_mixed_type (NULL, G_TYPE_OBJECT,
+                                              lba_core_get_type ()));
 }

@@ -21,11 +21,11 @@
 #include "bombolla/lba-log.h"
 #include <gjs/gjs.h>
 #include "bombolla/base/lba-module-scanner.h"
-#include <gmo/gmo.h>
+#include <bmixin/bmixin.h>
 
 typedef struct _LbaGjs LbaGjs;
 
-/* TODO: split into mutogenes: PluginSystem + Async + Gjs */
+/* TODO: split into mixins: PluginSystem + Async + Gjs */
 struct _LbaGjs {
   GObject parent;
 
@@ -41,7 +41,7 @@ typedef struct _LbaGjsClass {
   GObjectClass parent;
 } LbaGjsClass;
 
-GMO_DEFINE_MUTOGENE (lba_gjs, LbaGjs, GMO_ADD_DEP (lba_module_scanner));
+BM_DEFINE_MIXIN (lba_gjs, LbaGjs, BM_ADD_DEP (lba_module_scanner));
 
 static void
 lba_gjs_async_cmd_free (gpointer data) {
@@ -109,7 +109,7 @@ lba_gjs_async_eval_file (gpointer data) {
 
 static void
 lba_gjs_load_module (GObject * gobj, const gchar * module_filename) {
-  LbaGjs *self = gmo_get_LbaGjs (gobj);
+  LbaGjs *self = bm_get_LbaGjs (gobj);
 
   g_return_if_fail (module_filename);
 
@@ -138,21 +138,21 @@ lba_gjs_async_dispose (gpointer data) {
 
 static void
 lba_gjs_dispose (GObject * gobject) {
-  LbaGjs *self = gmo_get_LbaGjs (gobject);
+  LbaGjs *self = bm_get_LbaGjs (gobject);
 
   lba_gjs_sync_call_through_main_loop (self, lba_gjs_async_dispose);
 
-  GMO_CHAINUP (gobject, lba_gjs, GObject)->dispose (gobject);
+  BM_CHAINUP (gobject, lba_gjs, GObject)->dispose (gobject);
 }
 
 static void
 lba_gjs_finalize (GObject * gobject) {
-  LbaGjs *self = gmo_get_LbaGjs (gobject);
+  LbaGjs *self = bm_get_LbaGjs (gobject);
 
   g_mutex_clear (&self->lock);
   g_cond_clear (&self->cond);
 
-  GMO_CHAINUP (gobject, lba_gjs, GObject)->finalize (gobject);
+  BM_CHAINUP (gobject, lba_gjs, GObject)->finalize (gobject);
 }
 
 static void
@@ -163,9 +163,8 @@ lba_gjs_class_init (GObjectClass * object_class, LbaGjsClass * klass) {
   object_class->finalize = lba_gjs_finalize;
 
   lms_class =
-      (LbaModuleScannerClass *) gmo_class_get_mutogene (object_class,
-                                                        lba_module_scanner_get_type
-                                                        ());
+      (LbaModuleScannerClass *) bm_class_get_mixin (object_class,
+                                                    lba_module_scanner_get_type ());
 
   lms_class->plugin_path_env = "LBA_JS_PLUGINS_PATH";
   lms_class->plugin_prefix = "lba-";

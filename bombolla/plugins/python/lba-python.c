@@ -20,7 +20,7 @@
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 #include "bombolla/base/lba-module-scanner.h"
-#include <gmo/gmo.h>
+#include <bmixin/bmixin.h>
 #include <gmodule.h>
 #include <Python.h>
 #include <dlfcn.h>
@@ -38,11 +38,11 @@ typedef struct _LbaPythonClass {
   GObjectClass parent;
 } LbaPythonClass;
 
-GMO_DEFINE_MUTOGENE (lba_python, LbaPython, GMO_ADD_DEP (lba_module_scanner));
+BM_DEFINE_MIXIN (lba_python, LbaPython, BM_ADD_DEP (lba_module_scanner));
 
 static void
 lba_python_eval_file (GObject * gobject, const gchar * filename) {
-  LbaPython *self = gmo_get_LbaPython (gobject);
+  LbaPython *self = bm_get_LbaPython (gobject);
   FILE *fp;
 
   LBA_LOG ("Evaluating [%s]", filename);
@@ -159,13 +159,13 @@ lba_python_fill_vtable (LbaPython * self) {
 
 static void
 lba_python_constructed (GObject * gobject) {
-  LbaPython *self = gmo_get_LbaPython (gobject);
+  LbaPython *self = bm_get_LbaPython (gobject);
 
   self->py_run_simple_string ("print('Hello from Bombolla home python')");
   self->py_run_simple_string ("from gi.repository import GObject");
   self->initialized = TRUE;
 
-  GMO_CHAINUP (gobject, lba_python, GObject)->constructed (gobject);
+  BM_CHAINUP (gobject, lba_python, GObject)->constructed (gobject);
 }
 
 static void
@@ -178,18 +178,18 @@ lba_python_init (GObject * object, LbaPython * self) {
 
 static void
 lba_python_dispose (GObject * gobject) {
-  LbaPython *self = gmo_get_LbaPython (gobject);
+  LbaPython *self = bm_get_LbaPython (gobject);
 
   if (self->initialized) {
     self->py_run_simple_string ("print('Bombolla home python goes to sleep')");
   }
 
-  GMO_CHAINUP (gobject, lba_python, GObject)->dispose (gobject);
+  BM_CHAINUP (gobject, lba_python, GObject)->dispose (gobject);
 }
 
 static void
 lba_python_finalize (GObject * gobject) {
-  LbaPython *self = gmo_get_LbaPython (gobject);
+  LbaPython *self = bm_get_LbaPython (gobject);
 
   if (self->initialized) {
     /* FIXME: if we don't remove all the classes defined in python
@@ -197,7 +197,7 @@ lba_python_finalize (GObject * gobject) {
     self->py_finalize ();
   }
 
-  GMO_CHAINUP (gobject, lba_python, GObject)->finalize (gobject);
+  BM_CHAINUP (gobject, lba_python, GObject)->finalize (gobject);
 }
 
 static void
@@ -209,9 +209,8 @@ lba_python_class_init (GObjectClass * object_class, LbaPythonClass * klass) {
   object_class->finalize = lba_python_finalize;
 
   lms_class =
-      (LbaModuleScannerClass *) gmo_class_get_mutogene (object_class,
-                                                        lba_module_scanner_get_type
-                                                        ());
+      (LbaModuleScannerClass *) bm_class_get_mixin (object_class,
+                                                    lba_module_scanner_get_type ());
 
   lms_class->plugin_path_env = "LBA_PYTHON_PLUGINS_PATH";
   lms_class->plugin_prefix = "lba-";

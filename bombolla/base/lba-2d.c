@@ -18,34 +18,33 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gmo/gmo.h>
+#include <bmixin/bmixin.h>
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 #include "bombolla/base/i2d.h"
 
-typedef struct _LbaMutogene2D {
+typedef struct _LbaMixin2D {
   double x,
     y;
   // TODO: lock
-} LbaMutogene2D;
+} LbaMixin2D;
 
-typedef struct _LbaMutogene2DClass {
-} LbaMutogene2DClass;
+typedef struct _LbaMixin2DClass {
+} LbaMixin2DClass;
 
 static void
-  lba_mutogene_i2d_init (LbaI2D * iface);
+  lba_mixin_i2d_init (LbaI2D * iface);
 
-GMO_DEFINE_MUTOGENE (lba_mutogene_2d, LbaMutogene2D,
-                     GMO_IMPLEMENTS_IFACE (lba, mutogene, i2d));
+BM_DEFINE_MIXIN (lba_mixin_2d, LbaMixin2D, BM_IMPLEMENTS_IFACE (lba, mixin, i2d));
 
 typedef enum {
   PROP_X = 1,
   PROP_Y,
-} LbaMutogene2DProperty;
+} LbaMixin2DProperty;
 
 static void
-lba_mutogene_2d_xy (GObject * object, gdouble * x, gdouble * y) {
-  LbaMutogene2D *self = gmo_get_LbaMutogene2D (object);
+lba_mixin_2d_xy (GObject * object, gdouble * x, gdouble * y) {
+  LbaMixin2D *self = bm_get_LbaMixin2D (object);
 
   if (x)
     *x = self->x;
@@ -54,17 +53,17 @@ lba_mutogene_2d_xy (GObject * object, gdouble * x, gdouble * y) {
 }
 
 static void
-lba_mutogene_i2d_init (LbaI2D * iface) {
-  iface->xy = lba_mutogene_2d_xy;
+lba_mixin_i2d_init (LbaI2D * iface) {
+  iface->xy = lba_mixin_2d_xy;
 }
 
 static void
-lba_mutogene_2d_set_property (GObject * object,
-                              guint property_id, const GValue * value,
-                              GParamSpec * pspec) {
-  LbaMutogene2D *self = gmo_get_LbaMutogene2D (object);
+lba_mixin_2d_set_property (GObject * object,
+                           guint property_id, const GValue * value,
+                           GParamSpec * pspec) {
+  LbaMixin2D *self = bm_get_LbaMixin2D (object);
 
-  switch ((LbaMutogene2DProperty) property_id) {
+  switch ((LbaMixin2DProperty) property_id) {
   case PROP_X:
     self->x = g_value_get_double (value);
     break;
@@ -80,12 +79,11 @@ lba_mutogene_2d_set_property (GObject * object,
 }
 
 static void
-lba_mutogene_2d_get_property (GObject * object,
-                              guint property_id, GValue * value,
-                              GParamSpec * pspec) {
-  LbaMutogene2D *self = gmo_get_LbaMutogene2D (object);
+lba_mixin_2d_get_property (GObject * object,
+                           guint property_id, GValue * value, GParamSpec * pspec) {
+  LbaMixin2D *self = bm_get_LbaMixin2D (object);
 
-  switch ((LbaMutogene2DProperty) property_id) {
+  switch ((LbaMixin2DProperty) property_id) {
   case PROP_X:
     g_value_set_double (value, self->x);
     break;
@@ -101,15 +99,14 @@ lba_mutogene_2d_get_property (GObject * object,
 }
 
 static void
-lba_mutogene_2d_init (GObject * object, LbaMutogene2D * self) {
+lba_mixin_2d_init (GObject * object, LbaMixin2D * self) {
 }
 
 static void
-lba_mutogene_2d_class_init (GObjectClass * object_class,
-                            LbaMutogene2DClass * gmo_class) {
+lba_mixin_2d_class_init (GObjectClass * object_class, LbaMixin2DClass * mixin_class) {
 
-  object_class->set_property = lba_mutogene_2d_set_property;
-  object_class->get_property = lba_mutogene_2d_get_property;
+  object_class->set_property = lba_mixin_2d_set_property;
+  object_class->get_property = lba_mixin_2d_get_property;
 
   g_object_class_install_property
       (object_class,
@@ -132,4 +129,4 @@ lba_mutogene_2d_class_init (GObjectClass * object_class,
                             G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
 }
 
-BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (lba_mutogene_2d);
+BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (lba_mixin_2d);

@@ -10,7 +10,7 @@ bombolla_dep = declare_dependency(
                          include_directories('friendly-libs')],
   dependencies: [dependency('gobject-2.0', version: '>=2.58'),
                  dependency('gio-2.0'),
-                 gmo_dep],
+                 bmixin_dep],
   compile_args: ['-Wall', '-Werror', '-Wfatal-errors']
 )
 

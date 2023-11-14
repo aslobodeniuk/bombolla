@@ -22,7 +22,7 @@
 #include <gmodule.h>
 #include <string.h>
 #include <stdlib.h>
-#include <gmo/gmo.h>
+#include <bmixin/bmixin.h>
 
 /* Declare this magic symbol explicitly */
 GType lba_core_get_type2 (void);

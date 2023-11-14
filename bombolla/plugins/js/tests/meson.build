@@ -1,5 +1,5 @@
 exe = executable('lba-async-string-input-test', 'lba-async-string-input-test.c',
-                 dependencies : [bombolla_core_dep, gmo_dep, asan_dep],
+                 dependencies : [bombolla_core_dep, bmixin_dep, asan_dep],
                  link_with : [async_string_input]
                 )
 

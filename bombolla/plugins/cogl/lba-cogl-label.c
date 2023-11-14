@@ -17,7 +17,7 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gmo/gmo.h>
+#include <bmixin/bmixin.h>
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 #include "bombolla/base/i2d.h"
@@ -45,16 +45,16 @@ typedef struct _LbaCoglLabelClass {
 } LbaCoglLabelClass;
 
 GType lba_cogl_get_type (void);
-GType lba_mutogene_2d_get_type (void);
+GType lba_mixin_2d_get_type (void);
 
 static void
   lba_cogl_label_icogl_init (LbaICogl * iface);
 
 /* *INDENT-OFF* */ 
-GMO_DEFINE_MUTOGENE (lba_cogl_label, LbaCoglLabel,
-                     GMO_IMPLEMENTS_IFACE (lba, cogl_label, icogl),
-                     GMO_ADD_DEP (lba_cogl),
-                     GMO_ADD_DEP (lba_mutogene_2d));
+BM_DEFINE_MIXIN (lba_cogl_label, LbaCoglLabel,
+                     BM_IMPLEMENTS_IFACE (lba, cogl_label, icogl),
+                     BM_ADD_DEP (lba_cogl),
+                     BM_ADD_DEP (lba_mixin_2d));
 /* *INDENT-ON* */ 
 
 static void
@@ -63,7 +63,7 @@ lba_cogl_label_paint (GObject * obj, CoglFramebuffer * fb, CoglPipeline * pipeli
     y;
   int framebuffer_width;
   int framebuffer_height;
-  LbaCoglLabel *self = gmo_get_LbaCoglLabel (obj);
+  LbaCoglLabel *self = bm_get_LbaCoglLabel (obj);
   LbaI2D *iface2d = G_TYPE_INSTANCE_GET_INTERFACE (obj,
                                                    LBA_I2D,
                                                    LbaI2D);
@@ -102,7 +102,7 @@ lba_cogl_label_update (LbaCoglLabel * self) {
 static void
 lba_cogl_label_reopen (GObject * base, CoglFramebuffer * fb,
                        CoglPipeline * pipeline, CoglContext * ctx) {
-  LbaCoglLabel *self = gmo_get_LbaCoglLabel (base);
+  LbaCoglLabel *self = bm_get_LbaCoglLabel (base);
   int framebuffer_width;
   int framebuffer_height;
   float fovy,
@@ -177,7 +177,7 @@ static void
 lba_cogl_label_set_property (GObject * object,
                              guint property_id, const GValue * value,
                              GParamSpec * pspec) {
-  LbaCoglLabel *self = gmo_get_LbaCoglLabel (object);
+  LbaCoglLabel *self = bm_get_LbaCoglLabel (object);
 
   switch ((LbaCoglLabelProperty) property_id) {
   case PROP_TEXT:
@@ -210,7 +210,7 @@ lba_cogl_label_set_property (GObject * object,
 static void
 lba_cogl_label_get_property (GObject * object,
                              guint property_id, GValue * value, GParamSpec * pspec) {
-  LbaCoglLabel *self = gmo_get_LbaCoglLabel (object);
+  LbaCoglLabel *self = bm_get_LbaCoglLabel (object);
 
   switch ((LbaCoglLabelProperty) property_id) {
   case PROP_TEXT:
@@ -233,7 +233,7 @@ lba_cogl_label_get_property (GObject * object,
 }
 
 static void
-lba_cogl_label_class_init (GObjectClass * klass, LbaCoglLabelClass * gmo_class) {
+lba_cogl_label_class_init (GObjectClass * klass, LbaCoglLabelClass * mixin_class) {
   GObjectClass *gobj_class = G_OBJECT_CLASS (klass);
 
   gobj_class->set_property = lba_cogl_label_set_property;

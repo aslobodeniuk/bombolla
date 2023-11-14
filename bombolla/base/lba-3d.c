@@ -18,37 +18,36 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gmo/gmo.h>
+#include <bmixin/bmixin.h>
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 #include "bombolla/base/i3d.h"
 
-typedef struct _LbaMutogene3D {
+typedef struct _LbaMixin3D {
   double x,
     y,
     z;
   // TODO: lock
-} LbaMutogene3D;
+} LbaMixin3D;
 
-typedef struct _LbaMutogene3DClass {
+typedef struct _LbaMixin3DClass {
   int dummy;
-} LbaMutogene3DClass;
+} LbaMixin3DClass;
 
 static void
-  lba_mutogene_i3d_init (LbaI3D * iface);
+  lba_mixin_i3d_init (LbaI3D * iface);
 
-GMO_DEFINE_MUTOGENE (lba_mutogene_3d, LbaMutogene3D,
-                     GMO_IMPLEMENTS_IFACE (lba, mutogene, i3d));
+BM_DEFINE_MIXIN (lba_mixin_3d, LbaMixin3D, BM_IMPLEMENTS_IFACE (lba, mixin, i3d));
 
 typedef enum {
   PROP_X = 1,
   PROP_Y,
   PROP_Z
-} LbaMutogene3DProperty;
+} LbaMixin3DProperty;
 
 static void
-lba_mutogene_3d_xyz (GObject * object, gdouble * x, gdouble * y, gdouble * z) {
-  LbaMutogene3D *self = gmo_get_LbaMutogene3D (object);
+lba_mixin_3d_xyz (GObject * object, gdouble * x, gdouble * y, gdouble * z) {
+  LbaMixin3D *self = bm_get_LbaMixin3D (object);
 
   if (x)
     *x = self->x;
@@ -59,17 +58,17 @@ lba_mutogene_3d_xyz (GObject * object, gdouble * x, gdouble * y, gdouble * z) {
 }
 
 static void
-lba_mutogene_i3d_init (LbaI3D * iface) {
-  iface->xyz = lba_mutogene_3d_xyz;
+lba_mixin_i3d_init (LbaI3D * iface) {
+  iface->xyz = lba_mixin_3d_xyz;
 }
 
 static void
-lba_mutogene_3d_set_property (GObject * object,
-                              guint property_id, const GValue * value,
-                              GParamSpec * pspec) {
-  LbaMutogene3D *self = gmo_get_LbaMutogene3D (object);
+lba_mixin_3d_set_property (GObject * object,
+                           guint property_id, const GValue * value,
+                           GParamSpec * pspec) {
+  LbaMixin3D *self = bm_get_LbaMixin3D (object);
 
-  switch ((LbaMutogene3DProperty) property_id) {
+  switch ((LbaMixin3DProperty) property_id) {
   case PROP_X:
     self->x = g_value_get_double (value);
     break;
@@ -89,12 +88,11 @@ lba_mutogene_3d_set_property (GObject * object,
 }
 
 static void
-lba_mutogene_3d_get_property (GObject * object,
-                              guint property_id, GValue * value,
-                              GParamSpec * pspec) {
-  LbaMutogene3D *self = gmo_get_LbaMutogene3D (object);
+lba_mixin_3d_get_property (GObject * object,
+                           guint property_id, GValue * value, GParamSpec * pspec) {
+  LbaMixin3D *self = bm_get_LbaMixin3D (object);
 
-  switch ((LbaMutogene3DProperty) property_id) {
+  switch ((LbaMixin3DProperty) property_id) {
   case PROP_X:
     g_value_set_double (value, self->x);
     break;
@@ -114,15 +112,14 @@ lba_mutogene_3d_get_property (GObject * object,
 }
 
 static void
-lba_mutogene_3d_init (GObject * object, LbaMutogene3D * self) {
+lba_mixin_3d_init (GObject * object, LbaMixin3D * self) {
 }
 
 static void
-lba_mutogene_3d_class_init (GObjectClass * object_class,
-                            LbaMutogene3DClass * gmo_class) {
+lba_mixin_3d_class_init (GObjectClass * object_class, LbaMixin3DClass * mixin_class) {
 
-  object_class->set_property = lba_mutogene_3d_set_property;
-  object_class->get_property = lba_mutogene_3d_get_property;
+  object_class->set_property = lba_mixin_3d_set_property;
+  object_class->get_property = lba_mixin_3d_get_property;
 
   g_object_class_install_property
       (object_class,
@@ -155,4 +152,4 @@ lba_mutogene_3d_class_init (GObjectClass * object_class,
                             G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
 }
 
-BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (lba_mutogene_3d);
+BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (lba_mixin_3d);

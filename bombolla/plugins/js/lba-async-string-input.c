@@ -18,7 +18,7 @@
  *   along with bombolla.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gmo/gmo.h>
+#include <bmixin/bmixin.h>
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 
@@ -26,7 +26,7 @@ typedef struct _LbaAsyncStringInput {
 
   const gchar *input_string;
 
-  /* FIXME: will belong to the mutogene Async */
+  /* FIXME: will belong to the mixin Async */
   GMutex lock;
   GCond cond;
   GSource *async_ctx;
@@ -36,7 +36,7 @@ typedef struct _LbaAsyncStringInputClass {
   void (*input_string) (GObject *, const gchar *);
 } LbaAsyncStringInputClass;
 
-GMO_DEFINE_MUTOGENE (lba_async_string_input, LbaAsyncStringInput);
+BM_DEFINE_MIXIN (lba_async_string_input, LbaAsyncStringInput);
 
 enum {
   SIGNAL_INPUT_STRING,
@@ -47,12 +47,12 @@ enum {
 static guint lba_async_string_input_signals[LAST_SIGNAL] = { 0 };
 
 static void
-lba_async_string_input_init (GObject * object, LbaAsyncStringInput * mutogene) {
+lba_async_string_input_init (GObject * object, LbaAsyncStringInput * mixin) {
 }
 
 static void
 LbaAsync_async_cmd_free (gpointer gobject) {
-  LbaAsyncStringInput *self = gmo_get_LbaAsyncStringInput (gobject);
+  LbaAsyncStringInput *self = bm_get_LbaAsyncStringInput (gobject);
 
   g_mutex_lock (&self->lock);
   g_source_unref (self->async_ctx);
@@ -81,7 +81,7 @@ static gboolean
 lba_async_string_input_have_str (gpointer gobject) {
   LbaAsyncStringInput *self;
 
-  self = gmo_get_LbaAsyncStringInput (gobject);
+  self = bm_get_LbaAsyncStringInput (gobject);
   g_return_val_if_fail (self->input_string, G_SOURCE_REMOVE);
 
   LBA_LOG ("Emitting through the GMainContext: [%s]", self->input_string);
@@ -100,29 +100,29 @@ lba_async_string_input_input_string (GObject * gobject, const gchar * input) {
 
   LBA_LOG ("String input: [%s]", input);
 
-  self = gmo_get_LbaAsyncStringInput (gobject);
+  self = bm_get_LbaAsyncStringInput (gobject);
   // FIXME: lock, otherwise someone can overwrite self->input_string
   g_warn_if_fail (self->input_string == NULL);
   self->input_string = input;
 
-  /* FIXME: will belong to the iAsync interface of the Async mutogene */
+  /* FIXME: will belong to the iAsync interface of the Async mixin */
   LbaAsync_call_through_main_loop (self, lba_async_string_input_have_str, gobject);
 }
 
 static void
 lba_async_string_input_class_init (GObjectClass * object_class,
-                                   LbaAsyncStringInputClass * gmo_class) {
+                                   LbaAsyncStringInputClass * bm_class) {
 
-  LbaAsyncStringInputClass *klass = (LbaAsyncStringInputClass *) gmo_class;
+  LbaAsyncStringInputClass *klass = (LbaAsyncStringInputClass *) bm_class;
 
   klass->input_string = lba_async_string_input_input_string;
 
   lba_async_string_input_signals[SIGNAL_INPUT_STRING] =
       g_signal_new ("input-string", G_TYPE_FROM_CLASS (object_class),
                     G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
-                    /* FIXME: resolve in gmo.h. We install signal to the object_class.
-                     * GMO_CLASS_OFFSET() ?? */
-                    ((gpointer) gmo_class - (gpointer) object_class) +
+                    /* FIXME: resolve in bmixin.h. We install signal to the object_class.
+                     * BM_CLASS_OFFSET() ?? */
+                    ((gpointer) bm_class - (gpointer) object_class) +
                     G_STRUCT_OFFSET (LbaAsyncStringInputClass, input_string),
                     NULL, NULL,
                     g_cclosure_marshal_VOID__STRING,
