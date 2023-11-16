@@ -45,4 +45,6 @@ call w.open\n\
 
 while True:
     next_command = input("Enter next command: ")
+    if next_command == 'q':
+        break
     bombolla.emit ("execute", next_command)

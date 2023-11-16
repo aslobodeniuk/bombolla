@@ -11,4 +11,4 @@ call w.hide
 end
 
 async call w.my-open
-
+sync

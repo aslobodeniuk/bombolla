@@ -60,7 +60,7 @@ lba_cogl_icogl_init (LbaICogl * iface) {
 }
 
 static void
-lba_cogl_draw (GObject * obj) {
+lba_cogl_draw (BaseDrawable * obj) {
   LbaCogl *self = bm_get_LbaCogl (obj);
   LbaICogl *iface;
 
@@ -78,7 +78,7 @@ lba_cogl_draw (GObject * obj) {
     return;
   }
 
-  iface->paint (obj, self->fb, self->pipeline);
+  iface->paint (G_OBJECT (obj), self->fb, self->pipeline);
 
   g_mutex_unlock (&self->lock);
 }
@@ -144,8 +144,12 @@ lba_cogl_init (GObject * obj, LbaCogl * self) {
 }
 
 static void
-lba_cogl_dispose (GObject * gobject) {
+lba_cogl_finalize (GObject * gobject) {
   LbaCogl *self = bm_get_LbaCogl (gobject);
+
+  /* Sync for case of closing while doing things */
+  g_mutex_lock (&self->lock);
+  g_mutex_unlock (&self->lock);
 
   g_mutex_clear (&self->lock);
 
@@ -156,8 +160,8 @@ static void
 lba_cogl_class_init (GObjectClass * gobject_class, LbaCoglClass * mixin_class) {
   BaseDrawableClass *base_drawable_class = (BaseDrawableClass *) gobject_class;
 
-  base_drawable_class->draw = (void (*)(BaseDrawable *))lba_cogl_draw;
-  gobject_class->dispose = lba_cogl_dispose;
+  base_drawable_class->draw = lba_cogl_draw;
+  gobject_class->finalize = lba_cogl_finalize;
 }
 
 BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_GTYPE (lba_cogl);

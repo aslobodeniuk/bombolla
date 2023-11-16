@@ -1,5 +1,13 @@
 #!/bin/bash
 
+message()
+{
+    COL='\033[1;33m'
+    NC='\033[0m'
+
+    echo -e "${COL}FIRULAIS:${NC} $@"
+}
+
 INDENT_PARAMETERS="--line-length85 \
 	--indent-level2 \
 	--no-tabs \
@@ -29,14 +37,41 @@ INDENT_PARAMETERS="--line-length85 \
         --parameter-indentation2 \
 	--honour-newlines"
 
+test_example()
+{
+    RED='\033[0;31m'
+    NC='\033[0m'
+    LOGF="build/firulais-test-log.txt"
+    
+    message "Testing '$1' example"; shift
+    echo 'q' | G_DEBUG=fatal-warnings G_MESSAGES_DEBUG=all $@ 1>>${LOGF} 2>&1 || ( echo -e "\n\n ${RED}Test failed${NC}, check $LOGF"; exit 1 )
+}
+
 build_and_test()
 {
-    echo "-- FIRULAIS: Building --"
-    meson build || exit 1
+    GREEN='\033[1;32m'
+    NC='\033[0m'
+
+    message "Building"
+    meson setup build || exit 1
     ninja -C build  || exit 1
 
-    echo "-- FIRULAIS: Running tests --"
+    message "Running tests"
     ninja -C build test  || exit 1
+
+    test_example "cogl" "build/bombolla/tools/shell/bombolla-shell -p build -i examples/cogl" || exit 1
+
+    test_example "using from python" "python3 examples/python/use-from-python.py" || exit 1
+
+    test_example "plugin in vala" "build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-vala" || exit 1
+
+    test_example "plugin in js" "build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-js" || exit 1
+    
+    test_example "plugin in python" "build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-python" || exit 1
+    
+    LBA_PYTHON_PLUGINS_PATH=$(pwd)/examples/frankenstein-news LBA_JS_PLUGINS_PATH=$(pwd)/examples/frankenstein-news test_example "Testing FRANKENSTEIN" "build/bombolla/tools/shell/bombolla-shell -p build/bombolla/ -i examples/frankenstein-news/frank.lba" || exit 1
+
+    message "${GREEN}All tests passed! :)${NC} Enjoy."
 }
 
 check_format()
@@ -65,8 +100,8 @@ check_format()
 }
 
 if test "x$1" = "x--full-check"; then
-    echo "-- FIRULAIS: CI mode --"
-    echo "-- FIRULAIS: Checking all the files --"
+    message "CI mode"
+    message "Checking all the files"
     for file in `find * . 2>&1 | grep \\\.[ch]\$ | grep -v plugins/cogl/cogl | grep -v "^\\\./build/" | grep -v "^build/"` ; do
 	# nf is the temporary checkout. This makes sure we check against the
 	# revision in the index (and not the checked out version).
@@ -76,25 +111,24 @@ if test "x$1" = "x--full-check"; then
     done
 
     build_and_test
-    echo "-- Firulais allows this traveller to pass --"
+    message "Firulais allows this traveller to pass"
     exit 0
 fi
 
 if test "x$1" = "x"; then
-    echo "-- FIRULAIS: Commit-hook mode.. --"
-    echo "-- FIRULAIS: Checking style --"
+    message "Commit-hook mode"
+    message "Checking style"
     for file in `git diff-index --cached --name-only HEAD --diff-filter=ACMR| grep "\.[ch]$"` ; do
 	# nf is the temporary checkout. This makes sure we check against the
 	# revision in the index (and not the checked out version).
 	nf=`git checkout-index --temp ${file} | cut -f 1`
 	check_format $nf
     done
-    echo "-- FIRULAIS: Checking style pass --"
-
+    message "Checking style pass"
     build_and_test
 else
     if test "x$1" = "xenv"; then
-	echo "-- FIRULAIS: entering the env wrapper --"
+	message "entering the env wrapper"
 	meson devenv -C build
 	exit 0
     fi
