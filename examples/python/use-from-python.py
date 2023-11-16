@@ -25,9 +25,9 @@ import os
 lba_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'build', 'bombolla')
 b = ctypes.CDLL(os.path.join(lba_path, 'core', 'libbombolla-core.so'))
 
-b.lba_core_get_type()
+b.lba_core_object_get_type()
 
-bombolla = GObject.new ("LbaCore")
+bombolla = GObject.new ("LbaCoreObject")
 bombolla.set_property ("plugins_path", lba_path)
 
 bombolla.emit ("execute",

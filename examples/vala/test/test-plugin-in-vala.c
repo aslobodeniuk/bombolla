@@ -20,7 +20,7 @@
 #include <glib-object.h>
 
 /* Declare this magic symbol explicitly */
-GType lba_core_get_type2 (void);
+GType lba_core_object_get_type (void);
 
 typedef struct {
   GObject *obj;
@@ -34,7 +34,7 @@ fixture_set_up (Fixture * fixture, gconstpointer user_data) {
   /* Register type manually. */
   vala_test_get_type ();
 
-  fixture->obj = g_object_new (lba_core_get_type2 (), NULL);
+  fixture->obj = g_object_new (lba_core_object_get_type (), NULL);
 }
 
 static void

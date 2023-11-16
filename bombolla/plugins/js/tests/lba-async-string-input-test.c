@@ -21,7 +21,7 @@
 #include <bmixin/bmixin.h>
 
 /* Declare this magic symbols explicitly */
-GType lba_core_get_type2 (void);
+GType lba_core_object_get_type (void);
 GType lba_async_string_input_get_type (void);
 
 typedef struct {
@@ -35,7 +35,7 @@ fixture_set_up (Fixture * fixture, gconstpointer user_data) {
   GType async_type;
 
   /* Needed to have GMainContext running */
-  fixture->core = g_object_new (lba_core_get_type2 (), NULL);
+  fixture->core = g_object_new (lba_core_object_get_type (), NULL);
 
   /* Doesn't warn on running multiple times */
   async_type = bm_register_mixed_type (NULL, G_TYPE_OBJECT,

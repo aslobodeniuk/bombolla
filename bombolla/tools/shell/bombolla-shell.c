@@ -25,7 +25,7 @@
 #include <bmixin/bmixin.h>
 
 /* Declare this magic symbol explicitly */
-GType lba_core_get_type2 (void);
+GType lba_core_object_get_type (void);
 
 int
 main (int argc, char **argv) {
@@ -82,7 +82,7 @@ main (int argc, char **argv) {
   }
 
   /* Create core object, and execute the script */
-  core = g_object_new (lba_core_get_type2 (), NULL);
+  core = g_object_new (lba_core_object_get_type (), NULL);
 
   if (!core) {
     g_critical ("fatal: can't create core");

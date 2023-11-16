@@ -412,12 +412,12 @@ lba_core_class_init (GObjectClass * object_class, LbaCoreClass * klass) {
   lms_class->have_file = lba_core_load_module;
 }
 
-/* FIXME: better name */
+/* GObject entry point */
 GType
-lba_core_get_type2 (void) {
+lba_core_object_get_type (void) {
   static GType ret;
 
   return ret ? ret : (ret =
-                      bm_register_mixed_type (NULL, G_TYPE_OBJECT,
+                      bm_register_mixed_type ("LbaCoreObject", G_TYPE_OBJECT,
                                               lba_core_get_type ()));
 }
