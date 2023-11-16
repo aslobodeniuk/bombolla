@@ -17,4 +17,13 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
     - name: validate
-      run: ./Firulais --full-check
+      run: ./Firulais --ci-mode
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: artifacts
+        path: build/firulais-test-log.txt
+        if-no-files-found: error
+        retention-days: 90

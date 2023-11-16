@@ -8,6 +8,16 @@ message()
     echo -e "${COL}FIRULAIS:${NC} $@"
 }
 
+angry_message()
+{
+    RED='\033[0;31m'
+    NC='\033[0m'
+
+    echo -e "\n${RED}$1${NC}"
+    shift
+    echo -e "$@"
+}
+
 INDENT_PARAMETERS="--line-length85 \
 	--indent-level2 \
 	--no-tabs \
@@ -39,12 +49,10 @@ INDENT_PARAMETERS="--line-length85 \
 
 test_example()
 {
-    RED='\033[0;31m'
-    NC='\033[0m'
     LOGF="build/firulais-test-log.txt"
     
     message "Testing '$1' example"; shift
-    echo 'q' | G_DEBUG=fatal-warnings G_MESSAGES_DEBUG=all $@ 1>>${LOGF} 2>&1 || ( echo -e "\n\n ${RED}Test failed${NC}, check $LOGF"; exit 1 )
+    echo 'q' | G_DEBUG=fatal-warnings G_MESSAGES_DEBUG=all $@ 1>>${LOGF} 2>&1 || (angry_message "Test failed" "check $LOGF"; exit 1 )
 }
 
 build_and_test()
@@ -59,17 +67,17 @@ build_and_test()
     message "Running tests"
     ninja -C build test  || exit 1
 
-    test_example "cogl" "build/bombolla/tools/shell/bombolla-shell -p build -i examples/cogl" || exit 1
-
-    test_example "using from python" "python3 examples/python/use-from-python.py" || exit 1
-
     test_example "plugin in vala" "build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-vala" || exit 1
-
-    test_example "plugin in js" "build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-js" || exit 1
-    
     test_example "plugin in python" "build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-python" || exit 1
-    
-    LBA_PYTHON_PLUGINS_PATH=$(pwd)/examples/frankenstein-news LBA_JS_PLUGINS_PATH=$(pwd)/examples/frankenstein-news test_example "Testing FRANKENSTEIN" "build/bombolla/tools/shell/bombolla-shell -p build/bombolla/ -i examples/frankenstein-news/frank.lba" || exit 1
+
+    if test "x$1" != "x--ci-mode"; then
+	test_example "cogl" "build/bombolla/tools/shell/bombolla-shell -p build -i examples/cogl" || exit 1
+
+	test_example "using from python" "python3 examples/python/use-from-python.py" || exit 1
+	test_example "plugin in js" "build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-js" || exit 1
+
+	LBA_PYTHON_PLUGINS_PATH=$(pwd)/examples/frankenstein-news LBA_JS_PLUGINS_PATH=$(pwd)/examples/frankenstein-news test_example "Testing FRANKENSTEIN" "build/bombolla/tools/shell/bombolla-shell -p build/bombolla/ -i examples/frankenstein-news/frank.lba" || exit 1
+    fi
 
     message "${GREEN}All tests passed! :)${NC} Enjoy."
 }
@@ -87,7 +95,7 @@ check_format()
     rm "${nf}"
     if [ $r != 0 ] ; then
 	echo "================================================================================================="
-	echo " Code style error in: $file                                                                      "
+	angry_message "Code style error" "in: $file"
 	echo "                                                                                                 "
 	echo " Please fix before committing. Don't forget to run git add before trying to commit again.        "
 	echo " If the whole file is to be committed, this should work (run from the top-level directory):      "
@@ -99,7 +107,7 @@ check_format()
     fi
 }
 
-if test "x$1" = "x--full-check"; then
+if test "x$1" = "x--ci-mode"; then
     message "CI mode"
     message "Checking all the files"
     for file in `find * . 2>&1 | grep \\\.[ch]\$ | grep -v plugins/cogl/cogl | grep -v "^\\\./build/" | grep -v "^build/"` ; do
@@ -110,7 +118,7 @@ if test "x$1" = "x--full-check"; then
 	check_format $nf
     done
 
-    build_and_test
+    build_and_test "--ci-mode"
     message "Firulais allows this traveller to pass"
     exit 0
 fi
