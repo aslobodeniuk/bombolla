@@ -1,21 +1,29 @@
 #!/bin/bash
 
+LOGF="build/firulais-examples-test-log.txt"
+
+colored_msg()
+{
+    NC='\033[0m'
+    echo -e "${1}$2${NC} $3"
+}
+
 message()
 {
-    COL='\033[1;33m'
-    NC='\033[0m'
-
-    echo -e "${COL}FIRULAIS:${NC} $@"
+    YELLOW='\033[1;33m'
+    colored_msg "$YELLOW" "FIRULAIS:" "$1"
 }
 
 angry_message()
 {
     RED='\033[0;31m'
-    NC='\033[0m'
+    colored_msg "$RED" "$1" "$2"
+}
 
-    echo -e "\n${RED}$1${NC}"
-    shift
-    echo -e "$@"
+happy_message()
+{
+    GREEN='\033[1;32m'
+    colored_msg "$GREEN" "$1" "$2"
 }
 
 INDENT_PARAMETERS="--line-length85 \
@@ -49,23 +57,18 @@ INDENT_PARAMETERS="--line-length85 \
 
 test_example()
 {
-    LOGF="build/firulais-test-log.txt"
-    
-    message "Testing '$1' example"; shift
-    echo 'q' | G_DEBUG=fatal-warnings G_MESSAGES_DEBUG=all $@ 1>>${LOGF} 2>&1 || (angry_message "Test failed" "check $LOGF"; exit 1 )
+    message "Testing '$1' example"
+    echo "($1) Running '$2'" >> ${LOGF}
+    echo 'q' | G_DEBUG=fatal-warnings G_MESSAGES_DEBUG=all $2 1>>${LOGF} 2>&1 || (angry_message "Test '$1' failed" "check $LOGF"; exit 1 )
+
 }
 
-build_and_test()
+do_test()
 {
-    GREEN='\033[1;32m'
-    NC='\033[0m'
-
-    message "Building"
-    meson setup build || exit 1
-    ninja -C build  || exit 1
-
     message "Running tests"
     ninja -C build test  || exit 1
+
+    rm -rf $LOGF || true
 
     test_example "plugin in vala" "build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-vala" || exit 1
     test_example "plugin in python" "build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-python" || exit 1
@@ -76,10 +79,19 @@ build_and_test()
 	test_example "using from python" "python3 examples/python/use-from-python.py" || exit 1
 	test_example "plugin in js" "build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-js" || exit 1
 
-	LBA_PYTHON_PLUGINS_PATH=$(pwd)/examples/frankenstein-news LBA_JS_PLUGINS_PATH=$(pwd)/examples/frankenstein-news test_example "Testing FRANKENSTEIN" "build/bombolla/tools/shell/bombolla-shell -p build/bombolla/ -i examples/frankenstein-news/frank.lba" || exit 1
+	LBA_PYTHON_PLUGINS_PATH=$(pwd)/examples/frankenstein-news LBA_JS_PLUGINS_PATH=$(pwd)/examples/frankenstein-news test_example "FRANKENSTEIN" "build/bombolla/tools/shell/bombolla-shell -p build/bombolla/ -i examples/frankenstein-news/frank.lba" || exit 1
     fi
 
-    message "${GREEN}All tests passed! :)${NC} Enjoy."
+    happy_message "All tests passed!" "Enjoy."
+}
+
+build_and_test()
+{
+    message "Building"
+    meson setup build || exit 1
+    ninja -C build  || exit 1
+
+    do_test || exit 1
 }
 
 check_format()

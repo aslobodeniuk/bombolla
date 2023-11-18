@@ -34,6 +34,9 @@ typedef struct _LbaCoglWindow {
   CoglBool is_dirty;
   CoglBool draw_ready;
 
+  GRecMutex lock;
+  gboolean stopping;
+
 } LbaCoglWindow;
 
 typedef struct _LbaCoglWindowClass {
@@ -45,6 +48,12 @@ lba_cogl_window_paint_cb (void *user_data) {
   LbaCoglWindow *self = (LbaCoglWindow *) user_data;
 
   LBA_LOG ("repainting..");
+
+  LBA_LOCK (self);
+  if (self->stopping) {
+    LBA_LOG ("Stopping..");
+    goto cleanup;
+  }
 
   self->redraw_idle = 0;
   self->is_dirty = FALSE;
@@ -58,7 +67,8 @@ lba_cogl_window_paint_cb (void *user_data) {
 
   /* And swap buffers */
   cogl_onscreen_swap_buffers (self->fb);
-
+cleanup:
+  LBA_UNLOCK (self);
   return G_SOURCE_REMOVE;
 }
 
@@ -76,7 +86,9 @@ lba_cogl_window_maybe_redraw (LbaCoglWindow * self) {
     /* We'll draw on idle instead of drawing immediately so that
      * if Cogl reports multiple dirty rectangles we won't
      * redundantly draw multiple frames */
-    self->redraw_idle = g_idle_add (lba_cogl_window_paint_cb, self);
+    self->redraw_idle = g_idle_add_full (G_PRIORITY_DEFAULT_IDLE,
+                                         lba_cogl_window_paint_cb,
+                                         g_object_ref (self), g_object_unref);
   }
 }
 
@@ -115,6 +127,11 @@ lba_cogl_window_open (BaseWindow * base) {
   CoglError *error = NULL;
   GSource *cogl_source;
 
+  LBA_LOCK (self);
+  if (self->stopping) {
+    LBA_LOG ("Stopping..");
+    goto cleanup;
+  }
   self->redraw_idle = 0;
   self->is_dirty = FALSE;
   self->draw_ready = TRUE;
@@ -122,7 +139,7 @@ lba_cogl_window_open (BaseWindow * base) {
   self->ctx = cogl_context_new (NULL, &error);
   if (!self->ctx) {
     LBA_LOG ("Failed to create context: %s\n", error->message);
-    return;
+    goto cleanup;
   }
 
   onscreen = cogl_onscreen_new (self->ctx, base->width, base->height);
@@ -207,10 +224,14 @@ lba_cogl_window_open (BaseWindow * base) {
   cogl_onscreen_add_frame_callback (self->fb, lba_cogl_window_frame_event_cb,
                                     self, NULL);
   cogl_onscreen_add_dirty_callback (self->fb, lba_cogl_window_dirty_cb, self, NULL);
+
+cleanup:
+  LBA_UNLOCK (self);
 }
 
 static void
 lba_cogl_window_init (LbaCoglWindow * self) {
+  g_rec_mutex_init (&self->lock);
 }
 
 typedef enum {
@@ -247,6 +268,16 @@ lba_cogl_window_get_property (GObject * object,
 }
 
 static void
+lba_cogl_window_finalize (GObject * obj) {
+  LbaCoglWindow *self = (LbaCoglWindow *) obj;
+
+  LBA_LOCK (self);
+  self->stopping = TRUE;
+  LBA_UNLOCK (self);
+  g_rec_mutex_clear (&self->lock);
+}
+
+static void
 lba_cogl_window_class_init (LbaCoglWindowClass * klass) {
   GObjectClass *gobj_class = G_OBJECT_CLASS (klass);
   BaseWindowClass *base_class = BASE_WINDOW_CLASS (klass);
@@ -256,6 +287,7 @@ lba_cogl_window_class_init (LbaCoglWindowClass * klass) {
   base_class->request_redraw = lba_cogl_window_request_redraw;
 
   gobj_class->get_property = lba_cogl_window_get_property;
+  gobj_class->finalize = lba_cogl_window_finalize;
 
   g_object_class_install_property (gobj_class,
                                    PROP_COGL_FRAMEBUFFER,

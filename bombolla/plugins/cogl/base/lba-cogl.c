@@ -28,6 +28,7 @@ typedef struct _LbaCogl {
   CoglContext *ctx;
 
   GMutex lock;
+  gboolean closing;
 } LbaCogl;
 
 typedef struct _LbaCoglClass {
@@ -71,6 +72,8 @@ lba_cogl_draw (BaseDrawable * obj) {
     return;
 
   g_mutex_lock (&self->lock);
+  if (G_UNLIKELY (self->closing))
+    goto done;
 
   if (!self->fb || !self->pipeline) {
     LBA_LOG ("Incompatible drawing scene: needs COGL framebuffer and pipeline");
@@ -80,6 +83,7 @@ lba_cogl_draw (BaseDrawable * obj) {
 
   iface->paint (G_OBJECT (obj), self->fb, self->pipeline);
 
+done:
   g_mutex_unlock (&self->lock);
 }
 
@@ -150,6 +154,7 @@ lba_cogl_finalize (GObject * gobject) {
   LBA_LOG ("finalize");
   /* Sync for case of closing while doing things */
   g_mutex_lock (&self->lock);
+  self->closing = TRUE;
   g_mutex_unlock (&self->lock);
 
   g_mutex_clear (&self->lock);
