@@ -145,6 +145,7 @@ lba_command_dump_type (GType plugin_type) {
       s,
       n_signals;
     GObjectClass *klass;
+    GList *tree = NULL;
 
     g_printf ("GType is a GObject.");
     klass = (GObjectClass *) g_type_class_ref (plugin_type);
@@ -176,6 +177,7 @@ lba_command_dump_type (GType plugin_type) {
       for (t = plugin_type; t; t = g_type_parent (t)) {
         gchar *tmptab;
 
+        tree = g_list_prepend (tree, (gpointer) t);
         signals = g_signal_list_ids (t, &n_signals);
 
         for (s = 0; s < n_signals; s++) {
@@ -221,8 +223,24 @@ lba_command_dump_type (GType plugin_type) {
       g_free (in);
     }
 
+    {
+      gint i;
+      gchar offset[256] = { 0 };
+      GList *l;
+
+      g_printf ("\nInheiritance tree:\n");
+      for (l = tree, i = 0; (l); l = l->next) {
+        if (i < (256 - 2))
+          i += 2;
+        memset (offset, '-', i);
+        offset[i] = 0;
+        g_printf ("%s%s\n", offset, g_type_name ((GType) l->data));
+      }
+    }
+
     g_type_class_unref (klass);
     g_free (properties);
+    g_list_free (tree);
   }
 }
 

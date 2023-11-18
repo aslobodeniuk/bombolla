@@ -147,6 +147,7 @@ static void
 lba_cogl_finalize (GObject * gobject) {
   LbaCogl *self = bm_get_LbaCogl (gobject);
 
+  LBA_LOG ("finalize");
   /* Sync for case of closing while doing things */
   g_mutex_lock (&self->lock);
   g_mutex_unlock (&self->lock);

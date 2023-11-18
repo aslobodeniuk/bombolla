@@ -143,13 +143,14 @@ lba_async_constructor_cmd (gpointer ptr) {
   g_return_val_if_fail (info, G_SOURCE_REMOVE);
   g_return_val_if_fail (info->type, G_SOURCE_REMOVE);
   g_return_val_if_fail (info->parent_klass, G_SOURCE_REMOVE);
-  g_return_val_if_fail (info->n_construct_properties
+  g_return_val_if_fail (info->n_construct_properties == 0
                         || info->construct_properties, G_SOURCE_REMOVE);
   g_return_val_if_fail (info->return_object == NULL, G_SOURCE_REMOVE);
 
   info->return_object =
       info->parent_klass->constructor (info->type, info->n_construct_properties,
                                        info->construct_properties);
+  g_return_val_if_fail (info->return_object, G_SOURCE_REMOVE);
   return G_SOURCE_REMOVE;
 }
 
@@ -161,6 +162,9 @@ lba_async_constructor (GType type, guint n_construct_properties,
   parent_klass =
       g_type_class_peek (g_type_parent
                          (bm_type_peek_mixed_type (type, lba_async_info.type)));
+
+  LBA_LOG ("Parent: %s", G_OBJECT_CLASS_NAME (parent_klass));
+  g_assert (parent_klass->constructor != lba_async_constructor);
 
   if (g_main_context_is_owner (NULL)) {
     return parent_klass->constructor (type, n_construct_properties,

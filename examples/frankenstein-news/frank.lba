@@ -30,3 +30,5 @@ sync
 # in fact we only unref it, and it doesn't go through GObject.
 
 async destroy feed
+
+dump FrankNewsWindow
