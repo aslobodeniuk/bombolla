@@ -42,14 +42,76 @@ typedef struct _LbaAsync {
 
   /* Special case: GObject constructor */
   LbaAsyncConstructorInfo *constructor_info;
+  gpointer obj_toggle_refs;
 } LbaAsync;
 
 typedef struct _LbaAsyncClass {
+  gboolean dirty_hack_constructing_now;
 } LbaAsyncClass;
 
 /* TODO: this mixin should always go as the last in the inheiritance tree.
  * We should add some kind of flag to it's type that would provide that feature. */
-BM_DEFINE_MIXIN (lba_async, LbaAsync);
+static void
+lba_async_base_init (gpointer g_class) {
+  GObjectClass *gobject_class = G_OBJECT_CLASS (g_class);
+
+  LBA_LOG ("base init for %s (%p) "
+           "constructor = %p, dispose = %p, finalize = %p",
+           G_OBJECT_CLASS_NAME (gobject_class),
+           g_class,
+           gobject_class->constructor,
+           gobject_class->dispose, gobject_class->finalize);
+}
+
+static void lba_async_class_init (GObjectClass *, LbaAsyncClass *);
+static void lba_async_init (GObject *, LbaAsync *);
+static LbaAsync *bm_get_LbaAsync (gpointer gobject);
+static LbaAsyncClass *bm_class_get_LbaAsync (gpointer gobject);
+static void
+lba_async_proxy_class_init (gpointer class, gpointer p) {
+  lba_async_class_init (class, bm_class_get_LbaAsync (class));
+}
+
+static void
+lba_async_proxy_init (GTypeInstance * instance, gpointer p) {
+  lba_async_init (G_OBJECT (instance), bm_get_LbaAsync (instance));
+}
+
+static const BMParams lba_async_bmixin_params[] = { };
+
+static BMInfo lba_async_info = {
+  .info = {
+           .base_init = lba_async_base_init,
+           .class_init = lba_async_proxy_class_init,
+           .instance_init = lba_async_proxy_init,
+           .class_size = sizeof (LbaAsyncClass),
+           .instance_size = sizeof (LbaAsync)
+            },
+  .params = lba_async_bmixin_params,
+  .num_params = G_N_ELEMENTS (lba_async_bmixin_params)
+};
+
+GType
+lba_async_get_type (void) {
+  static gsize g_define_type_id = 0;
+
+  if (g_once_init_enter (&g_define_type_id)) {
+    g_define_type_id = bm_register_mixin ("LbaAsync", &lba_async_info);
+    lba_async_info.type = g_define_type_id;
+    g_type_set_qdata (lba_async_info.type, bmixin_info_qrk (), &lba_async_info);
+  }
+  return g_define_type_id;
+}
+
+static LbaAsync *
+bm_get_LbaAsync (gpointer gobject) {
+  return bm_instance_get_mixin (gobject, lba_async_info.type);
+}
+
+static LbaAsyncClass *
+bm_class_get_LbaAsync (gpointer class) {
+  return bm_class_get_mixin (class, lba_async_info.type);
+}
 
 static void
 lba_async_cmd_free (gpointer gobject) {
@@ -65,7 +127,6 @@ lba_async_cmd_free (gpointer gobject) {
 static void
 lba_async_call_through_main_loop (LbaAsync * self, GSourceFunc cmd) {
   g_warn_if_fail (self->async_ctx == NULL);
-
   if (g_main_context_is_owner (NULL)) {
     LBA_LOG ("Already in the MainContext. Calling synchronously");
     cmd (self);
@@ -119,6 +180,37 @@ lba_async_finalize (GObject * gobject) {
   g_warn_if_fail (self->async_ctx == NULL);
 }
 
+static void
+  lba_async_toggle_notify (gpointer data, GObject * object, gboolean is_last_ref);
+
+static gboolean
+lba_async_toggle_notify_cmd (gpointer ptr) {
+  LbaAsync *self = (LbaAsync *) ptr;
+  gpointer toggle_refs_now;
+
+  g_object_remove_toggle_ref (self->mami, lba_async_toggle_notify, self);
+  toggle_refs_now = g_object_get_data (self->mami, "GObject-toggle-references");
+  if (toggle_refs_now && self->obj_toggle_refs) {
+    LBA_LOG ("We're screwed. Hamster mode on...");
+  }
+
+  return G_SOURCE_REMOVE;
+}
+
+static void
+lba_async_toggle_notify (gpointer data, GObject * object, gboolean is_last_ref) {
+  LbaAsync *self = (LbaAsync *) data;
+
+  LBA_LOG ("(%s) is_last_ref = %d", G_OBJECT_TYPE_NAME (object), is_last_ref);
+
+  if (is_last_ref) {
+    g_object_ref (object);
+    lba_async_call_through_main_loop (self, lba_async_toggle_notify_cmd);
+    /* REMEMBER: this can trigger dispose/finalize */
+    g_object_unref (object);
+  }
+}
+
 static gboolean
 lba_async_constructed_cmd (gpointer ptr) {
   LbaAsync *self = (LbaAsync *) ptr;
@@ -130,6 +222,16 @@ lba_async_constructed_cmd (gpointer ptr) {
 static void
 lba_async_constructed (GObject * gobject) {
   LbaAsync *self = bm_get_LbaAsync (gobject);
+
+  /* We want to set the very first toggle ref. To do that we
+   * just store all the previous toggle refs here, hoping to restore
+   * them back. If someone adds a toggle ref after that, we are screwed,
+   * because our toggle ref will never be triggered.. if only when that one
+   * removes the ref..
+   * But in any case our ref MUST be the first one */
+  self->obj_toggle_refs = g_object_steal_data (gobject, "GObject-toggle-references");
+  LBA_LOG ("obj_toggle_refs = %p", self->obj_toggle_refs);
+  g_object_add_toggle_ref (gobject, lba_async_toggle_notify, self);
 
   LBA_LOG ("Scheduling [%s]->constructed", G_OBJECT_TYPE_NAME (gobject));
   lba_async_call_through_main_loop (self, lba_async_constructed_cmd);
@@ -148,7 +250,8 @@ lba_async_constructor_cmd (gpointer ptr) {
   g_return_val_if_fail (info->return_object == NULL, G_SOURCE_REMOVE);
 
   info->return_object =
-      info->parent_klass->constructor (info->type, info->n_construct_properties,
+      info->parent_klass->constructor (info->type,
+                                       info->n_construct_properties,
                                        info->construct_properties);
   g_return_val_if_fail (info->return_object, G_SOURCE_REMOVE);
   return G_SOURCE_REMOVE;
@@ -158,20 +261,39 @@ static GObject *
 lba_async_constructor (GType type, guint n_construct_properties,
                        GObjectConstructParam * construct_properties) {
   GObjectClass *parent_klass;
+  GObject *ret;
 
   parent_klass =
-      g_type_class_peek (g_type_parent
-                         (bm_type_peek_mixed_type (type, lba_async_info.type)));
+      g_type_class_peek
+      (g_type_parent (bm_type_peek_mixed_type (type, lba_async_info.type)));
 
-  LBA_LOG ("Parent: %s", G_OBJECT_CLASS_NAME (parent_klass));
+  LBA_LOG ("Type: %s class ptr=(%p)", g_type_name (type), g_type_class_peek (type));
+  LBA_LOG ("Parent: %s class_ptr=(%p)", G_OBJECT_CLASS_NAME (parent_klass),
+           parent_klass);
   g_assert (parent_klass->constructor != lba_async_constructor);
 
   if (g_main_context_is_owner (NULL)) {
-    return parent_klass->constructor (type, n_construct_properties,
-                                      construct_properties);
-  } else {
-    GObject *ret;
+    /* NOTE: here comes a dirty hack to workaround a bug somethere between gjs
+     * and JS gi bindings. One of that codes in the constructor doesn't chain
+     * up as we would like, and instead of chaining up to the parent class
+     * (that would be a parent class of the class written in JS, e.g.
+     * GtkWindow), it chains up back to us :/. So we enter into an infinite
+     * recursion. With Python it doesn't happen.. .*/
+    LbaAsyncClass *aklass = bm_class_get_LbaAsync (g_type_class_peek (type));
 
+    if (aklass->dirty_hack_constructing_now) {
+      parent_klass = g_type_class_peek_parent (parent_klass);
+      LBA_LOG ("Dirty hacking gjs/gi constructor: will chain up to '%s'",
+               G_OBJECT_CLASS_NAME (parent_klass));
+    }
+
+    aklass->dirty_hack_constructing_now = TRUE;
+    ret = parent_klass->constructor (type, n_construct_properties,
+                                     construct_properties);
+    /* Yes, that is a dirty hack. We also (correctly) assume that all this
+     * always runs in the same thread. */
+    aklass->dirty_hack_constructing_now = FALSE;
+  } else {
     /* Here we need a tricky chainup. Async and without an instance.
      * For now we are choosing a quick hack. */
     LbaAsync tmp = { 0 };
@@ -191,14 +313,20 @@ lba_async_constructor (GType type, guint n_construct_properties,
     g_cond_clear (&tmp.cond);
     ret = tmp.constructor_info->return_object;
     g_free (tmp.constructor_info);
-
-    g_warn_if_fail (ret != NULL);
-    return ret;
   }
+
+  g_warn_if_fail (ret);
+  return ret;
 }
 
 static void
 lba_async_class_init (GObjectClass * gobject_class, LbaAsyncClass * self_class) {
+  LBA_LOG ("class init for %s(%p). constructor = %p, dispose = %p, finalize = %p",
+           G_OBJECT_CLASS_NAME (gobject_class),
+           gobject_class, gobject_class->constructor, gobject_class->dispose,
+           gobject_class->finalize);
+
+  self_class->dirty_hack_constructing_now = FALSE;
 
   /* seldom overidden */
   /* overridable methods */

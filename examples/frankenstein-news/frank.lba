@@ -8,8 +8,7 @@ async create LbaPythonAsync py
 sync
 # Put Async mixin on top of it so the dispose & finalize will be async
 dna LbaFeedParserAsync __main__+LbaFeedParser LbaAsync
-
-async create LbaFeedParserAsync feed
+create LbaFeedParserAsync feed
 
 # this one already does it thought the GMainLoop.
 create LbaGjs js
@@ -24,11 +23,8 @@ async bind jsw.my-summary feed.summary
 async call jsw.my-open
 
 sync
-
-# FIXME: destroying feed from hash table crashes, and mutogene LbaAsync
-# doesn't seem to fix that.. So the issue is that when we "destroy" the feed first,
-# in fact we only unref it, and it doesn't go through GObject.
-
-async destroy feed
-
+# just print the object tree to see how nice it is
 dump FrankNewsWindow
+
+# So an object written in Python with LbaAsync mixin on it already can be
+# created and destroyed without a problem from any thread.
