@@ -23,6 +23,8 @@
 #include "bombolla/lba-log.h"
 #include "bombolla/base/i2d.h"
 
+static GQuark toggle_refs_qrk;
+
 typedef struct {
   GType type;
   guint n_construct_properties;
@@ -42,6 +44,8 @@ typedef struct _LbaAsync {
 
   /* Special case: GObject constructor */
   LbaAsyncConstructorInfo *constructor_info;
+
+  /* Another dirty hack */
   gpointer obj_toggle_refs;
 } LbaAsync;
 
@@ -186,12 +190,18 @@ static void
 static gboolean
 lba_async_toggle_notify_cmd (gpointer ptr) {
   LbaAsync *self = (LbaAsync *) ptr;
-  gpointer toggle_refs_now;
 
   g_object_remove_toggle_ref (self->mami, lba_async_toggle_notify, self);
-  toggle_refs_now = g_object_get_data (self->mami, "GObject-toggle-references");
-  if (toggle_refs_now && self->obj_toggle_refs) {
-    LBA_LOG ("We're screwed. Hamster mode on...");
+
+  if (self->obj_toggle_refs) {
+    if (g_object_get_qdata (self->mami, toggle_refs_qrk)) {
+      g_critical ("Can't restore the initial toggle refs, because there're"
+                  " other ones... May leak this object..");
+    } else {
+      LBA_LOG ("Warning: Dirtiest hack!! restoring the original toggle refs");
+      g_object_set_qdata (self->mami, toggle_refs_qrk, self->obj_toggle_refs);
+      self->obj_toggle_refs = NULL;
+    }
   }
 
   return G_SOURCE_REMOVE;
@@ -229,7 +239,7 @@ lba_async_constructed (GObject * gobject) {
    * because our toggle ref will never be triggered.. if only when that one
    * removes the ref..
    * But in any case our ref MUST be the first one */
-  self->obj_toggle_refs = g_object_steal_data (gobject, "GObject-toggle-references");
+  self->obj_toggle_refs = g_object_steal_qdata (gobject, toggle_refs_qrk);
   LBA_LOG ("obj_toggle_refs = %p", self->obj_toggle_refs);
   g_object_add_toggle_ref (gobject, lba_async_toggle_notify, self);
 
@@ -262,6 +272,7 @@ lba_async_constructor (GType type, guint n_construct_properties,
                        GObjectConstructParam * construct_properties) {
   GObjectClass *parent_klass;
   GObject *ret;
+  LbaAsyncClass *aklass = bm_class_get_LbaAsync (g_type_class_peek (type));
 
   parent_klass =
       g_type_class_peek
@@ -279,7 +290,6 @@ lba_async_constructor (GType type, guint n_construct_properties,
      * (that would be a parent class of the class written in JS, e.g.
      * GtkWindow), it chains up back to us :/. So we enter into an infinite
      * recursion. With Python it doesn't happen.. .*/
-    LbaAsyncClass *aklass = bm_class_get_LbaAsync (g_type_class_peek (type));
 
     if (aklass->dirty_hack_constructing_now) {
       parent_klass = g_type_class_peek_parent (parent_klass);
@@ -306,7 +316,9 @@ lba_async_constructor (GType type, guint n_construct_properties,
     tmp.constructor_info->parent_klass = parent_klass;
 
     lba_async_init (NULL, &tmp);
+    aklass->dirty_hack_constructing_now = TRUE;
     lba_async_call_through_main_loop (&tmp, lba_async_constructor_cmd);
+    aklass->dirty_hack_constructing_now = FALSE;
 
     /* can't do finalize */
     g_mutex_clear (&tmp.lock);
@@ -321,10 +333,9 @@ lba_async_constructor (GType type, guint n_construct_properties,
 
 static void
 lba_async_class_init (GObjectClass * gobject_class, LbaAsyncClass * self_class) {
-  LBA_LOG ("class init for %s(%p). constructor = %p, dispose = %p, finalize = %p",
-           G_OBJECT_CLASS_NAME (gobject_class),
-           gobject_class, gobject_class->constructor, gobject_class->dispose,
-           gobject_class->finalize);
+
+  if (G_UNLIKELY (!toggle_refs_qrk))
+    toggle_refs_qrk = g_quark_from_static_string ("GObject-toggle-references");
 
   self_class->dirty_hack_constructing_now = FALSE;
 

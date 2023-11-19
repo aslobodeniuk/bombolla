@@ -1,11 +1,13 @@
-# NOTE/TODO it seems that we can only properly
-# call python from the thread from which it was created,
-# calling it from any other threads deadlocks.
-# Same with JS, so we do everything through the main loop
+# NOTE: you can see so many "async" and "LbaAsync" words
+# here, because we need to align Python and JS to their theads.
+# In fact now we align everything to the default GMainContext
+# that runs in LbaCore, because JS only works through GMainxContext.
+# Python only works from one same thread it was created from.
 
 dna LbaPythonAsync GObject LbaPython LbaAsync
 async create LbaPythonAsync py
 sync
+
 # Put Async mixin on top of it so the dispose & finalize will be async
 dna LbaFeedParserAsync __main__+LbaFeedParser LbaAsync
 create LbaFeedParserAsync feed
@@ -13,10 +15,12 @@ create LbaFeedParserAsync feed
 # this one already does it thought the GMainLoop.
 create LbaGjs js
 
-# Put Async mixin on top of it so the dispose & finalize will be async
-# dna FrankNewsWindowAsync FrankNewsWindow LbaAsync
-async create FrankNewsWindow jsw
+dna FrankNewsWindowAsync FrankNewsWindow LbaAsync
+create FrankNewsWindowAsync jsw
 
+
+# LbaAsync can't override properties and signals for now, that is why
+# we have to call this commands through "async" specifier
 async call feed.check-for-updates
 async bind jsw.title feed.title
 async bind jsw.my-summary feed.summary
@@ -25,6 +29,3 @@ async call jsw.my-open
 sync
 # just print the object tree to see how nice it is
 dump FrankNewsWindow
-
-# So an object written in Python with LbaAsync mixin on it already can be
-# created and destroyed without a problem from any thread.
