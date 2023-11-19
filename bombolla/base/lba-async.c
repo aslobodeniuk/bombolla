@@ -50,7 +50,6 @@ typedef struct _LbaAsync {
 } LbaAsync;
 
 typedef struct _LbaAsyncClass {
-  gboolean dirty_hack_constructing_now;
 } LbaAsyncClass;
 
 /* TODO: this mixin should always go as the last in the inheiritance tree.
@@ -272,7 +271,6 @@ lba_async_constructor (GType type, guint n_construct_properties,
                        GObjectConstructParam * construct_properties) {
   GObjectClass *parent_klass;
   GObject *ret;
-  LbaAsyncClass *aklass = bm_class_get_LbaAsync (g_type_class_peek (type));
 
   parent_klass =
       g_type_class_peek
@@ -284,25 +282,8 @@ lba_async_constructor (GType type, guint n_construct_properties,
   g_assert (parent_klass->constructor != lba_async_constructor);
 
   if (g_main_context_is_owner (NULL)) {
-    /* NOTE: here comes a dirty hack to workaround a bug somethere between gjs
-     * and JS gi bindings. One of that codes in the constructor doesn't chain
-     * up as we would like, and instead of chaining up to the parent class
-     * (that would be a parent class of the class written in JS, e.g.
-     * GtkWindow), it chains up back to us :/. So we enter into an infinite
-     * recursion. With Python it doesn't happen.. .*/
-
-    if (aklass->dirty_hack_constructing_now) {
-      parent_klass = g_type_class_peek_parent (parent_klass);
-      LBA_LOG ("Dirty hacking gjs/gi constructor: will chain up to '%s'",
-               G_OBJECT_CLASS_NAME (parent_klass));
-    }
-
-    aklass->dirty_hack_constructing_now = TRUE;
     ret = parent_klass->constructor (type, n_construct_properties,
                                      construct_properties);
-    /* Yes, that is a dirty hack. We also (correctly) assume that all this
-     * always runs in the same thread. */
-    aklass->dirty_hack_constructing_now = FALSE;
   } else {
     /* Here we need a tricky chainup. Async and without an instance.
      * For now we are choosing a quick hack. */
@@ -316,9 +297,7 @@ lba_async_constructor (GType type, guint n_construct_properties,
     tmp.constructor_info->parent_klass = parent_klass;
 
     lba_async_init (NULL, &tmp);
-    aklass->dirty_hack_constructing_now = TRUE;
     lba_async_call_through_main_loop (&tmp, lba_async_constructor_cmd);
-    aklass->dirty_hack_constructing_now = FALSE;
 
     /* can't do finalize */
     g_mutex_clear (&tmp.lock);
@@ -336,8 +315,6 @@ lba_async_class_init (GObjectClass * gobject_class, LbaAsyncClass * self_class) 
 
   if (G_UNLIKELY (!toggle_refs_qrk))
     toggle_refs_qrk = g_quark_from_static_string ("GObject-toggle-references");
-
-  self_class->dirty_hack_constructing_now = FALSE;
 
   /* seldom overidden */
   /* overridable methods */

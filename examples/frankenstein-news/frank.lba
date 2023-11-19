@@ -15,9 +15,11 @@ create LbaFeedParserAsync feed
 # this one already does it thought the GMainLoop.
 create LbaGjs js
 
-dna FrankNewsWindowAsync FrankNewsWindow LbaAsync
-create FrankNewsWindowAsync jsw
-
+# FIXME: LbaAsync still can't properly hack around the objects written
+# in JS. It's about how gjs chains up from the constructor: instead of
+# chaining up to the parent class, it calls the constructor of the type.
+# dna FrankNewsWindowAsync FrankNewsWindow LbaAsync
+async create FrankNewsWindow jsw
 
 # LbaAsync can't override properties and signals for now, that is why
 # we have to call this commands through "async" specifier
