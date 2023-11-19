@@ -24,6 +24,6 @@ jobs:
       if: always()
       with:
         name: artifacts
-        path: build/firulais-test-log.txt
+        path: build/firulais-examples-test-log.txt
         if-no-files-found: error
         retention-days: 90
