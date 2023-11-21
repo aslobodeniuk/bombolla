@@ -23,22 +23,6 @@
  * 
  * Experimental approach that we call "Bombolla Mixin",
  * or BMixin (aka bmixin).
- * Mixin: is a code that together with some parent can produce
- * a child class. Mixin is agnostic to what class is going
- * to be the parent.
- * Bombolla Mixin also has "dependencies". One point of view
- * on this - is a solution to resolve the problem of multiple
- * inheiritance. Another view on this - is that practically the code
- * of most of real mixins is going to depend on some other mixins or
- * interfaces, just because of the fact of using their API.
- * Mixed type - is a result of applying one or multiple mixins on
- * top of a base type, that has to be based on GObject.
- * When the creation of the mixed type starts, the dependency tree
- * is built, considering the dependencies and the dependencies of
- * the dependencies of each mixin in the tree.
- * When the dependency tree is resolved, there is only one instance
- * of each mixin applied to the inheiritance tree of the result object,
- * that is linear. The mixins are applied one after another in some order.
  * 
  */
 
@@ -48,7 +32,9 @@ static GTypeInfo empty_info;
 
 GQuark
 bmixin_info_qrk (void) {
-  return g_quark_from_static_string ("BMInfo");
+  static GQuark qrk;
+
+  return G_LIKELY (qrk) ? qrk : (qrk = g_quark_from_static_string ("BMInfo"));
 }
 
 GType
@@ -107,9 +93,7 @@ bm_register_mixed_type (const gchar * mixed_type_name, GType base_type, GType mi
       /* Will proccess after type registration */
       continue;
     case BM_ADD_TYPE_DEP:
-      if (param->gtype == BM_DEP_ANY_SEP_GTYPE) {
-        g_error ("Variant dependencies not supported yet");
-      } else {
+      {
         /*
          * If the dep is GObject..
          * If the dep is Interface..
