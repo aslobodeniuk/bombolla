@@ -51,4 +51,8 @@ void lba_core_init_convertion_functions (void);
 void lba_core_shedule_async_script (GObject * obj, gchar * command);
 void lba_core_sync_with_async_cmds (gpointer core);
 
+gboolean
+lba_command_set_str2obj (BombollaContext * ctx,
+                         const GValue * src_value, GValue * dest_value);
+
 #endif

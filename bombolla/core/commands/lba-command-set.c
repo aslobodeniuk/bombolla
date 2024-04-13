@@ -104,7 +104,7 @@ _str2gtype (const GValue * src_value, GValue * dest_value) {
   g_value_set_gtype (dest_value, t);
 }
 
-static gboolean
+gboolean
 lba_command_set_str2obj (BombollaContext * ctx,
                          const GValue * src_value, GValue * dest_value) {
   GObject *obj = NULL;
@@ -214,14 +214,15 @@ lba_command_set (BombollaContext * ctx, gchar ** tokens) {
   g_value_init (&outp, prop->value_type);
 
   /* Now set outp */
-  if (prop->value_type == G_TYPE_OBJECT) {
+  if (G_TYPE_IS_OBJECT (prop->value_type)) {
     if (!lba_command_set_str2obj (ctx, &inp, &outp)) {
       g_warning ("object '%s' not found", prop_val);
       goto done;
     }
 
   } else if (!g_value_transform (&inp, &outp)) {
-    g_warning ("unsupported parameter type");
+    g_warning ("could not transform [%s]-->[%s]", prop_val,
+               g_type_name (prop->value_type));
     goto done;
   }
 

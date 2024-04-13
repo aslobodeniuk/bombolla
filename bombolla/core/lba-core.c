@@ -69,11 +69,6 @@ lba_core_mainloop (gpointer data) {
   /* FIXME: for the beginning we use default context */
 //  self->mainctx = g_main_context_new ();
 //  g_main_context_acquire (self->mainctx);
-  self->mainloop = g_main_loop_new (NULL, TRUE);
-
-  g_mutex_lock (&self->lock);
-  g_cond_broadcast (&self->cond);
-  g_mutex_unlock (&self->lock);
 
   /* Proccessing events here until quit event arrives */
   g_main_loop_run (self->mainloop);
@@ -122,6 +117,19 @@ lba_core_init (GObject * object, LbaCore * self) {
   g_mutex_init (&self->async_cmd_guard);
   g_mutex_init (&self->lock);
   g_cond_init (&self->cond);
+
+  if (!self->started) {
+    /* Start the main loop */
+    g_mutex_lock (&self->lock);
+    /* FIXME: custom MainContext would be nice */
+    self->mainloop = g_main_loop_new (NULL, TRUE);
+    self->mainloop_thr = g_thread_new ("LbaCoreMainLoop", lba_core_mainloop, self);
+    while (!g_main_loop_is_running (self->mainloop))
+      g_usleep (1);             // FIXME: wait properly
+    /* Done */
+    self->started = TRUE;
+    g_mutex_unlock (&self->lock);
+  }
 }
 
 void lba_core_sync_with_async_cmds (gpointer core);
@@ -262,17 +270,6 @@ lba_core_load_module (GObject * gobj, const gchar * module_filename) {
 static void
 lba_core_execute (GObject * gobject, const gchar * commands) {
   LbaCore *self = bm_get_LbaCore (gobject);
-
-  if (!self->started) {
-    /* Start the main loop */
-    g_mutex_lock (&self->lock);
-    /* FIXME: custom MainContext would be nice */
-    self->mainloop_thr = g_thread_new ("LbaCoreMainLoop", lba_core_mainloop, self);
-    g_cond_wait (&self->cond, &self->lock);
-    /* Done */
-    self->started = TRUE;
-    g_mutex_unlock (&self->lock);
-  }
 
   /* Proccessing commands */
   if (commands) {

@@ -57,6 +57,8 @@ lba_command_create (BombollaContext * ctx, gchar ** tokens) {
 
     if (obj) {
       g_object_set_data (obj, "bombolla-commands-ctx", ctx);
+      if (g_object_is_floating (obj))
+        g_object_ref_sink (obj);
       g_hash_table_insert (ctx->objects, (gpointer) g_strdup (varname), obj);
 
       LBA_LOG ("%s %s created", typename, varname);
@@ -87,10 +89,17 @@ lba_command_destroy (BombollaContext * ctx, gchar ** tokens) {
 static gboolean
 lba_command_call (BombollaContext * ctx, gchar ** tokens) {
   const gchar *objname,
-   *signal_name;
+   *signame;
   GObject *obj;
   char **tmp = NULL;
   gboolean ret = FALSE;
+  GValue return_value = G_VALUE_INIT;
+  GArray *instance_and_params = NULL;
+
+  if (FALSE == (tokens[0] && tokens[1])) {
+    g_warning ("wrong syntax");
+    goto done;
+  }
 
   tmp = g_strsplit (tokens[1], ".", 2);
 
@@ -100,7 +109,7 @@ lba_command_call (BombollaContext * ctx, gchar ** tokens) {
   }
 
   objname = tmp[0];
-  signal_name = tmp[1];
+  signame = tmp[1];
 
   obj = g_hash_table_lookup (ctx->objects, objname);
 
@@ -109,15 +118,93 @@ lba_command_call (BombollaContext * ctx, gchar ** tokens) {
     goto done;
   }
 
-  LBA_LOG ("calling %s ()", signal_name);
+  {
+    int p;
+    guint signal_id;
+    GSignalQuery query;
 
-  g_signal_emit_by_name (obj, signal_name, NULL);
+    signal_id = g_signal_lookup (signame, G_OBJECT_TYPE (obj));
+    if (!signal_id) {
+      g_warning ("%s doesn't have signal '%s'", objname, signame);
+      goto done;
+    }
+    g_signal_query (signal_id, &query);
+
+    instance_and_params = g_array_sized_new (FALSE,
+                                             FALSE,
+                                             sizeof (GValue), query.n_params + 1);
+    g_array_set_clear_func (instance_and_params, (GDestroyNotify) g_value_unset);
+
+    {
+      GValue instance = G_VALUE_INIT;
+
+      g_value_init (&instance, G_OBJECT_TYPE (obj));
+      g_value_set_object (&instance, obj);
+      g_array_append_val (instance_and_params, instance);
+    }
+
+    for (p = 0; p < query.n_params; p++) {
+      GValue param = G_VALUE_INIT;
+      GType ptype = query.param_types[p];
+
+      // check if we can process this param
+      if (!G_TYPE_IS_OBJECT (ptype) &&
+          !g_value_type_transformable (G_TYPE_STRING, ptype)) {
+        g_warning ("[%s.%s]: don't know how to set parameter %d of type %s",
+                   objname, signame, p, g_type_name (ptype));
+        goto done;
+      }
+      // so now we need to get the param
+      {
+        // FIXME: handle spaces
+        const gchar *strparam = tokens[2 + p];
+
+        // -------------------
+        GValue strparamv = G_VALUE_INIT;
+
+        if (!strparam) {
+          g_warning ("signal %s parameter %d is not set", signame, p);
+          goto done;
+        }
+
+        LBA_LOG ("%s.%s(%d): setting [%s]-->[%s]", objname, signame, p, strparam,
+                 g_type_name (ptype));
+
+        g_value_init (&param, ptype);
+        g_value_init (&strparamv, G_TYPE_STRING);
+        g_value_set_string (&strparamv, strparam);
+
+        if (G_TYPE_IS_OBJECT (ptype)) {
+          if (!lba_command_set_str2obj (ctx, &strparamv, &param)) {
+            g_warning ("object '%s' not found", strparam);
+            g_value_unset (&strparamv);
+            g_value_unset (&param);
+            goto done;
+          }
+        } else if (!g_value_transform (&strparamv, &param)) {
+          g_warning ("%s.%s(%d): could not transform [%s]-->[%s]",
+                     objname, signame, p, strparam, g_type_name (ptype));
+          g_value_unset (&strparamv);
+          g_value_unset (&param);
+          goto done;
+        }
+      }
+
+      g_array_append_val (instance_and_params, param);
+    }
+
+    LBA_LOG ("calling %s.%s ()", objname, signame);
+    g_signal_emitv ((GValue *) instance_and_params->data,
+                    signal_id, 0, &return_value);
+  }
 
   ret = TRUE;
 done:
-  if (tmp) {
+  g_value_unset (&return_value);
+  if (instance_and_params)
+    g_array_unref (instance_and_params);
+  if (tmp)
     g_strfreev (tmp);
-  }
 
   return ret;
 }

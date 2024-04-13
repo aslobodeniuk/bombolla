@@ -31,7 +31,7 @@ Yes, check
 ```bash
 cat examples/plugin-in-python
 
-build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-python
+LBA_PYTHON_PLUGINS_PATH=$(pwd)/examples/python build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-python
 ```
 
 ### ¿Can I call bombolla scripts from python?
@@ -47,7 +47,8 @@ python3 examples/python/use-from-python.py
 Yes, check
 ```bash
 cat examples/js/lba-plugin-in-js.js
-build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-js
+
+LBA_JS_PLUGINS_PATH=$(pwd)/examples/js build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-js
 ```
 
 ### ¿Can I write a plugin in Vala?
