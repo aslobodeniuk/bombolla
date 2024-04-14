@@ -1,6 +1,6 @@
 vala_example_test_dep = declare_dependency(
   sources: files(['plugin-in-vala.vala', 'register-plugin.c']),
-  compile_args: ['-Wno-unused-variable'],
+  compile_args: ['-Wno-unused-variable', '-Wno-incompatible-pointer-types'],
   dependencies: bombolla_dep
 )
 
