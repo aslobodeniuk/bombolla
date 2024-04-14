@@ -1,0 +1,9 @@
+create LbaGjs js
+
+async create MyCustomObject obj
+sync
+dump obj
+
+async call obj.hello
+async set obj.something 444
+async call obj.hello

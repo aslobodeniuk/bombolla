@@ -26,6 +26,9 @@ typedef struct _LbaModuleScannerClass {
   gboolean scan_on_constructed;
   /* Virtual function */
   void (*have_file) (GObject *, const gchar *);
+  /* Signal handler */
+  void (*scan_in_thread) (GObject *, const gchar *);
+  void (*scan) (GObject *, const gchar *);
 } LbaModuleScannerClass;
 
 GType lba_module_scanner_get_type (void);

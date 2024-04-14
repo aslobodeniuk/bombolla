@@ -28,10 +28,24 @@ typedef enum {
 } LbaModuleScannerProperty;
 
 typedef struct _LbaModuleScanner {
+  // TODO: this should be in the BMixin structure (that doesn't exist yet)
+  GObject *gobject;
+  LbaModuleScannerClass *klass;
+  // ---------------------------------------------------------------------
+
   gchar *plugin_path;
+  GArray *threads;
 } LbaModuleScanner;
 
 BM_DEFINE_MIXIN (lba_module_scanner, LbaModuleScanner);
+
+enum {
+  SIGNAL_SCAN,
+  SIGNAL_SCAN_IN_THREAD,
+  LAST_SIGNAL
+};
+
+static guint lba_module_scanner_signals[LAST_SIGNAL] = { 0 };
 
 static GSList *lba_module_scanner_scan_path (LbaModuleScannerClass * klass,
                                              const gchar * path,
@@ -96,53 +110,121 @@ lba_module_scanner_scan_path (LbaModuleScannerClass * klass, const gchar * path,
 }
 
 static void
-lba_module_scanner_scan (LbaModuleScanner * self, GObject * gobject,
-                         LbaModuleScannerClass * klass) {
-  /* FIXME: BMixin should contain ptr to gobject and to klass */
+lba_module_scanner_scan (GObject * gobject, const gchar * file) {
+  LbaModuleScanner *self;
+
+  LBA_LOG ("Going to scan: [%s]", file);
+
+  self = bm_get_LbaModuleScanner (gobject);
+  g_return_if_fail (file != NULL);
+
+  self->klass->have_file (self->gobject, file);
+}
+
+static void
+lba_module_scanner_scan_start (LbaModuleScanner * self) {
   GSList *modules_files = NULL,
       *l;
 
   g_return_if_fail (self->plugin_path != NULL);
-  g_return_if_fail (klass->have_file != NULL);
+  g_return_if_fail (self->klass->have_file != NULL);
 
-  modules_files = lba_module_scanner_scan_path (klass, self->plugin_path, NULL);
+  modules_files =
+      lba_module_scanner_scan_path (self->klass, self->plugin_path, NULL);
   for (l = modules_files; l; l = l->next) {
-    klass->have_file (gobject, (gchar *) l->data);
+    self->klass->have_file (self->gobject, (gchar *) l->data);
   }
   g_slist_free_full (modules_files, g_free);
 }
 
+typedef struct {
+  LbaModuleScanner *scanner;
+  gchar *file;
+  GThread *thread;
+} LbaModuleScannerThreadScan;
+
+static gpointer
+lba_module_scanner_scan_custom_thread (gpointer data) {
+  LbaModuleScannerThreadScan *ev = (LbaModuleScannerThreadScan *) data;
+  LbaModuleScanner *self = ev->scanner;
+
+  LBA_LOG ("Scanuating right here: %s", ev->file);
+  self->klass->have_file (self->gobject, ev->file);
+
+  return NULL;
+}
+
+static void
+lba_module_scanner_scan_in_thread (GObject * gobject, const gchar * file) {
+  LbaModuleScanner *self;
+
+  LBA_LOG ("Going to scan in thread: [%s]", file);
+
+  self = bm_get_LbaModuleScanner (gobject);
+  g_return_if_fail (file != NULL);
+
+  {
+    // FIXME: really need mutex here.
+    {
+      LbaModuleScannerThreadScan ev = { 0 };
+      g_array_append_val (self->threads, ev);
+    }
+
+    LbaModuleScannerThreadScan *pev;
+
+    pev =
+        &((LbaModuleScannerThreadScan *) (self->threads->data))[self->threads->len -
+                                                                1];
+    pev->file = g_strdup (file);
+    pev->scanner = self;
+    // FIXME: RCs here, and all around
+    pev->thread = g_thread_new (NULL, lba_module_scanner_scan_custom_thread, pev);
+  }
+
+}
+
+static void
+lba_module_scanner_thread_scan_clear (gpointer data) {
+  LbaModuleScannerThreadScan *ev = (LbaModuleScannerThreadScan *) data;
+
+  g_thread_join (ev->thread);
+  g_free (ev->file);
+}
+
 static void
 lba_module_scanner_init (GObject * gobject, LbaModuleScanner * self) {
+  self->threads = g_array_new (FALSE, FALSE, sizeof (LbaModuleScannerThreadScan));
+  g_array_set_clear_func (self->threads, lba_module_scanner_thread_scan_clear);
+  self->gobject = gobject;
 }
 
 static void
 lba_module_scanner_constructed (GObject * gobject) {
-  /* FIXME: bmixin_get_LbaModuleScannerClass??
-   * Ptr on Class can be cached in BMixin structure */
-  LbaModuleScannerClass *klass =
-      bm_class_get_LbaModuleScanner (G_OBJECT_GET_CLASS (gobject));
   LbaModuleScanner *self = bm_get_LbaModuleScanner (gobject);
+
+  self->klass = bm_class_get_LbaModuleScanner (G_OBJECT_GET_CLASS (gobject));
 
   /* need "scan" signal?? */
   if (!self->plugin_path) {
-    if (klass->plugin_path_env)
-      self->plugin_path = g_strdup (g_getenv (klass->plugin_path_env));
+    if (self->klass->plugin_path_env)
+      self->plugin_path = g_strdup (g_getenv (self->klass->plugin_path_env));
 
-    if (!self->plugin_path) {
+    if (!self->plugin_path && 0) {
+      // FIXME: that's nasty
       LBA_LOG ("No plugin path is set. Will scan current directory.");
       self->plugin_path = g_get_current_dir ();
     }
   }
 
-  if (klass->scan_on_constructed)
-    lba_module_scanner_scan (self, gobject, klass);
+  if (self->klass->scan_on_constructed && self->plugin_path)
+    lba_module_scanner_scan_start (self);
 }
 
 static void
 lba_module_scanner_finalize (GObject * gobject) {
   LbaModuleScanner *self = bm_get_LbaModuleScanner (gobject);
 
+  g_array_unref (self->threads);
   g_free (self->plugin_path);
 
   BM_CHAINUP (gobject, lba_module_scanner, GObject)->finalize (gobject);
@@ -192,6 +274,8 @@ lba_module_scanner_class_init (GObjectClass * gobject_class,
   gobject_class->get_property = lba_module_scanner_get_property;
 
   self_class->scan_on_constructed = TRUE;
+  self_class->scan = lba_module_scanner_scan;
+  self_class->scan_in_thread = lba_module_scanner_scan_in_thread;
 
   g_object_class_install_property (gobject_class, PROP_PLUGINS_PATH,
                                    g_param_spec_string ("plugins-path",
@@ -200,6 +284,29 @@ lba_module_scanner_class_init (GObjectClass * gobject_class,
                                                         NULL,
                                                         G_PARAM_STATIC_STRINGS |
                                                         G_PARAM_READWRITE));
+
+  lba_module_scanner_signals[SIGNAL_SCAN_IN_THREAD] =
+      g_signal_new ("scan-in-thread", G_TYPE_FROM_CLASS (gobject_class),
+                    G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+                    /* FIXME: resolve in bmixin.h. We install signal to the object_class.
+                     * BM_CLASS_OFFSET() ?? */
+                    ((gpointer) self_class - (gpointer) gobject_class) +
+                    G_STRUCT_OFFSET (LbaModuleScannerClass, scan_in_thread),
+                    NULL, NULL,
+                    g_cclosure_marshal_VOID__STRING,
+                    G_TYPE_NONE, 1, G_TYPE_STRING, G_TYPE_NONE);
+
+  lba_module_scanner_signals[SIGNAL_SCAN] =
+      g_signal_new ("scan", G_TYPE_FROM_CLASS (gobject_class),
+                    G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+                    /* FIXME: resolve in bmixin.h. We install signal to the object_class.
+                     * BM_CLASS_OFFSET() ?? */
+                    ((gpointer) self_class - (gpointer) gobject_class) +
+                    G_STRUCT_OFFSET (LbaModuleScannerClass, scan),
+                    NULL, NULL,
+                    g_cclosure_marshal_VOID__STRING,
+                    G_TYPE_NONE, 1, G_TYPE_STRING, G_TYPE_NONE);
+
 }
 
 /* Export plugin */

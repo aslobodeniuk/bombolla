@@ -1,0 +1,10 @@
+# Gtk4 by concept doesn't want to obey to other app as it seems,
+# it needs to just block some thread. That is why we actually have to
+# evaluate our js script in a separate thread.. A good question is
+# how will we access anything..
+# If only we could init some things in our bombolla script, and then
+# obtain them through gtk4 in js..
+
+create LbaGjs js
+call js.scan-in-thread examples/js/gtk4/lba-gtk4-app-in-js.js
+destroy js

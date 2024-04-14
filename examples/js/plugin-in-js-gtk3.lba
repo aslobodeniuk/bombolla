@@ -1,4 +1,6 @@
-create LbaGjs gjs
+create LbaGjs js
+call js.scan examples/js/gtk3/lba-gtk3-window-in-js.js
+
 async create MyJSWindow w
 async set w.width-request 300
 async set w.height-request 200

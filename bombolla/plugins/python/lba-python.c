@@ -102,6 +102,9 @@ lba_python_fill_vtable (LbaPython * self) {
   gint i;
 
   const gchar *pythons[] = {
+    /* FIXME: need better way */
+    "libpython3.12.so",
+    "libpython3.11.so",
     "libpython3.10.so",
     "libpython3.9.so",
     "libpython3.8.so",

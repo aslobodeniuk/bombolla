@@ -70,14 +70,22 @@ do_test()
 
     rm -rf $LOGF || true
 
-    test_example "plugin in vala" "build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-vala" || exit 1
-    test_example "plugin in python" "build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-python" || exit 1
-
+    test_example "plugin in vala" "build/bombolla/tools/shell/bombolla-shell -p build/examples/vala -i examples/plugin-in-vala" || exit 1
+    LBA_PYTHON_PLUGINS_PATH=$(pwd)/examples/python test_example "plugin in python" "build/bombolla/tools/shell/bombolla-shell -p build/bombolla -i examples/plugin-in-python" || exit 1
+    LBA_JS_PLUGINS_PATH=$(pwd)/examples/js/pure-gobject test_example "plugin in js gobject" "build/bombolla/tools/shell/bombolla-shell -p build/bombolla -i examples/js/pure-gobject.lba" || exit 1
     if test "x$1" != "x--ci-mode"; then
-	test_example "cogl" "build/bombolla/tools/shell/bombolla-shell -p build -i examples/cogl" || exit 1
+	# FIXME: cogl stuff doesn't work on my new Ubuntu 23!!
+	# But then.... how does Clutter works??
+	test_example "cogl" "build/bombolla/tools/shell/bombolla-shell -p build/bombolla -i examples/cogl" || exit 1
+	LBA_PLUGINS_PATH=$(pwd)/build/bombolla test_example "using from python" "python3 examples/python/use-from-python.py" || exit 1
+	# =================================================
 
-	test_example "using from python" "python3 examples/python/use-from-python.py" || exit 1
-	test_example "plugin in js" "build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-js" || exit 1
+	if pkg-config --modversion gtk+-3.0 >/dev/null 2>/dev/null; then
+	    test_example "plugin in js gtk3" "build/bombolla/tools/shell/bombolla-shell -p build/bombolla -i examples/js/plugin-in-js-gtk3.lba" || exit 1
+	fi
+	if pkg-config --modversion gtk4 >/dev/null 2>/dev/null; then
+	    test_example "plugin in js gtk4" "build/bombolla/tools/shell/bombolla-shell -p build/bombolla -i examples/js/plugin-in-js-gtk4.lba" || exit 1
+	fi
 
 	LBA_PYTHON_PLUGINS_PATH=$(pwd)/examples/frankenstein-news LBA_JS_PLUGINS_PATH=$(pwd)/examples/frankenstein-news test_example "FRANKENSTEIN" "build/bombolla/tools/shell/bombolla-shell -p build/bombolla/ -i examples/frankenstein-news/frank.lba" || exit 1
     fi

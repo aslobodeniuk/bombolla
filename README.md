@@ -31,7 +31,7 @@ Yes, check
 ```bash
 cat examples/plugin-in-python
 
-LBA_PYTHON_PLUGINS_PATH=$(pwd)/examples/python build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-python
+LBA_PYTHON_PLUGINS_PATH=$(pwd)/examples/python build/bombolla/tools/shell/bombolla-shell -p build/bombolla -i examples/plugin-in-python
 ```
 
 ### ¿Can I call bombolla scripts from python?
@@ -39,24 +39,30 @@ LBA_PYTHON_PLUGINS_PATH=$(pwd)/examples/python build/bombolla/tools/shell/bombol
 Yes, check
 ```bash
 cat examples/python/use-from-python.py
-python3 examples/python/use-from-python.py
+LBA_PLUGINS_PATH=build/bombolla/ python3 examples/python/use-from-python.py
 ```
 
 ### ¿Can I write a plugin in JavaScript?
 
-Yes, check
+Example 1 (Gtk 3)
 ```bash
-cat examples/js/lba-plugin-in-js.js
-
-LBA_JS_PLUGINS_PATH=$(pwd)/examples/js build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-js
+build/bombolla/tools/shell/bombolla-shell -p build/bombolla -i examples/js/plugin-in-js-gtk3.lba
 ```
+Example 2 (Gtk 4)
+```bash
+build/bombolla/tools/shell/bombolla-shell -p build/bombolla -i examples/js/plugin-in-js-gtk4.lba
+```
+Example 1 (pure GObject)
+```bash
+LBA_JS_PLUGINS_PATH=$(pwd)/examples/js/pure-gobject build/bombolla/tools/shell/bombolla-shell -i examples/js/pure-gobject.lba
+```
+
 
 ### ¿Can I write a plugin in Vala?
 
 Yes, check
 ```bash
-cat examples/vala/plugin-in-vala.vala
-build/bombolla/tools/shell/bombolla-shell -i examples/plugin-in-vala
+LBA_PLUGINS_PATH=$(pwd)/examples/vala build/bombolla/tools/shell/bombolla-shell -p build/bombolla -i examples/plugin-in-vala
 ```
 
 ### So, ok I can write in many languages. Can I connect them in between?

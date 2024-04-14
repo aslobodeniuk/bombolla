@@ -94,7 +94,7 @@ lba_async_string_input_have_str (gpointer gobject) {
   return G_SOURCE_REMOVE;
 }
 
-void
+static void
 lba_async_string_input_input_string (GObject * gobject, const gchar * input) {
   LbaAsyncStringInput *self;
 
@@ -113,9 +113,7 @@ static void
 lba_async_string_input_class_init (GObjectClass * object_class,
                                    LbaAsyncStringInputClass * bm_class) {
 
-  LbaAsyncStringInputClass *klass = (LbaAsyncStringInputClass *) bm_class;
-
-  klass->input_string = lba_async_string_input_input_string;
+  bm_class->input_string = lba_async_string_input_input_string;
 
   lba_async_string_input_signals[SIGNAL_INPUT_STRING] =
       g_signal_new ("input-string", G_TYPE_FROM_CLASS (object_class),
