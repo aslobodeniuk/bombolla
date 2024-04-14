@@ -375,12 +375,42 @@ lba_core_shedule_async_script (GObject * obj, gchar * command) {
   g_source_attach (ctx->source, NULL);
 }
 
+G_LOCK_DEFINE_STATIC (singleton_lock);
+static GObject *singleton_object;
+
+static void
+lba_core_reset_singleton (gpointer data, GObject * where_the_object_was) {
+  G_LOCK (singleton_lock);
+  singleton_object = NULL;
+  G_UNLOCK (singleton_lock);
+}
+
+static GObject *
+lba_core_constructor (GType type, guint n_cp, GObjectConstructParam * cp) {
+  GObjectClass *chain_up =
+      (GObjectClass *) g_type_class_peek_parent (g_type_class_peek (type));
+
+  if (G_UNLIKELY (n_cp != 0 && singleton_object != NULL))
+    g_warning ("Will ignore the construct properties, this object is a singleton!");
+
+  G_LOCK (singleton_lock);
+  if (singleton_object == NULL) {
+    singleton_object = chain_up->constructor (type, n_cp, cp);
+    g_object_weak_ref (singleton_object, lba_core_reset_singleton, NULL);
+  } else
+    g_object_ref (singleton_object);
+  G_UNLOCK (singleton_lock);
+
+  return singleton_object;
+}
+
 static void
 lba_core_class_init (GObjectClass * object_class, LbaCoreClass * klass) {
   LbaModuleScannerClass *lms_class;
 
   object_class->dispose = lba_core_dispose;
   object_class->finalize = lba_core_finalize;
+  object_class->constructor = lba_core_constructor;
 
   klass->execute = lba_core_execute;
 

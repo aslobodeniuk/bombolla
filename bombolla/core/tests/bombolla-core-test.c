@@ -43,7 +43,17 @@ test_empty_string (Fixture * fixture, gconstpointer user_data) {
 }
 
 static void
-test2 (Fixture * fixture, gconstpointer user_data) {
+test_singleton (Fixture * fixture, gconstpointer user_data) {
+  GObject *more_lba_cores[2];
+
+  more_lba_cores[0] = g_object_new (lba_core_object_get_type (), NULL);
+  more_lba_cores[1] = g_object_new (lba_core_object_get_type (), NULL);
+
+  g_assert (more_lba_cores[0] == more_lba_cores[1]);
+  g_object_unref (more_lba_cores[0]);
+  g_object_unref (more_lba_cores[1]);
+
+  fixture->obj = g_object_new (lba_core_object_get_type (), NULL);
 }
 
 int
@@ -52,8 +62,8 @@ main (int argc, char *argv[]) {
 
   g_test_add ("/core/test-empty-string", Fixture, NULL,
               fixture_set_up, test_empty_string, fixture_tear_down);
-  g_test_add ("/core/test2", Fixture, "some-user-data",
-              fixture_set_up, test2, fixture_tear_down);
+  g_test_add ("/core/singleton", Fixture, "some-user-data",
+              fixture_set_up, test_singleton, fixture_tear_down);
 
   return g_test_run ();
 }
