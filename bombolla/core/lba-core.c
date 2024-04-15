@@ -35,6 +35,7 @@ enum {
 static guint lba_core_signals[LAST_SIGNAL] = { 0 };
 
 typedef struct _LbaCore {
+  BMixinInstance i;
   BombollaContext *ctx;
   /* FIXME: to BMixin */
   GObject *papi;
@@ -52,6 +53,7 @@ typedef struct _LbaCore {
 } LbaCore;
 
 typedef struct _LbaCoreClass {
+  BMixinClass c;
   void (*execute) (GObject *, const gchar *);
 } LbaCoreClass;
 
@@ -88,7 +90,7 @@ lba_core_quit_msg (gpointer data) {
 }
 
 static void
-lba_core_stop (LbaCore * self) {
+lba_core_stop (LbaCore *self) {
   GSource *s;
 
   /* Send quit message to the main loop */
@@ -111,7 +113,7 @@ lba_core_stop (LbaCore * self) {
 }
 
 static void
-lba_core_init (GObject * object, LbaCore * self) {
+lba_core_init (GObject *object, LbaCore *self) {
   self->papi = object;
 
   g_mutex_init (&self->async_cmd_guard);
@@ -135,7 +137,7 @@ lba_core_init (GObject * object, LbaCore * self) {
 void lba_core_sync_with_async_cmds (gpointer core);
 
 static void
-lba_core_dispose (GObject * gobject) {
+lba_core_dispose (GObject *gobject) {
   LbaCore *self = bm_get_LbaCore (gobject);
 
   if (self->async_cmds) {
@@ -165,7 +167,7 @@ lba_core_dispose (GObject * gobject) {
 }
 
 static void
-lba_core_finalize (GObject * gobject) {
+lba_core_finalize (GObject *gobject) {
   LbaCore *self = bm_get_LbaCore (gobject);
 
   g_mutex_clear (&self->async_cmd_guard);
@@ -176,7 +178,7 @@ lba_core_finalize (GObject * gobject) {
 }
 
 static gboolean
-lba_core_proccess_line (gpointer obj, const gchar * str) {
+lba_core_proccess_line (gpointer obj, const gchar *str) {
   LbaCore *self = (LbaCore *) obj;
   gboolean ret = TRUE;
   char **tokens;
@@ -233,7 +235,7 @@ done:
 }
 
 static void
-lba_core_load_module (GObject * gobj, const gchar * module_filename) {
+lba_core_load_module (GObject *gobj, const gchar *module_filename) {
   GModule *module = NULL;
   gpointer ptr;
   lBaPluginSystemGetGtypeFunc get_type_f;
@@ -268,7 +270,7 @@ lba_core_load_module (GObject * gobj, const gchar * module_filename) {
 
 /* TODO: return FALSE if execution fails */
 static void
-lba_core_execute (GObject * gobject, const gchar * commands) {
+lba_core_execute (GObject *gobject, const gchar *commands) {
   LbaCore *self = bm_get_LbaCore (gobject);
 
   /* Proccessing commands */
@@ -354,7 +356,7 @@ lba_core_sync_with_async_cmds (gpointer core) {
 }
 
 void
-lba_core_shedule_async_script (GObject * obj, gchar * command) {
+lba_core_shedule_async_script (GObject *obj, gchar *command) {
   LbaCore *self = (LbaCore *) obj;
   LbaCoreAsyncCmd *ctx = g_new0 (LbaCoreAsyncCmd, 1);
 
@@ -379,14 +381,14 @@ G_LOCK_DEFINE_STATIC (singleton_lock);
 static GObject *singleton_object;
 
 static void
-lba_core_reset_singleton (gpointer data, GObject * where_the_object_was) {
+lba_core_reset_singleton (gpointer data, GObject *where_the_object_was) {
   G_LOCK (singleton_lock);
   singleton_object = NULL;
   G_UNLOCK (singleton_lock);
 }
 
 static GObject *
-lba_core_constructor (GType type, guint n_cp, GObjectConstructParam * cp) {
+lba_core_constructor (GType type, guint n_cp, GObjectConstructParam *cp) {
   GObjectClass *chain_up =
       (GObjectClass *) g_type_class_peek_parent (g_type_class_peek (type));
 
@@ -405,7 +407,7 @@ lba_core_constructor (GType type, guint n_cp, GObjectConstructParam * cp) {
 }
 
 static void
-lba_core_class_init (GObjectClass * object_class, LbaCoreClass * klass) {
+lba_core_class_init (GObjectClass *object_class, LbaCoreClass *klass) {
   LbaModuleScannerClass *lms_class;
 
   object_class->dispose = lba_core_dispose;
@@ -418,11 +420,7 @@ lba_core_class_init (GObjectClass * object_class, LbaCoreClass * klass) {
   lba_core_signals[SIGNAL_EXECUTE] =
       g_signal_new ("execute", G_TYPE_FROM_CLASS (object_class),
                     G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
-                    /* FIXME: resolve in gmo.h. We install signal to the object_class.
-                     * BM_CLASS_OFFSET() ?? */
-                    ((gpointer) klass - (gpointer) object_class) +
-                    G_STRUCT_OFFSET (LbaCoreClass, execute),
-                    ////////////////////////////////////////////
+                    BM_CLASS_VFUNC_OFFSET (klass, execute),
                     NULL, NULL,
                     g_cclosure_marshal_VOID__STRING,
                     G_TYPE_NONE, 1, G_TYPE_STRING, G_TYPE_NONE);

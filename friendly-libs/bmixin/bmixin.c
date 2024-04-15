@@ -69,7 +69,7 @@ bm_type_peek_mixed_type (GType mixed_type, GType mixin) {
 }
 
 GType
-bm_register_mixed_type (const gchar * mixed_type_name, GType base_type, GType mixin) {
+bm_register_mixed_type (const gchar *mixed_type_name, GType base_type, GType mixin) {
   GType ret;
   GTypeQuery base_info;
   BMInfo *minfo;
@@ -208,7 +208,7 @@ bm_register_mixed_type (const gchar * mixed_type_name, GType base_type, GType mi
 }
 
 GType
-bm_register_mixin (const gchar * mixin_name, BMInfo * minfo) {
+bm_register_mixin (const gchar *mixin_name, BMInfo *minfo) {
   GType ret;
 
   ret =

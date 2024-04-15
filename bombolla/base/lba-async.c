@@ -34,6 +34,7 @@ typedef struct {
 } LbaAsyncConstructorInfo;
 
 typedef struct _LbaAsync {
+  BMixinInstance i;
   /* TODO: move to BMixin struct */
   GObject *mami;
   /* -------------------------------- */
@@ -50,6 +51,7 @@ typedef struct _LbaAsync {
 } LbaAsync;
 
 typedef struct _LbaAsyncClass {
+  BMixinClass c;
 } LbaAsyncClass;
 
 /* TODO: this mixin should always go as the last in the inheiritance tree.
@@ -76,7 +78,7 @@ lba_async_proxy_class_init (gpointer class, gpointer p) {
 }
 
 static void
-lba_async_proxy_init (GTypeInstance * instance, gpointer p) {
+lba_async_proxy_init (GTypeInstance *instance, gpointer p) {
   lba_async_init (G_OBJECT (instance), bm_get_LbaAsync (instance));
 }
 
@@ -128,7 +130,7 @@ lba_async_cmd_free (gpointer gobject) {
 }
 
 static void
-lba_async_call_through_main_loop (LbaAsync * self, GSourceFunc cmd) {
+lba_async_call_through_main_loop (LbaAsync *self, GSourceFunc cmd) {
   g_warn_if_fail (self->async_ctx == NULL);
   if (g_main_context_is_owner (NULL)) {
     LBA_LOG ("Already in the MainContext. Calling synchronously");
@@ -155,7 +157,7 @@ lba_async_dispose_cmd (gpointer ptr) {
 }
 
 static void
-lba_async_dispose (GObject * gobject) {
+lba_async_dispose (GObject *gobject) {
   LbaAsync *self = bm_get_LbaAsync (gobject);
 
   LBA_LOG ("Schedulling [%s]->dispose", G_OBJECT_TYPE_NAME (gobject));
@@ -171,7 +173,7 @@ lba_async_finalize_cmd (gpointer ptr) {
 }
 
 static void
-lba_async_finalize (GObject * gobject) {
+lba_async_finalize (GObject *gobject) {
   LbaAsync *self = bm_get_LbaAsync (gobject);
 
   LBA_LOG ("Scheduling [%s]->finalize", G_OBJECT_TYPE_NAME (gobject));
@@ -207,7 +209,7 @@ lba_async_toggle_notify_cmd (gpointer ptr) {
 }
 
 static void
-lba_async_toggle_notify (gpointer data, GObject * object, gboolean is_last_ref) {
+lba_async_toggle_notify (gpointer data, GObject *object, gboolean is_last_ref) {
   LbaAsync *self = (LbaAsync *) data;
 
   LBA_LOG ("(%s) is_last_ref = %d", G_OBJECT_TYPE_NAME (object), is_last_ref);
@@ -229,7 +231,7 @@ lba_async_constructed_cmd (gpointer ptr) {
 }
 
 static void
-lba_async_constructed (GObject * gobject) {
+lba_async_constructed (GObject *gobject) {
   LbaAsync *self = bm_get_LbaAsync (gobject);
 
   /* We want to set the very first toggle ref. To do that we
@@ -268,7 +270,7 @@ lba_async_constructor_cmd (gpointer ptr) {
 
 static GObject *
 lba_async_constructor (GType type, guint n_construct_properties,
-                       GObjectConstructParam * construct_properties) {
+                       GObjectConstructParam *construct_properties) {
   GObjectClass *parent_klass;
   GObject *ret;
 
@@ -311,7 +313,7 @@ lba_async_constructor (GType type, guint n_construct_properties,
 }
 
 static void
-lba_async_class_init (GObjectClass * gobject_class, LbaAsyncClass * self_class) {
+lba_async_class_init (GObjectClass *gobject_class, LbaAsyncClass *self_class) {
 
   if (G_UNLIKELY (!toggle_refs_qrk))
     toggle_refs_qrk = g_quark_from_static_string ("GObject-toggle-references");
@@ -368,7 +370,7 @@ lba_async_class_init (GObjectClass * gobject_class, LbaAsyncClass * self_class) 
 }
 
 static void
-lba_async_init (GObject * object, LbaAsync * self) {
+lba_async_init (GObject *object, LbaAsync *self) {
   self->mami = object;
 
   g_mutex_init (&self->lock);

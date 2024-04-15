@@ -28,6 +28,7 @@ typedef enum {
 } LbaModuleScannerProperty;
 
 typedef struct _LbaModuleScanner {
+  BMixinInstance i;
   // TODO: this should be in the BMixin structure (that doesn't exist yet)
   GObject *gobject;
   LbaModuleScannerClass *klass;
@@ -53,8 +54,8 @@ static GSList *lba_module_scanner_scan_path (LbaModuleScannerClass * klass,
 
 /* This function is recursive */
 static GSList *
-lba_module_scanner_scan_path (LbaModuleScannerClass * klass, const gchar * path,
-                              GSList * modules_files) {
+lba_module_scanner_scan_path (LbaModuleScannerClass *klass, const gchar *path,
+                              GSList *modules_files) {
   /* FIXME: BMixin should contain ptr to gobject and to klass */
   g_return_val_if_fail (klass->plugin_prefix != NULL, NULL);
   g_return_val_if_fail (klass->plugin_suffix != NULL, NULL);
@@ -110,7 +111,7 @@ lba_module_scanner_scan_path (LbaModuleScannerClass * klass, const gchar * path,
 }
 
 static void
-lba_module_scanner_scan (GObject * gobject, const gchar * file) {
+lba_module_scanner_scan (GObject *gobject, const gchar *file) {
   LbaModuleScanner *self;
 
   LBA_LOG ("Going to scan: [%s]", file);
@@ -122,7 +123,7 @@ lba_module_scanner_scan (GObject * gobject, const gchar * file) {
 }
 
 static void
-lba_module_scanner_scan_start (LbaModuleScanner * self) {
+lba_module_scanner_scan_start (LbaModuleScanner *self) {
   GSList *modules_files = NULL,
       *l;
 
@@ -155,7 +156,7 @@ lba_module_scanner_scan_custom_thread (gpointer data) {
 }
 
 static void
-lba_module_scanner_scan_in_thread (GObject * gobject, const gchar * file) {
+lba_module_scanner_scan_in_thread (GObject *gobject, const gchar *file) {
   LbaModuleScanner *self;
 
   LBA_LOG ("Going to scan in thread: [%s]", file);
@@ -192,14 +193,14 @@ lba_module_scanner_thread_scan_clear (gpointer data) {
 }
 
 static void
-lba_module_scanner_init (GObject * gobject, LbaModuleScanner * self) {
+lba_module_scanner_init (GObject *gobject, LbaModuleScanner *self) {
   self->threads = g_array_new (FALSE, FALSE, sizeof (LbaModuleScannerThreadScan));
   g_array_set_clear_func (self->threads, lba_module_scanner_thread_scan_clear);
   self->gobject = gobject;
 }
 
 static void
-lba_module_scanner_constructed (GObject * gobject) {
+lba_module_scanner_constructed (GObject *gobject) {
   LbaModuleScanner *self = bm_get_LbaModuleScanner (gobject);
 
   self->klass = bm_class_get_LbaModuleScanner (G_OBJECT_GET_CLASS (gobject));
@@ -221,7 +222,7 @@ lba_module_scanner_constructed (GObject * gobject) {
 }
 
 static void
-lba_module_scanner_finalize (GObject * gobject) {
+lba_module_scanner_finalize (GObject *gobject) {
   LbaModuleScanner *self = bm_get_LbaModuleScanner (gobject);
 
   g_array_unref (self->threads);
@@ -231,9 +232,9 @@ lba_module_scanner_finalize (GObject * gobject) {
 }
 
 static void
-lba_module_scanner_set_property (GObject * object,
-                                 guint property_id, const GValue * value,
-                                 GParamSpec * pspec) {
+lba_module_scanner_set_property (GObject *object,
+                                 guint property_id, const GValue *value,
+                                 GParamSpec *pspec) {
   LbaModuleScanner *self = bm_get_LbaModuleScanner (object);
 
   switch ((LbaModuleScannerProperty) property_id) {
@@ -249,9 +250,9 @@ lba_module_scanner_set_property (GObject * object,
 }
 
 static void
-lba_module_scanner_get_property (GObject * object,
-                                 guint property_id, GValue * value,
-                                 GParamSpec * pspec) {
+lba_module_scanner_get_property (GObject *object,
+                                 guint property_id, GValue *value,
+                                 GParamSpec *pspec) {
   LbaModuleScanner *self = bm_get_LbaModuleScanner (object);
 
   switch ((LbaModuleScannerProperty) property_id) {
@@ -266,8 +267,8 @@ lba_module_scanner_get_property (GObject * object,
 }
 
 static void
-lba_module_scanner_class_init (GObjectClass * gobject_class,
-                               LbaModuleScannerClass * self_class) {
+lba_module_scanner_class_init (GObjectClass *gobject_class,
+                               LbaModuleScannerClass *self_class) {
   gobject_class->finalize = lba_module_scanner_finalize;
   gobject_class->constructed = lba_module_scanner_constructed;
   gobject_class->set_property = lba_module_scanner_set_property;
@@ -288,10 +289,8 @@ lba_module_scanner_class_init (GObjectClass * gobject_class,
   lba_module_scanner_signals[SIGNAL_SCAN_IN_THREAD] =
       g_signal_new ("scan-in-thread", G_TYPE_FROM_CLASS (gobject_class),
                     G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
-                    /* FIXME: resolve in bmixin.h. We install signal to the object_class.
-                     * BM_CLASS_OFFSET() ?? */
-                    ((gpointer) self_class - (gpointer) gobject_class) +
-                    G_STRUCT_OFFSET (LbaModuleScannerClass, scan_in_thread),
+                    /* FIXME: how to protect user from putting G_STRUCT_OFFSET ?? */
+                    BM_CLASS_VFUNC_OFFSET (self_class, scan_in_thread),
                     NULL, NULL,
                     g_cclosure_marshal_VOID__STRING,
                     G_TYPE_NONE, 1, G_TYPE_STRING, G_TYPE_NONE);
@@ -299,10 +298,8 @@ lba_module_scanner_class_init (GObjectClass * gobject_class,
   lba_module_scanner_signals[SIGNAL_SCAN] =
       g_signal_new ("scan", G_TYPE_FROM_CLASS (gobject_class),
                     G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
-                    /* FIXME: resolve in bmixin.h. We install signal to the object_class.
-                     * BM_CLASS_OFFSET() ?? */
-                    ((gpointer) self_class - (gpointer) gobject_class) +
-                    G_STRUCT_OFFSET (LbaModuleScannerClass, scan),
+                    /* FIXME: how to protect user from putting G_STRUCT_OFFSET ?? */
+                    BM_CLASS_VFUNC_OFFSET (self_class, scan),
                     NULL, NULL,
                     g_cclosure_marshal_VOID__STRING,
                     G_TYPE_NONE, 1, G_TYPE_STRING, G_TYPE_NONE);

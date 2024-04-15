@@ -67,6 +67,34 @@ typedef struct {
 } BMInfo;
 
 /**
+ * BMixin:
+ * @type: A #GType value.
+ *
+ * A structure to put as a first member of your mixin structure.
+ * It provides various things:
+ * - cached pointer of the root GObject
+ * - GTypeInstance, that allows to treat it as a normal GType instance. In particular
+ * this allows type checks and discovery on the mixin pointer. So it would be safe
+ * to call G_IS_OBJECT on the mixin instance pointer.
+ */
+typedef struct {
+  GTypeInstance type_instance;
+  GObject *base_object;
+} BMixinInstance;
+
+typedef struct {
+  GTypeClass type_class;
+  GObjectClass *base_object_class;
+} BMixinClass;
+
+#  define BM_GET_GOBJECT(mixin) /* TODO */
+#  define BM_CLASS_GET_GOBJECT_CLASS(mclass)    /* TODO */
+
+/* FIXME: how to protect user from putting G_STRUCT_OFFSET ?? */
+#  define BM_CLASS_VFUNC_OFFSET(mclass,member)                            \
+  (((gpointer)&mclass->member - (gpointer)mclass) + ((gpointer)mclass - (gpointer)((BMixinClass*)mclass)->base_object_class))
+
+/**
  * G_TYPE_IS_BMIXIN:
  * @type: A #GType value.
  *
@@ -244,20 +272,11 @@ GQuark bmixin_info_qrk (void);
 #  define BM_DEFINE_MIXIN(name, Name, ...)                        \
   static void name##_class_init (GObjectClass *, Name##Class*);   \
   static void name##_init (GObject *, Name *);                    \
-  static Name *bm_get_##Name (gpointer gobject);                  \
-  static Name##Class *bm_class_get_##Name (gpointer gobject);     \
-  static void                                                     \
-  name##_proxy_class_init (gpointer class, gpointer p)            \
-  {                                                               \
-    name##_class_init (class, bm_class_get_##Name (class));       \
-  }                                                               \
-                                                                  \
-  static void                                                     \
-  name##_proxy_init (GTypeInstance * instance, gpointer p)              \
-  {                                                                     \
-    name##_init (G_OBJECT (instance), bm_get_##Name (instance));        \
-  }                                                                     \
+  static Name *bm_get_##Name (gpointer);                                \
+  static Name##Class *bm_class_get_##Name (gpointer);                   \
                                                                         \
+  static void name##_proxy_class_init (gpointer, gpointer);             \
+  static void name##_proxy_init (GTypeInstance *, gpointer);            \
   static const BMParams name##_bmixin_params[] = {__VA_ARGS__};         \
                                                                         \
   static BMInfo name##_info = {                                         \
@@ -270,6 +289,27 @@ GQuark bmixin_info_qrk (void);
     .params = name##_bmixin_params,                                     \
     .num_params = G_N_ELEMENTS (name##_bmixin_params)                   \
   };                                                                    \
+                                                                  \
+static void                                                       \
+  name##_proxy_class_init (gpointer class, gpointer p)            \
+  {                                                               \
+    BMixinClass *bmc = (BMixinClass *)bm_class_get_##Name (class);  \
+    bmc->type_class.g_type = name##_info.type;                    \
+    bmc->base_object_class = (GObjectClass*) class;               \
+    G_STATIC_ASSERT (sizeof (GTypeClass) == sizeof (GType));      \
+    name##_class_init (class, (Name##Class*)bmc);                 \
+  }                                                               \
+                                                                  \
+  static void                                                     \
+  name##_proxy_init (GTypeInstance * instance, gpointer gclass)         \
+  {                                                                     \
+    BMixinInstance *bmi = (BMixinInstance *)bm_get_##Name (instance);   \
+    bmi->type_instance.g_class = gclass;                                \
+    bmi->base_object = (GObject*) instance;                             \
+    G_STATIC_ASSERT (sizeof (GTypeInstance) == sizeof (gpointer));      \
+                                                                        \
+    name##_init (G_OBJECT (instance), (Name*)bmi);                      \
+  }                                                                     \
                                                                         \
   GType name##_get_type (void) {                                        \
     static gsize g_define_type_id = 0;                                  \

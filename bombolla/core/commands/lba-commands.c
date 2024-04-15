@@ -25,51 +25,46 @@
 static const gchar *global_lba_plugin_name = "LbaCore";
 
 static gboolean
-lba_command_create (BombollaContext * ctx, gchar ** tokens) {
+lba_command_create (BombollaContext *ctx, gchar **tokens) {
   const gchar *typename = tokens[1];
   const gchar *varname = tokens[2];
-  const gchar *request_failure_msg = NULL;
   GType obj_type;
+  GObject *obj;
 
   obj_type = g_type_from_name (typename);
 
   if (!varname) {
-    request_failure_msg = "need varname";
+    g_warning ("need varname");
+    return FALSE;
   } else if (g_hash_table_lookup (ctx->objects, varname)) {
-    request_failure_msg = "variable already exists";
+    g_warning ("variable already exists");
+    return FALSE;
   } else if (!obj_type) {
-    request_failure_msg = "type not found";
+    g_warning ("type %s not found", typename);
+    return FALSE;
   }
 
-  if (request_failure_msg) {
-    /* FIXME: LBA_LOG_WARNING ?? */
-    g_warning ("%s", request_failure_msg);
-    return FALSE;
-  } else {
-    GObject *obj;
+  /* If the type is mixin, then we might be able to instantiate
+   * the mixed_type. If it's not abstract. */
+  if (G_TYPE_IS_BMIXIN (obj_type))
+    obj_type = bm_register_mixed_type (NULL, G_TYPE_OBJECT, obj_type);
 
-    /* If the type is mixin, then we might be able to instantiate
-     * the mixed_type. If it's not abstract. */
-    if (G_TYPE_IS_BMIXIN (obj_type))
-      obj_type = bm_register_mixed_type (NULL, G_TYPE_OBJECT, obj_type);
+  obj = g_object_new (obj_type, NULL);
 
-    obj = g_object_new (obj_type, NULL);
+  if (obj) {
+    g_object_set_data (obj, "bombolla-commands-ctx", ctx);
+    if (g_object_is_floating (obj))
+      g_object_ref_sink (obj);
+    g_hash_table_insert (ctx->objects, (gpointer) g_strdup (varname), obj);
 
-    if (obj) {
-      g_object_set_data (obj, "bombolla-commands-ctx", ctx);
-      if (g_object_is_floating (obj))
-        g_object_ref_sink (obj);
-      g_hash_table_insert (ctx->objects, (gpointer) g_strdup (varname), obj);
-
-      LBA_LOG ("%s %s created", typename, varname);
-    }
+    LBA_LOG ("%s %s created", typename, varname);
   }
 
   return TRUE;
 }
 
 static gboolean
-lba_command_destroy (BombollaContext * ctx, gchar ** tokens) {
+lba_command_destroy (BombollaContext *ctx, gchar **tokens) {
   const gchar *varname = tokens[1];
   GObject *obj;
 
@@ -87,7 +82,7 @@ lba_command_destroy (BombollaContext * ctx, gchar ** tokens) {
 }
 
 static gboolean
-lba_command_call (BombollaContext * ctx, gchar ** tokens) {
+lba_command_call (BombollaContext *ctx, gchar **tokens) {
   const gchar *objname,
    *signame;
   GObject *obj;
@@ -332,7 +327,7 @@ lba_command_dump_type (GType plugin_type) {
 }
 
 static gboolean
-lba_command_dump (BombollaContext * ctx, gchar ** tokens) {
+lba_command_dump (BombollaContext *ctx, gchar **tokens) {
   GType t;
 
   if (NULL == tokens[1]) {
@@ -359,7 +354,7 @@ lba_command_dump (BombollaContext * ctx, gchar ** tokens) {
 }
 
 static gboolean
-lba_command_bind (BombollaContext * ctx, gchar ** tokens) {
+lba_command_bind (BombollaContext *ctx, gchar **tokens) {
   gchar *prop_name1 = NULL;
   gchar *prop_name2 = NULL;
   GObject *obj1 = NULL;
@@ -455,7 +450,7 @@ done:
 }
 
 gchar *
-assemble_line (gchar ** tokens) {
+assemble_line (gchar **tokens) {
   gchar *ret;
   gint i;
 
@@ -476,7 +471,7 @@ assemble_line (gchar ** tokens) {
 }
 
 static gboolean
-lba_command_log (BombollaContext * ctx, gchar ** tokens) {
+lba_command_log (BombollaContext *ctx, gchar **tokens) {
   if (NULL == tokens[1] || NULL != tokens[2]) {
     g_warning ("invalid syntax for 'log' command");
   }
@@ -487,7 +482,7 @@ lba_command_log (BombollaContext * ctx, gchar ** tokens) {
 }
 
 static gboolean
-lba_command_sync (BombollaContext * ctx, gchar ** tokens) {
+lba_command_sync (BombollaContext *ctx, gchar **tokens) {
   if (NULL != tokens[1]) {
     g_warning ("invalid syntax for 'sync' command");
   }
@@ -497,18 +492,18 @@ lba_command_sync (BombollaContext * ctx, gchar ** tokens) {
 }
 
 static gboolean
-lba_command_async (BombollaContext * ctx, gchar ** tokens) {
+lba_command_async (BombollaContext *ctx, gchar **tokens) {
   lba_core_shedule_async_script (ctx->self, assemble_line (tokens + 1));
   return TRUE;
 }
 
 static gboolean
-lba_comment (BombollaContext * ctx, gchar ** tokens) {
+lba_comment (BombollaContext *ctx, gchar **tokens) {
   return TRUE;
 }
 
 static gboolean
-lba_command_dna (BombollaContext * ctx, gchar ** tokens) {
+lba_command_dna (BombollaContext *ctx, gchar **tokens) {
   gint t;
   GType base_type;
   const gchar *mixed_type_name = tokens[1];

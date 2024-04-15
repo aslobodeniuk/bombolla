@@ -19,7 +19,10 @@
  */
 #ifndef _LBA_MODULE_SCANNER
 
+#  include <bmixin/bmixin.h>
+
 typedef struct _LbaModuleScannerClass {
+  BMixinClass c;
   const char *plugin_path_env;
   const char *plugin_prefix;
   const char *plugin_suffix;

@@ -23,6 +23,7 @@
 #include "bombolla/lba-log.h"
 
 typedef struct _LbaAsyncStringInput {
+  BMixinInstance i;
 
   const gchar *input_string;
 
@@ -33,6 +34,7 @@ typedef struct _LbaAsyncStringInput {
 } LbaAsyncStringInput;
 
 typedef struct _LbaAsyncStringInputClass {
+  BMixinClass c;
   void (*input_string) (GObject *, const gchar *);
 } LbaAsyncStringInputClass;
 
@@ -47,7 +49,7 @@ enum {
 static guint lba_async_string_input_signals[LAST_SIGNAL] = { 0 };
 
 static void
-lba_async_string_input_init (GObject * object, LbaAsyncStringInput * mixin) {
+lba_async_string_input_init (GObject *object, LbaAsyncStringInput *mixin) {
 }
 
 static void
@@ -62,7 +64,7 @@ LbaAsync_async_cmd_free (gpointer gobject) {
 }
 
 static void
-LbaAsync_call_through_main_loop (LbaAsyncStringInput * self, GSourceFunc cmd,
+LbaAsync_call_through_main_loop (LbaAsyncStringInput *self, GSourceFunc cmd,
                                  gpointer data) {
   g_warn_if_fail (self->async_ctx == NULL);
 
@@ -95,7 +97,7 @@ lba_async_string_input_have_str (gpointer gobject) {
 }
 
 static void
-lba_async_string_input_input_string (GObject * gobject, const gchar * input) {
+lba_async_string_input_input_string (GObject *gobject, const gchar *input) {
   LbaAsyncStringInput *self;
 
   LBA_LOG ("String input: [%s]", input);
@@ -110,18 +112,15 @@ lba_async_string_input_input_string (GObject * gobject, const gchar * input) {
 }
 
 static void
-lba_async_string_input_class_init (GObjectClass * object_class,
-                                   LbaAsyncStringInputClass * bm_class) {
+lba_async_string_input_class_init (GObjectClass *object_class,
+                                   LbaAsyncStringInputClass *bm_class) {
 
   bm_class->input_string = lba_async_string_input_input_string;
 
   lba_async_string_input_signals[SIGNAL_INPUT_STRING] =
       g_signal_new ("input-string", G_TYPE_FROM_CLASS (object_class),
                     G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
-                    /* FIXME: resolve in bmixin.h. We install signal to the object_class.
-                     * BM_CLASS_OFFSET() ?? */
-                    ((gpointer) bm_class - (gpointer) object_class) +
-                    G_STRUCT_OFFSET (LbaAsyncStringInputClass, input_string),
+                    BM_CLASS_VFUNC_OFFSET (bm_class, input_string),
                     NULL, NULL,
                     g_cclosure_marshal_VOID__STRING,
                     G_TYPE_NONE, 1, G_TYPE_STRING, G_TYPE_NONE);
