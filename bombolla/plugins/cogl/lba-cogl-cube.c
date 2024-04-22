@@ -44,7 +44,7 @@ static void
 
 /* *INDENT-OFF* */ 
 BM_DEFINE_MIXIN (lba_cogl_cube, LbaCoglCube,
-    BM_IMPLEMENTS_IFACE (lba, cogl_cube, icogl),
+    BM_ADD_IFACE (lba, cogl_cube, icogl),
     BM_ADD_DEP (lba_cogl),
     BM_ADD_DEP (lba_mixin_3d));
 /* *INDENT-ON* */ 

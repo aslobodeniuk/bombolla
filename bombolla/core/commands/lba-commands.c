@@ -46,7 +46,7 @@ lba_command_create (BombollaContext *ctx, gchar **tokens) {
 
   /* If the type is mixin, then we might be able to instantiate
    * the mixed_type. If it's not abstract. */
-  if (G_TYPE_IS_BMIXIN (obj_type))
+  if (BM_GTYPE_IS_BMIXIN (obj_type))
     obj_type = bm_register_mixed_type (NULL, G_TYPE_OBJECT, obj_type);
 
   obj = g_object_new (obj_type, NULL);
@@ -212,7 +212,7 @@ lba_command_dump_type (GType plugin_type) {
   if (query.type)
     g_printf ("Dumping GType '%s'\n", query.type_name);
 
-  if (G_TYPE_IS_BMIXIN (plugin_type)) {
+  if (BM_GTYPE_IS_BMIXIN (plugin_type)) {
     g_printf ("Mixin %s\n", g_type_name (plugin_type));
     lba_command_dump_type (bm_register_mixed_type
                            (NULL, G_TYPE_OBJECT, plugin_type));

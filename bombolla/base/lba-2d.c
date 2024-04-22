@@ -37,7 +37,7 @@ typedef struct _LbaMixin2DClass {
 static void
   lba_mixin_i2d_init (LbaI2D * iface);
 
-BM_DEFINE_MIXIN (lba_mixin_2d, LbaMixin2D, BM_IMPLEMENTS_IFACE (lba, mixin, i2d));
+BM_DEFINE_MIXIN (lba_mixin_2d, LbaMixin2D, BM_ADD_IFACE (lba, mixin, i2d));
 
 typedef enum {
   PROP_X = 1,

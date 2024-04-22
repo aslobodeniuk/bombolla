@@ -55,6 +55,7 @@ typedef enum {
 
 typedef struct {
   BMAddType add_type;
+  /* wtf is wrong with the indent here?? */
     GType (*gtype) (void);
   GInterfaceInfo iface_info;
 } BMParams;
@@ -87,22 +88,29 @@ typedef struct {
   GObjectClass *base_object_class;
 } BMixinClass;
 
-#  define BM_GET_GOBJECT(mixin) /* TODO */
+/* We should invent good strong naming. What is mixin, what is mixin instance, mixin class, mixin base object, mixin base object class */
+#  define BM_GET_GOBJECT(mx) (BMIXIN (mx)->base_object) /* TODO */
 #  define BM_CLASS_GET_GOBJECT_CLASS(mclass)    /* TODO */
+#  define BM_GOBJECT_LOOKUP_MIXIN(obj, gtype)   /* TODO */
 
 /* FIXME: how to protect user from putting G_STRUCT_OFFSET ?? */
 #  define BM_CLASS_VFUNC_OFFSET(mclass,member)                            \
   (((gpointer)&mclass->member - (gpointer)mclass) + ((gpointer)mclass - (gpointer)((BMixinClass*)mclass)->base_object_class))
 
+#  define BM_TYPE_MIXIN bm_fundamental_get_type ()
+
 /**
- * G_TYPE_IS_BMIXIN:
+ * BM_GTYPE_IS_BMIXIN:
  * @type: A #GType value.
  *
  * Checks if @type is a BMixin type.
  *
  * Returns: %TRUE if @type is a mixin
  */
-#  define G_TYPE_IS_BMIXIN(type) (G_TYPE_FUNDAMENTAL (type) == bm_fundamental_get_type ())
+#  define BM_GTYPE_IS_BMIXIN(type) (G_TYPE_FUNDAMENTAL (type) == BM_TYPE_MIXIN)
+
+/* TODO put this cast everywhere */
+#  define BMIXIN(object) (G_TYPE_CHECK_INSTANCE_CAST ((object), BM_TYPE_MIXIN, BMixin))
 
 /**
  * bm_fundamental_get_type:
@@ -239,7 +247,7 @@ GQuark bmixin_info_qrk (void);
 #  define BM_ADD_DEP(name) { .add_type = BM_ADD_TYPE_DEP, .gtype = name##_get_type }
 
 /**
- * BM_IMPLEMENTS_IFACE:
+ * BM_ADD_IFACE:
  * 
  * link current mixin to the `iface_init` function.
  * Example:
@@ -248,7 +256,7 @@ GQuark bmixin_info_qrk (void);
  *  lba_cogl_cube_icogl_init (LbaICogl * iface);
  *
  *  BM_DEFINE_MIXIN (lba_cogl_cube, LbaCoglCube,
- *      BM_IMPLEMENTS_IFACE (lba, cogl_cube, icogl),
+ *      BM_ADD_IFACE (lba, cogl_cube, icogl),
  *      BM_ADD_DEP (lba_cogl),
  *      BM_ADD_DEP (lba_mixin_3d));
  *
@@ -261,10 +269,12 @@ GQuark bmixin_info_qrk (void);
  * }
  * ```
  */
-#  define BM_IMPLEMENTS_IFACE(head, body, iface, ...)                   \
+/* FIXME: ambiguos name. Better B_ADD_IFACE */
+#  define BM_ADD_IFACE(head, body, iface, ...)                   \
   { .add_type = BM_ADD_TYPE_IFACE, .gtype = head##_##iface##_get_type,  \
         .iface_info = { (GInterfaceInitFunc)head##_##body##_##iface##_init, __VA_ARGS__ } }
 
+/* B_DEFINE_BMIXIN ?? */
 /**
  * BM_DEFINE_MIXIN:
  * TODO, epic

@@ -80,7 +80,7 @@ bm_register_mixed_type (const gchar *mixed_type_name, GType base_type, GType mix
 
   g_return_val_if_fail (mixin, G_TYPE_INVALID);
   g_return_val_if_fail (base_type, G_TYPE_INVALID);
-  g_return_val_if_fail (G_TYPE_IS_BMIXIN (mixin), G_TYPE_INVALID);
+  g_return_val_if_fail (BM_GTYPE_IS_BMIXIN (mixin), G_TYPE_INVALID);
 
   minfo = g_type_get_qdata (mixin, bmixin_info_qrk ());
   g_return_val_if_fail (minfo, 0);
@@ -130,7 +130,7 @@ bm_register_mixed_type (const gchar *mixed_type_name, GType base_type, GType mix
           return 0;
         }
 
-        if (G_TYPE_IS_BMIXIN (dep_type)) {
+        if (BM_GTYPE_IS_BMIXIN (dep_type)) {
           /* Mixin:
            * So, our dep is a mixin. Here come 2 scenarios: either base_type already has it,
            * either not. If it's already included to the base class, then we're done, and there's
