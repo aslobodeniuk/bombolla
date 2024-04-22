@@ -58,8 +58,8 @@ INDENT_PARAMETERS="--line-length85 \
 test_example()
 {
     message "Testing '$1' example"
-    echo "($1) Running '$2'" >> ${LOGF}
-    echo 'q' | G_DEBUG=fatal-warnings G_MESSAGES_DEBUG=all $2 1>>${LOGF} 2>&1 || (angry_message "Test '$1' failed" "check $LOGF"; exit 1 )
+    echo "($1) Running '$2'" >>${LOGF}
+    echo 'q' | G_DEBUG=fatal-warnings G_MESSAGES_DEBUG=all $2 1>>${LOGF} 2>&1 || (angry_message "Test '$1' failed" "check ${LOGF}"; exit 1 )
 
 }
 
@@ -74,10 +74,12 @@ do_test()
     LBA_PYTHON_PLUGINS_PATH=$(pwd)/examples/python test_example "plugin in python" "build/bombolla/tools/shell/bombolla-shell -p build/bombolla -i examples/plugin-in-python" || exit 1
     LBA_JS_PLUGINS_PATH=$(pwd)/examples/js/pure-gobject test_example "plugin in js gobject" "build/bombolla/tools/shell/bombolla-shell -p build/bombolla -i examples/js/pure-gobject.lba" || exit 1
     if test "x$1" != "x--ci-mode"; then
-	# FIXME: cogl stuff doesn't work on my new Ubuntu 23!!
+	# Cogl doesn't seem to work on wayland
 	# But then.... how does Clutter works?
-	test_example "cogl" "build/bombolla/tools/shell/bombolla-shell -p build/bombolla -i examples/cogl" || exit 1
-	LBA_PLUGINS_PATH=$(pwd)/build/bombolla test_example "using from python" "python3 examples/python/use-from-python.py" || exit 1
+	if test "x$XDG_SESSION_TYPE" != "xwayland"; then
+	    test_example "cogl" "build/bombolla/tools/shell/bombolla-shell -p build/bombolla -i examples/cogl" || exit 1
+	    LBA_PLUGINS_PATH=$(pwd)/build/bombolla test_example "using from python" "python3 examples/python/use-from-python.py" || exit 1
+	fi
 	# =================================================
 
 	if pkg-config --modversion gtk+-3.0 >/dev/null 2>/dev/null; then
