@@ -136,15 +136,15 @@ GType bm_fundamental_get_type (void);
  * dependencies): this means that some intermediate types, based on @base_type are
  * going to be registered. The end result will be a valid #GObject-based type with
  * a plane inheiritance tree, that will look like:
- * ```
+ * |[
  * GObject
  *  ...
  *  -- BaseType
  *     -- BaseType+Dep1
  *        ...
  *        -- BaseType+Dep1+..+DepN
- *           -- BaseType+Dep1+..+DepN+Mixin             
- * ```
+ *           -- BaseType+Dep1+..+DepN+Mixin
+ * ]|
  * It might happen that the dependency tree of the @mixin won't be resolved if some
  * of the dependencie is not satisfied. For example if the @mixin depends on a certain
  * interface, and none of the @mixin's dependencies, nor @base_type provide an

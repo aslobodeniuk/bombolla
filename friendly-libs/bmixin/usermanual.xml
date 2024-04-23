@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
+               "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+  <!ENTITY % local.common.attrib "xmlns:xi  CDATA  #FIXED 'http://www.w3.org/2003/XInclude'">
+  <!ENTITY version SYSTEM "version.xml">
+]>
+<chapter id="Why using BMixin">
+  <title></title>  
+  <section id="why-bmixin">
+    <title>Some interesting facts</title>
+    <para>
+      We will mention them here
+    </para>
+    <para>
+      And here
+    </para>
+    <programlisting language="C">
+      #include &lt;bmixin.h&gt;
+      // And here we have some code in C !!
+      void nothing (void);
+    </programlisting>
+    <para>
+      Here some
+      <type>BMixinClass</type>
+    </para>
+    <para>
+      Some link <ulink
+      url="https://developer.gnome.org/glib/stable/glib-Byte-Arrays.html#GBytes"><type>GBytes</type></ulink>
+      Function <function>bm_register_mixin</function> does things.
+    </para>
+  </section>  
+  <section id="now-what">
+    <title>So now what??</title>
+    <para>
+      Here we go
+    </para>
+  </section>  
+</chapter>

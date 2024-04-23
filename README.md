@@ -23,6 +23,11 @@ cd bombolla
 build/bombolla/tools/shell/bombolla-shell -p build/bombolla/ -i examples/cogl
 ```
 
+## Open the documentation of BMixin
+```
+./Firulais doc
+```
+
 ## FAQ
 
 ### Can I write a plugin in python?

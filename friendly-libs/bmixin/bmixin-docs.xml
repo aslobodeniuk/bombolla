@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
+               "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+  <!ENTITY % local.common.attrib "xmlns:xi  CDATA  #FIXED 'http://www.w3.org/2003/XInclude'">
+  <!ENTITY version SYSTEM "version.xml">
+]>
+<book id="index">
+  <bookinfo>
+    <title>BMixin Manual</title>
+    <abstract>
+      <title>BMixin</title>
+      <graphic fileref="light.svg" format="SVG" align="center"/>
+      <para>
+	BMIXIN ROCKS
+      </para>
+    </abstract>
+  </bookinfo>
+
+  <part id="user-manual">
+    <title>User's manual</title>
+      <xi:include href="usermanual.xml"/>
+  </part>
+
+  <part id="reference-manual">
+    <partinfo>
+      <releaseinfo>
+        This is not a release yet
+      </releaseinfo>
+    </partinfo>
+
+    <title>Reference manual</title>
+      <chapter id="bmixin-api">
+        <title>Core API</title>
+        <xi:include href="xml/bmixin.xml"/>
+      </chapter>
+
+      <index id="api-index-full"><title>API Index</title><xi:include href="xml/api-index-full.xml"><xi:fallback /></xi:include></index>
+  </part>
+</book>

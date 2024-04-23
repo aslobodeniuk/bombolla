@@ -1,6 +1,7 @@
 #!/bin/bash
 commit_mode=0
 LOGF="build/firulais-examples-test-log.txt"
+DOC_PREFIX="$PWD/build/doc-prefix"
 
 colored_msg()
 {
@@ -98,7 +99,7 @@ do_test()
 build_and_test()
 {
     message "Building"
-    meson setup build || exit 1
+    meson setup build --prefix=${DOC_PREFIX} || exit 1
     ninja -C build  || exit 1
 
     do_test $1 || exit 1
@@ -192,7 +193,17 @@ else
 	git commit
 	exit 0
     fi
-    
+    if test "x$1" = "xdoc"; then
+	meson setup build --prefix=${DOC_PREFIX} --reconfigure || exit 1
+	ninja -C build install || (angry_message "Run Firulais first" "" && exit 1)
+	if test "x$(which devhelp)" = "x"; then
+	    sensible-browser $(pwd)/build/doc-prefix/share/gtk-doc/html/bmixin/index.html &
+	else
+	    XDG_DATA_DIRS=$XDG_DATA_DIRS:$(pwd)/build/doc-prefix/share/ devhelp --search "BMixin Manual" &
+	fi
+	message "Enjoy the doc"
+	exit 0
+    fi
 
     do_indent $@
 fi
