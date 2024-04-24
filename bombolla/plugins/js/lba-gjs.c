@@ -55,7 +55,7 @@ lba_gjs_async_cmd_free (gpointer data) {
 }
 
 static void
-lba_gjs_sync_call_through_main_loop (LbaGjs *self, GSourceFunc cmd) {
+lba_gjs_sync_call_through_main_loop (LbaGjs * self, GSourceFunc cmd) {
   g_warn_if_fail (self->async_ctx == NULL);
 
   self->async_ctx = g_idle_source_new ();
@@ -108,7 +108,7 @@ lba_gjs_async_eval_file (gpointer data) {
 }
 
 static void
-lba_gjs_load_module (GObject *gobj, const gchar *module_filename) {
+lba_gjs_load_module (GObject * gobj, const gchar * module_filename) {
   LbaGjs *self = bm_get_LbaGjs (gobj);
 
   g_return_if_fail (module_filename);
@@ -119,7 +119,7 @@ lba_gjs_load_module (GObject *gobj, const gchar *module_filename) {
 }
 
 static void
-lba_gjs_init (GObject *object, LbaGjs *self) {
+lba_gjs_init (GObject * object, LbaGjs * self) {
   g_mutex_init (&self->lock);
   g_cond_init (&self->cond);
 }
@@ -137,7 +137,7 @@ lba_gjs_async_dispose (gpointer data) {
 }
 
 static void
-lba_gjs_dispose (GObject *gobject) {
+lba_gjs_dispose (GObject * gobject) {
   LbaGjs *self = bm_get_LbaGjs (gobject);
 
   lba_gjs_sync_call_through_main_loop (self, lba_gjs_async_dispose);
@@ -146,7 +146,7 @@ lba_gjs_dispose (GObject *gobject) {
 }
 
 static void
-lba_gjs_finalize (GObject *gobject) {
+lba_gjs_finalize (GObject * gobject) {
   LbaGjs *self = bm_get_LbaGjs (gobject);
 
   g_mutex_clear (&self->lock);
@@ -156,7 +156,7 @@ lba_gjs_finalize (GObject *gobject) {
 }
 
 static void
-lba_gjs_class_init (GObjectClass *object_class, LbaGjsClass *klass) {
+lba_gjs_class_init (GObjectClass * object_class, LbaGjsClass * klass) {
   LbaModuleScannerClass *lms_class;
 
   object_class->dispose = lba_gjs_dispose;

@@ -25,7 +25,7 @@
 static const gchar *global_lba_plugin_name = "LbaCore";
 
 static gboolean
-lba_command_create (BombollaContext *ctx, gchar **tokens) {
+lba_command_create (BombollaContext * ctx, gchar ** tokens) {
   const gchar *typename = tokens[1];
   const gchar *varname = tokens[2];
   GType obj_type;
@@ -64,7 +64,7 @@ lba_command_create (BombollaContext *ctx, gchar **tokens) {
 }
 
 static gboolean
-lba_command_destroy (BombollaContext *ctx, gchar **tokens) {
+lba_command_destroy (BombollaContext * ctx, gchar ** tokens) {
   const gchar *varname = tokens[1];
   GObject *obj;
 
@@ -82,7 +82,7 @@ lba_command_destroy (BombollaContext *ctx, gchar **tokens) {
 }
 
 static gboolean
-lba_command_call (BombollaContext *ctx, gchar **tokens) {
+lba_command_call (BombollaContext * ctx, gchar ** tokens) {
   const gchar *objname,
    *signame;
   GObject *obj;
@@ -327,7 +327,7 @@ lba_command_dump_type (GType plugin_type) {
 }
 
 static gboolean
-lba_command_dump (BombollaContext *ctx, gchar **tokens) {
+lba_command_dump (BombollaContext * ctx, gchar ** tokens) {
   GType t;
 
   if (NULL == tokens[1]) {
@@ -354,7 +354,7 @@ lba_command_dump (BombollaContext *ctx, gchar **tokens) {
 }
 
 static gboolean
-lba_command_bind (BombollaContext *ctx, gchar **tokens) {
+lba_command_bind (BombollaContext * ctx, gchar ** tokens) {
   gchar *prop_name1 = NULL;
   gchar *prop_name2 = NULL;
   GObject *obj1 = NULL;
@@ -450,7 +450,7 @@ done:
 }
 
 gchar *
-assemble_line (gchar **tokens) {
+assemble_line (gchar ** tokens) {
   gchar *ret;
   gint i;
 
@@ -471,7 +471,7 @@ assemble_line (gchar **tokens) {
 }
 
 static gboolean
-lba_command_log (BombollaContext *ctx, gchar **tokens) {
+lba_command_log (BombollaContext * ctx, gchar ** tokens) {
   if (NULL == tokens[1] || NULL != tokens[2]) {
     g_warning ("invalid syntax for 'log' command");
   }
@@ -482,7 +482,7 @@ lba_command_log (BombollaContext *ctx, gchar **tokens) {
 }
 
 static gboolean
-lba_command_sync (BombollaContext *ctx, gchar **tokens) {
+lba_command_sync (BombollaContext * ctx, gchar ** tokens) {
   if (NULL != tokens[1]) {
     g_warning ("invalid syntax for 'sync' command");
   }
@@ -492,18 +492,18 @@ lba_command_sync (BombollaContext *ctx, gchar **tokens) {
 }
 
 static gboolean
-lba_command_async (BombollaContext *ctx, gchar **tokens) {
+lba_command_async (BombollaContext * ctx, gchar ** tokens) {
   lba_core_shedule_async_script (ctx->self, assemble_line (tokens + 1));
   return TRUE;
 }
 
 static gboolean
-lba_comment (BombollaContext *ctx, gchar **tokens) {
+lba_comment (BombollaContext * ctx, gchar ** tokens) {
   return TRUE;
 }
 
 static gboolean
-lba_command_dna (BombollaContext *ctx, gchar **tokens) {
+lba_command_dna (BombollaContext * ctx, gchar ** tokens) {
   gint t;
   GType base_type;
   const gchar *mixed_type_name = tokens[1];

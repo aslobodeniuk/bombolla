@@ -46,7 +46,7 @@ BM_DEFINE_MIXIN (lba_cogl, LbaCogl,
 /* *INDENT-ON* */ 
 
 static void
-lba_cogl_get_ctx (GObject *obj, CoglContext **ctx, CoglPipeline **pipeline) {
+lba_cogl_get_ctx (GObject * obj, CoglContext ** ctx, CoglPipeline ** pipeline) {
   LbaCogl *self = bm_get_LbaCogl (obj);
 
   if (ctx)
@@ -57,13 +57,13 @@ lba_cogl_get_ctx (GObject *obj, CoglContext **ctx, CoglPipeline **pipeline) {
 }
 
 static void
-lba_cogl_icogl_init (LbaICogl *iface) {
+lba_cogl_icogl_init (LbaICogl * iface) {
   /* The rest will be implemented by the children */
   iface->get_ctx = lba_cogl_get_ctx;
 }
 
 static void
-lba_cogl_draw (BaseDrawable *obj) {
+lba_cogl_draw (BaseDrawable * obj) {
   LbaCogl *self = bm_get_LbaCogl (obj);
   LbaICogl *iface;
 
@@ -90,7 +90,7 @@ done:
 }
 
 static void
-lba_cogl_scene_reopen (GObject *scene, gpointer user_data) {
+lba_cogl_scene_reopen (GObject * scene, gpointer user_data) {
   LbaICogl *iface;
   LbaCogl *self = bm_get_LbaCogl (user_data);
 
@@ -111,7 +111,8 @@ lba_cogl_scene_reopen (GObject *scene, gpointer user_data) {
 }
 
 void
-lba_cogl_has_drawing_scene (GObject *gobject, GParamSpec *pspec, gpointer user_data) {
+lba_cogl_has_drawing_scene (GObject * gobject, GParamSpec * pspec,
+                            gpointer user_data) {
   BaseDrawable *drawable = (BaseDrawable *) gobject;
 
   /* Cache pipeline/fb from the drawing scene that must be LbaCoglWindow */
@@ -142,14 +143,14 @@ lba_cogl_has_drawing_scene (GObject *gobject, GParamSpec *pspec, gpointer user_d
 }
 
 static void
-lba_cogl_init (GObject *obj, LbaCogl *self) {
+lba_cogl_init (GObject * obj, LbaCogl * self) {
   g_mutex_init (&self->lock);
   g_signal_connect (obj, "notify::drawing-scene",
                     G_CALLBACK (lba_cogl_has_drawing_scene), NULL);
 }
 
 static void
-lba_cogl_finalize (GObject *gobject) {
+lba_cogl_finalize (GObject * gobject) {
   LbaCogl *self = bm_get_LbaCogl (gobject);
 
   LBA_LOG ("finalize");
@@ -164,7 +165,7 @@ lba_cogl_finalize (GObject *gobject) {
 }
 
 static void
-lba_cogl_class_init (GObjectClass *gobject_class, LbaCoglClass *mixin_class) {
+lba_cogl_class_init (GObjectClass * gobject_class, LbaCoglClass * mixin_class) {
   BaseDrawableClass *base_drawable_class = (BaseDrawableClass *) gobject_class;
 
   base_drawable_class->draw = lba_cogl_draw;

@@ -50,7 +50,7 @@ BM_DEFINE_MIXIN (lba_cogl_cube, LbaCoglCube,
 /* *INDENT-ON* */ 
 
 static void
-lba_cogl_cube_paint (GObject *obj, CoglFramebuffer *fb, CoglPipeline *pipeline) {
+lba_cogl_cube_paint (GObject * obj, CoglFramebuffer * fb, CoglPipeline * pipeline) {
   int framebuffer_width;
   int framebuffer_height;
   float rotation = 75.0;
@@ -83,8 +83,8 @@ lba_cogl_cube_paint (GObject *obj, CoglFramebuffer *fb, CoglPipeline *pipeline) 
 }
 
 static void
-lba_cogl_cube_reopen (GObject *base, CoglFramebuffer *fb,
-                      CoglPipeline *pipeline, CoglContext *ctx) {
+lba_cogl_cube_reopen (GObject * base, CoglFramebuffer * fb,
+                      CoglPipeline * pipeline, CoglContext * ctx) {
   LbaCoglCube *self = bm_get_LbaCoglCube (base);
   LbaI3D *iface3d = G_TYPE_INSTANCE_GET_INTERFACE (base,
                                                    LBA_I3D,
@@ -178,15 +178,16 @@ lba_cogl_cube_reopen (GObject *base, CoglFramebuffer *fb,
 }
 
 static void
-lba_cogl_cube_init (GObject *object, LbaCoglCube *mixin) {
+lba_cogl_cube_init (GObject * object, LbaCoglCube * mixin) {
 }
 
 static void
-lba_cogl_cube_class_init (GObjectClass *object_class, LbaCoglCubeClass *mixin_class) {
+lba_cogl_cube_class_init (GObjectClass * object_class,
+                          LbaCoglCubeClass * mixin_class) {
 }
 
 static void
-lba_cogl_cube_icogl_init (LbaICogl *iface) {
+lba_cogl_cube_icogl_init (LbaICogl * iface) {
   iface->paint = lba_cogl_cube_paint;
   iface->reopen = lba_cogl_cube_reopen;
 }
