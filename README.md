@@ -1,6 +1,6 @@
 ![Ubuntu build & unit tests](https://github.com/aslobodeniuk/bombolla/actions/workflows/ubuntu.yml/badge.svg)
 # bombolla
-![logo](doc/logo/light_solid.svg)
+![logo](doc/logo/dark1.svg)
 
 Currently bombolla is a space to play with technologies.
 It is some kind of object-oriented shell/DSL that allows to manipulate plugins.
