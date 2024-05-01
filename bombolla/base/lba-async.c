@@ -42,9 +42,6 @@ typedef struct {
 
 typedef struct _LbaAsync {
   BMixinInstance i;
-  /* TODO: move to BMixin struct */
-  GObject *mami;
-  /* -------------------------------- */
 
   GMutex lock;
   GCond cond;
@@ -79,15 +76,8 @@ static void lba_async_class_init (GObjectClass *, LbaAsyncClass *);
 static void lba_async_init (GObject *, LbaAsync *);
 static LbaAsync *bm_get_LbaAsync (gpointer gobject);
 static LbaAsyncClass *bm_class_get_LbaAsync (gpointer gobject);
-static void
-lba_async_proxy_class_init (gpointer class, gpointer p) {
-  lba_async_class_init (class, bm_class_get_LbaAsync (class));
-}
-
-static void
-lba_async_proxy_init (GTypeInstance * instance, gpointer p) {
-  lba_async_init (G_OBJECT (instance), bm_get_LbaAsync (instance));
-}
+static void lba_async_proxy_class_init (gpointer class, gpointer p);
+static void lba_async_proxy_init (GTypeInstance * instance, gpointer p);
 
 static const BMParams lba_async_bmixin_params[] = { };
 
@@ -102,6 +92,30 @@ static BMInfo lba_async_info = {
   .params = lba_async_bmixin_params,
   .num_params = G_N_ELEMENTS (lba_async_bmixin_params)
 };
+
+static void
+lba_async_proxy_class_init (gpointer class, gpointer p) {
+  BMixinClass *bmc = (BMixinClass *) bm_class_get_LbaAsync (class);
+
+  bmc->type_class.g_type = lba_async_info.type;
+  bmc->root_object_class = (GObjectClass *) class;
+  bmc->chainup_class = (GObjectClass *)
+      g_type_class_peek (g_type_parent
+                         (bm_type_peek_mixed_type
+                          (G_TYPE_FROM_CLASS (class), lba_async_info.type)));
+
+  lba_async_class_init (class, bm_class_get_LbaAsync (class));
+}
+
+static void
+lba_async_proxy_init (GTypeInstance * instance, gpointer gclass) {
+  BMixinInstance *bmi = (BMixinInstance *) bm_get_LbaAsync (instance);
+
+  bmi->type_instance.g_class = bm_class_get_mixin (gclass, lba_async_info.type);
+  bmi->root_object = (GObject *) instance;
+
+  lba_async_init (G_OBJECT (instance), bm_get_LbaAsync (instance));
+}
 
 GType
 lba_async_get_type (void) {
@@ -159,7 +173,7 @@ static gboolean
 lba_async_dispose_cmd (gpointer ptr) {
   LbaAsync *self = (LbaAsync *) ptr;
 
-  BM_CHAINUP (self->mami, lba_async, GObject)->dispose (self->mami);
+  BM_CHAINUP (self, GObject)->dispose (BM_GET_GOBJECT (self));
   return G_SOURCE_REMOVE;
 }
 
@@ -175,7 +189,7 @@ static gboolean
 lba_async_finalize_cmd (gpointer ptr) {
   LbaAsync *self = (LbaAsync *) ptr;
 
-  BM_CHAINUP (self->mami, lba_async, GObject)->finalize (self->mami);
+  BM_CHAINUP (self, GObject)->finalize (BM_GET_GOBJECT (self));
   return G_SOURCE_REMOVE;
 }
 
@@ -199,15 +213,16 @@ static gboolean
 lba_async_toggle_notify_cmd (gpointer ptr) {
   LbaAsync *self = (LbaAsync *) ptr;
 
-  g_object_remove_toggle_ref (self->mami, lba_async_toggle_notify, self);
+  g_object_remove_toggle_ref (BM_GET_GOBJECT (self), lba_async_toggle_notify, self);
 
   if (self->obj_toggle_refs) {
-    if (g_object_get_qdata (self->mami, toggle_refs_qrk)) {
+    if (g_object_get_qdata (BM_GET_GOBJECT (self), toggle_refs_qrk)) {
       g_critical ("Can't restore the initial toggle refs, because there're"
                   " other ones... May leak this object..");
     } else {
       LBA_LOG ("Warning: Dirtiest hack!! restoring the original toggle refs");
-      g_object_set_qdata (self->mami, toggle_refs_qrk, self->obj_toggle_refs);
+      g_object_set_qdata (BM_GET_GOBJECT (self), toggle_refs_qrk,
+                          self->obj_toggle_refs);
       self->obj_toggle_refs = NULL;
     }
   }
@@ -233,7 +248,7 @@ static gboolean
 lba_async_constructed_cmd (gpointer ptr) {
   LbaAsync *self = (LbaAsync *) ptr;
 
-  BM_CHAINUP (self->mami, lba_async, GObject)->constructed (self->mami);
+  BM_CHAINUP (self, GObject)->constructed (BM_GET_GOBJECT (self));
   return G_SOURCE_REMOVE;
 }
 
@@ -378,8 +393,6 @@ lba_async_class_init (GObjectClass * gobject_class, LbaAsyncClass * self_class) 
 
 static void
 lba_async_init (GObject * object, LbaAsync * self) {
-  self->mami = object;
-
   g_mutex_init (&self->lock);
   g_cond_init (&self->cond);
 }

@@ -150,7 +150,7 @@ lba_gjs_dispose (GObject * gobject) {
 
   lba_gjs_sync_call_through_main_loop (self, lba_gjs_async_dispose);
 
-  BM_CHAINUP (gobject, lba_gjs, GObject)->dispose (gobject);
+  BM_CHAINUP (self, GObject)->dispose (gobject);
 }
 
 static void
@@ -160,7 +160,7 @@ lba_gjs_finalize (GObject * gobject) {
   g_mutex_clear (&self->lock);
   g_cond_clear (&self->cond);
 
-  BM_CHAINUP (gobject, lba_gjs, GObject)->finalize (gobject);
+  BM_CHAINUP (self, GObject)->finalize (gobject);
 }
 
 static void

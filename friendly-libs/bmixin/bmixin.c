@@ -35,7 +35,10 @@
 
 #include <bmixin/bmixin.h>
 
-static GTypeInfo empty_info;
+static GTypeInfo bmixin_fundamental_info = {
+  .class_size = sizeof (BMixinClass),
+  .instance_size = sizeof (BMixinInstance)
+};
 
 GQuark
 bmixin_info_qrk (void) {
@@ -47,12 +50,14 @@ bmixin_info_qrk (void) {
 GType
 bm_fundamental_get_type (void) {
   static GType ret;
-  GTypeFundamentalInfo finfo = { G_TYPE_FLAG_DERIVABLE };
+  GTypeFundamentalInfo finfo =
+      { G_TYPE_FLAG_DERIVABLE | G_TYPE_FLAG_INSTANTIATABLE | G_TYPE_FLAG_CLASSED };
   if (G_LIKELY (ret))
     return ret;
 
-  return (ret = g_type_register_fundamental (g_type_fundamental_next (),
-                                             "BMixin", &empty_info, &finfo, 0));
+  return (ret = g_type_register_fundamental
+          (g_type_fundamental_next (),
+           "BMixin", &bmixin_fundamental_info, &finfo, 0));
 }
 
 GType
@@ -220,7 +225,7 @@ bm_register_mixin (const gchar * mixin_name, BMInfo * minfo) {
 
   ret =
       g_type_register_static (bm_fundamental_get_type (), mixin_name,
-                              &empty_info, 0);
+                              &bmixin_fundamental_info, 0);
 
   g_return_val_if_fail (ret != 0, 0);
 

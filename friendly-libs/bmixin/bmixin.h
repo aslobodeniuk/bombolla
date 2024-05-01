@@ -55,11 +55,21 @@
  * that is linear. The mixins are applied one after another in some order.
  */
 
+/**
+ * BMAddType: (skip)
+ *
+ * Used internally by BM_DEFINE_MIXIN()
+ */
 typedef enum {
   BM_ADD_TYPE_IFACE,
   BM_ADD_TYPE_DEP,
 } BMAddType;
 
+/**
+ * BMParams: (skip)
+ *
+ * Used internally by BM_DEFINE_MIXIN()
+ */
 typedef struct {
   BMAddType add_type;
   /* wtf is wrong with the indent here?? */
@@ -67,6 +77,11 @@ typedef struct {
   GInterfaceInfo iface_info;
 } BMParams;
 
+/**
+ * BMInfo: (skip)
+ *
+ * Used internally by BM_DEFINE_MIXIN()
+ */
 typedef struct {
   GTypeInfo info;
   GType type;
@@ -76,7 +91,8 @@ typedef struct {
 
 /**
  * BMixin:
- * @type: A #GType value.
+ * @type_instance: a #GTypeInstance
+ * @root_object: a pointer to the root object instance
  *
  * A structure to put as a first member of your mixin structure.
  * It provides various things:
@@ -87,23 +103,53 @@ typedef struct {
  */
 typedef struct {
   GTypeInstance type_instance;
-  GObject *base_object;
+  GObject *root_object;
 } BMixinInstance;
 
 typedef struct {
   GTypeClass type_class;
-  GObjectClass *base_object_class;
+  GObjectClass *root_object_class;
+  GObjectClass *chainup_class;
 } BMixinClass;
 
-/* We should invent good strong naming. What is mixin, what is mixin instance, mixin class, mixin base object, mixin base object class */
-#  define BM_GET_GOBJECT(mx) (BMIXIN (mx)->base_object) /* TODO */
-#  define BM_CLASS_GET_GOBJECT_CLASS(mclass)    /* TODO */
-#  define BM_GOBJECT_LOOKUP_MIXIN(obj, gtype)   /* TODO */
+/**
+ * BMIXIN:
+ * @instance:
+ *
+ * Macro used to cast the mixin instance to BMixin.
+ * Also performs a sanity check.
+ */
+#  define BMIXIN(mx) (G_TYPE_CHECK_INSTANCE_CAST ((mx), BM_TYPE_MIXIN, BMixinInstance))
 
+/**
+ * BM_GET_GOBJECT:
+ *
+ * Points from a mixin instance to the mixed object instance
+ */
+#  define BM_GET_GOBJECT(mx) (BMIXIN (mx)->root_object)
+
+/**
+ * BM_GET_CLASS:
+ *
+ * Get the class of the mixin
+ */
+#  define BM_GET_CLASS(mx) (G_TYPE_INSTANCE_GET_CLASS ((mx), BM_TYPE_MIXIN, BMixinClass))
+
+/**
+ * BM_CLASS_VFUNC_OFFSET:
+ *
+ * Use this macro when attaching a signal to #BMixin
+ */
 /* FIXME: how to protect user from putting G_STRUCT_OFFSET ?? */
-#  define BM_CLASS_VFUNC_OFFSET(mclass,member)                            \
-  (((gpointer)&mclass->member - (gpointer)mclass) + ((gpointer)mclass - (gpointer)((BMixinClass*)mclass)->base_object_class))
+/* TODO: make a static function with type checks */
+#  define BM_CLASS_VFUNC_OFFSET(mclass,member)                          \
+  (((gpointer)&mclass->member - (gpointer)mclass) + ((gpointer)mclass - (gpointer)((BMixinClass*)mclass)->root_object_class))
 
+/**
+ * BM_TYPE_MIXIN:
+ *
+ * Fundamental GType of BMixin
+ */
 #  define BM_TYPE_MIXIN bm_fundamental_get_type ()
 
 /**
@@ -115,9 +161,6 @@ typedef struct {
  * Returns: %TRUE if @type is a mixin
  */
 #  define BM_GTYPE_IS_BMIXIN(type) (G_TYPE_FUNDAMENTAL (type) == BM_TYPE_MIXIN)
-
-/* TODO put this cast everywhere */
-#  define BMIXIN(object) (G_TYPE_CHECK_INSTANCE_CAST ((object), BM_TYPE_MIXIN, BMixin))
 
 /**
  * bm_fundamental_get_type:
@@ -163,54 +206,10 @@ GType bm_register_mixed_type (const gchar * mixed_type_name,
                               GType base_type, GType mixin);
 
 /**
- * bm_register_mixin:
- * @mixin_name: name of the mixin
- * @minfo: a completed #BMInfo structure. Note that this pointer must remain valid during
- *   all the lifetime of the proccess. The most usual option for it is a `static` storage.
- *   Also note that the `type` field of #BMInfo is going to be completed by this function,
- *   so there's no need to fill it.
+ * bm_register_mixin: (skip)
  *
- * In a usual case you won't need this function because using BM_DEFINE_MIXIN() is much
- * simpler, and it covers most of the cases. However to get some extended control on
- * registering your mixin this function can be used. One of the real life cases -
- * is a need to set the `base_init()` callback in #GType-info of the result mixed type.
- * An example of using this function could be:
- * ```c
- * static const BMParams hello_mixin_params[] = {0}; // can add deps here
- * static BMInfo hello_info = {
- *   .info = {
- *     .class_init = hello_class_init,
- *     .instance_init = hello_init,
- *     .class_size = sizeof (HelloClass),
- *     .instance_size = sizeof (Hello),
- *     .base_init = hello_base_init
- *   },
- *   .params = hello_mixin_params,
- *   .num_params = G_N_ELEMENTS (hello_params)
- * };
- *
- * static Hello *
- * bm_get_Hello (gpointer gobject) {
- *   return bm_instance_get_mixin (gobject, hello_info.type);
- * }
- *
- * static HelloClass *
- * bm_class_get_Hello (gpointer class) {
- *   return bm_class_get_mixin (class, hello_info.type);
- * }
- *
- * GType hello_get_type (void) {
- *   static GType stype_id = 0;
- *   if (g_once_init_enter_pointer (&stype_id)) {
- *     GType type_id = bm_register_mixin ("HelloMixin", &hello_info);
- *     g_once_init_leave_pointer (&stype_id, type_id);
- *   }
- *   return stype_id;
- * }
- * ```
- *
- * Returns: a #GType of newly registered mixin
- */
+ * Used internally by BM_DEFINE_MIXIN()
+*/
 GType bm_register_mixin (const gchar * mixin_name, BMInfo * minfo);
 
 /**
@@ -257,9 +256,11 @@ GQuark bmixin_info_qrk (void);
  * BM_ADD_IFACE:
  * 
  * link current mixin to the `iface_init` function.
+ * This macro is used together with BM_DEFINE_MIXIN()
+ *
  * Example:
- * ```c
- * static void
+ * |[<!-- language="C" -->
+ *  static void
  *  lba_cogl_cube_icogl_init (LbaICogl * iface);
  *
  *  BM_DEFINE_MIXIN (lba_cogl_cube, LbaCoglCube,
@@ -274,17 +275,27 @@ GQuark bmixin_info_qrk (void);
  *   iface->paint = lba_cogl_cube_paint;
  *   iface->reopen = lba_cogl_cube_reopen;
  * }
- * ```
+ * ]|
  */
-/* FIXME: ambiguos name. Better B_ADD_IFACE */
 #  define BM_ADD_IFACE(head, body, iface, ...)                   \
   { .add_type = BM_ADD_TYPE_IFACE, .gtype = head##_##iface##_get_type,  \
         .iface_info = { (GInterfaceInitFunc)head##_##body##_##iface##_init, __VA_ARGS__ } }
 
-/* B_DEFINE_BMIXIN ?? */
 /**
  * BM_DEFINE_MIXIN:
- * TODO, epic
+ *
+ * Define a new mixin.
+ * This macro will define a get_type function for the mixin type,
+ * similar to G_DEFINE_TYPE for GObject.
+ *
+ * Example:
+ * |[<!-- language="C" -->
+ *  BM_DEFINE_MIXIN (lba_cogl_cube, LbaCoglCube,
+ *      BM_ADD_IFACE (lba, cogl_cube, icogl),
+ *      BM_ADD_DEP (lba_cogl),
+ *      BM_ADD_DEP (lba_mixin_3d));
+ * ]|
+ * 
  */
 #  define BM_DEFINE_MIXIN(name, Name, ...)                        \
   static void name##_class_init (GObjectClass *, Name##Class*);   \
@@ -308,11 +319,15 @@ GQuark bmixin_info_qrk (void);
   };                                                                    \
                                                                   \
 static void                                                       \
-  name##_proxy_class_init (gpointer class, gpointer p)            \
+ name##_proxy_class_init (gpointer class, gpointer p)             \
   {                                                               \
     BMixinClass *bmc = (BMixinClass *)bm_class_get_##Name (class);  \
     bmc->type_class.g_type = name##_info.type;                    \
-    bmc->base_object_class = (GObjectClass*) class;               \
+    bmc->root_object_class = (GObjectClass*) class;               \
+    bmc->chainup_class = (GObjectClass *)g_type_class_peek (            \
+        g_type_parent (                                                 \
+        bm_type_peek_mixed_type (G_TYPE_FROM_CLASS (class),             \
+            name##_info.type)));                                        \
     G_STATIC_ASSERT (sizeof (GTypeClass) == sizeof (GType));      \
     name##_class_init (class, (Name##Class*)bmc);                 \
   }                                                               \
@@ -321,8 +336,8 @@ static void                                                       \
   name##_proxy_init (GTypeInstance * instance, gpointer gclass)         \
   {                                                                     \
     BMixinInstance *bmi = (BMixinInstance *)bm_get_##Name (instance);   \
-    bmi->type_instance.g_class = gclass;                                \
-    bmi->base_object = (GObject*) instance;                             \
+    bmi->type_instance.g_class = bm_class_get_mixin (gclass, name##_info.type); \
+    bmi->root_object = (GObject*) instance;                             \
     G_STATIC_ASSERT (sizeof (GTypeInstance) == sizeof (gpointer));      \
                                                                         \
     name##_init (G_OBJECT (instance), (Name*)bmi);                      \
@@ -342,32 +357,22 @@ static void                                                       \
     return bm_instance_get_mixin (gobject, name##_info.type);        \
   }                                                                     \
   static Name##Class *bm_class_get_##Name (gpointer gobject) {          \
-    return bm_class_get_mixin (gobject, name##_info.type);           \
-  }                                                                     \
+    return bm_class_get_mixin (gobject, name##_info.type);              \
+  }
 
 /**
  * BM_CHAINUP:
  *
  * @gobject: instance of the GObject (not bmixin private data)
- * @name: identifyer of the mixin we are going to chainup from
  * @Parent: return value will be casted to the Parent+Class
  *
  * Returns: the parent class - previous class in the inheiritance
  * tree, relatively to the mixin, identified by @name.
  *
- * ```C
- *   BM_CHAINUP (gobject, lba_cogl, GObject)->dispose (gobject);
- * ```
+ * |[<!-- language="C" -->
+ *   BM_CHAINUP (mixin, GObject)->dispose (gobject);
+ * ]|
  */
-#  define BM_CHAINUP(gobject, name, Parent)                             \
-  ((Parent##Class*)                                                     \
-      g_type_class_peek (                                               \
-        g_type_parent (                                                 \
-          bm_type_peek_mixed_type (                                     \
-            G_TYPE_FROM_INSTANCE(gobject),                              \
-            name##_info.type)                                           \
-          )))
-/* TODO: way faster solution - cache the pointers in the BMixin base struct.
- * Pointers to cache: gobject, gobject_class, gobject_parent_class, gmo_info.
- */
+#  define BM_CHAINUP(mixin, Parent) ((Parent##Class*)(BM_GET_CLASS (mixin)->chainup_class))
+
 #endif /* _BMIXIN_H */

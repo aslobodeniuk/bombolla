@@ -176,7 +176,7 @@ lba_python_constructed (GObject * gobject) {
   self->py_run_simple_string ("from gi.repository import GObject");
   self->initialized = TRUE;
 
-  BM_CHAINUP (gobject, lba_python, GObject)->constructed (gobject);
+  BM_CHAINUP (self, GObject)->constructed (gobject);
 }
 
 static void
@@ -195,7 +195,7 @@ lba_python_dispose (GObject * gobject) {
     self->py_run_simple_string ("print('Bombolla home python goes to sleep')");
   }
 
-  BM_CHAINUP (gobject, lba_python, GObject)->dispose (gobject);
+  BM_CHAINUP (self, GObject)->dispose (gobject);
 }
 
 static void
@@ -208,7 +208,7 @@ lba_python_finalize (GObject * gobject) {
     self->py_finalize ();
   }
 
-  BM_CHAINUP (gobject, lba_python, GObject)->finalize (gobject);
+  BM_CHAINUP (self, GObject)->finalize (gobject);
 }
 
 static void

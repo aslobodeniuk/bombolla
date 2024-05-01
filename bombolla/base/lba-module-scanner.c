@@ -235,7 +235,7 @@ lba_module_scanner_finalize (GObject * gobject) {
   g_array_unref (self->threads);
   g_free (self->plugin_path);
 
-  BM_CHAINUP (gobject, lba_module_scanner, GObject)->finalize (gobject);
+  BM_CHAINUP (self, GObject)->finalize (gobject);
 }
 
 static void

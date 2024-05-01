@@ -169,7 +169,7 @@ lba_cogl_finalize (GObject * gobject) {
 
   g_mutex_clear (&self->lock);
 
-  BM_CHAINUP (gobject, lba_cogl, GObject)->dispose (gobject);
+  BM_CHAINUP (self, GObject)->dispose (gobject);
 }
 
 static void

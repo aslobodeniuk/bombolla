@@ -171,7 +171,7 @@ lba_core_dispose (GObject * gobject) {
     lba_core_stop (self);
   }
 
-  BM_CHAINUP (gobject, lba_core, GObject)->dispose (gobject);
+  BM_CHAINUP (self, GObject)->dispose (gobject);
 }
 
 static void
@@ -182,7 +182,7 @@ lba_core_finalize (GObject * gobject) {
   g_mutex_clear (&self->lock);
   g_cond_clear (&self->cond);
 
-  BM_CHAINUP (gobject, lba_core, GObject)->finalize (gobject);
+  BM_CHAINUP (self, GObject)->finalize (gobject);
 }
 
 static gboolean
