@@ -113,6 +113,22 @@ typedef struct {
 } BMixinClass;
 
 /**
+ * bm_fundamental_get_type:
+ *
+ * The fundamental type for BMixin.
+ *
+ * Returns: a #GType that represents the fundamental type for BMixin
+ */
+GType bm_fundamental_get_type (void);
+
+/**
+ * BM_TYPE_MIXIN:
+ *
+ * Fundamental GType of BMixin
+ */
+#  define BM_TYPE_MIXIN bm_fundamental_get_type ()
+
+/**
  * BMIXIN:
  * @instance:
  *
@@ -139,18 +155,32 @@ typedef struct {
  * BM_CLASS_VFUNC_OFFSET:
  *
  * Use this macro when attaching a signal to #BMixin
+ * Example:
+ * |[<!-- language="C" -->
+ * lba_core_signals[SIGNAL_EXECUTE] =
+ *    g_signal_new ("execute", G_TYPE_FROM_CLASS (object_class),
+ *                  G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+ *                  BM_CLASS_VFUNC_OFFSET (klass, execute),
+ *                  NULL, NULL,
+ *                  g_cclosure_marshal_VOID__STRING,
+ *                  G_TYPE_NONE, 1, G_TYPE_STRING, G_TYPE_NONE);
+ * ]|
  */
-/* FIXME: how to protect user from putting G_STRUCT_OFFSET ?? */
-/* TODO: make a static function with type checks */
-#  define BM_CLASS_VFUNC_OFFSET(mclass,member)                          \
-  (((gpointer)&mclass->member - (gpointer)mclass) + ((gpointer)mclass - (gpointer)((BMixinClass*)mclass)->root_object_class))
+#  define BM_CLASS_VFUNC_OFFSET(mclass,member) _BM_CLASS_VFUNC_OFFSET (mclass, &mclass->member)
 
-/**
- * BM_TYPE_MIXIN:
- *
- * Fundamental GType of BMixin
- */
-#  define BM_TYPE_MIXIN bm_fundamental_get_type ()
+static inline int
+_BM_CLASS_VFUNC_OFFSET (gpointer mclass, gpointer member) {
+  BMixinClass *bmc = (BMixinClass *) mclass;
+
+  g_return_val_if_fail (mclass != NULL, 0);
+  g_return_val_if_fail (member != NULL, 0);
+  g_return_val_if_fail (G_TYPE_CHECK_CLASS_TYPE (bmc, BM_TYPE_MIXIN), 0);
+
+  int struct_offset = member - mclass;
+  int root_offset = mclass - (gpointer) bmc->root_object_class;
+
+  return root_offset + struct_offset;
+}
 
 /**
  * BM_GTYPE_IS_BMIXIN:
@@ -161,15 +191,6 @@ typedef struct {
  * Returns: %TRUE if @type is a mixin
  */
 #  define BM_GTYPE_IS_BMIXIN(type) (G_TYPE_FUNDAMENTAL (type) == BM_TYPE_MIXIN)
-
-/**
- * bm_fundamental_get_type:
- *
- * The fundamental type for BMixin.
- *
- * Returns: a #GType that represents the fundamental type for BMixin
- */
-GType bm_fundamental_get_type (void);
 
 /**
  * bm_register_mixed_type:
