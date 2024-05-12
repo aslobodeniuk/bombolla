@@ -3,6 +3,11 @@ project('bombolla', 'c', 'vala',
         meson_version: '>= 0.58',
         default_options: ['buildtype=debug',])
 
+asan_dep = declare_dependency(
+  compile_args: ['-fsanitize=address', '-fno-omit-frame-pointer', '-g', '-O0', '-fno-inline'],
+  link_args: ['-fsanitize=address'],
+)
+
 subdir('friendly-libs')
 
 bombolla_dep = declare_dependency(
@@ -12,11 +17,6 @@ bombolla_dep = declare_dependency(
                  dependency('gio-2.0'),
                  bmixin_dep],
   compile_args: ['-Wall', '-Werror', '-Wfatal-errors']
-)
-
-asan_dep = declare_dependency(
-  compile_args: ['-fsanitize=address', '-fno-omit-frame-pointer', '-g', '-O0', '-fno-inline'],
-  link_args: ['-fsanitize=address'],
 )
 
 cc = meson.get_compiler('c')

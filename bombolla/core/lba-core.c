@@ -45,9 +45,6 @@ static guint lba_core_signals[LAST_SIGNAL] = { 0 };
 typedef struct _LbaCore {
   BMixinInstance i;
   BombollaContext *ctx;
-  /* FIXME: to BMixin */
-  GObject *papi;
-  /* ---------------- */
 
   gboolean started;
   GThread *mainloop_thr;
@@ -122,8 +119,6 @@ lba_core_stop (LbaCore * self) {
 
 static void
 lba_core_init (GObject * object, LbaCore * self) {
-  self->papi = object;
-
   g_mutex_init (&self->async_cmd_guard);
   g_mutex_init (&self->lock);
   g_cond_init (&self->cond);
@@ -334,7 +329,7 @@ static gboolean
 lba_core_async_cmd (gpointer data) {
   LbaCoreAsyncCmd *ctx = (LbaCoreAsyncCmd *) data;
 
-  lba_core_execute (ctx->core->papi, ctx->command);
+  lba_core_execute (BM_GET_GOBJECT (ctx->core), ctx->command);
 
   return G_SOURCE_REMOVE;
 }

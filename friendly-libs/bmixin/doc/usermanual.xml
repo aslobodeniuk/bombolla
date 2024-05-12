@@ -4,35 +4,283 @@
   <!ENTITY % local.common.attrib "xmlns:xi  CDATA  #FIXED 'http://www.w3.org/2003/XInclude'">
   <!ENTITY version SYSTEM "version.xml">
 ]>
-<chapter id="Why using BMixin">
-  <title></title>  
-  <section id="why-bmixin">
-    <title>Some interesting facts</title>
+<chapter id="What does BMixin implement">
+  <title>What it does</title>  
+  <section id="what-it-does">
+    <title>What it does</title>
     <para>
-      We will mention them here
+      BMixin provides a multiple inheiritance to GObject.
+    </para>
+  </section>
+  <section id="multiple-inheiritance">
+    <title>Multiple inheiritance</title>
+    <para>
+      Designing an extensible codebase, if it is supposed to implement a matrix of usecases, usually brings
+      one well known idea: writing each element of the matrix by separate.
     </para>
     <para>
-      And here
+      If the object-oriented paradigm is chosen, this problem is usually resolved with <ulink
+      url="https://en.wikipedia.org/wiki/Multiple_inheritance"><type>multiple inheiritance</type></ulink>.
+    </para>
+    <para>
+      Multiple inheiritance is widely-used with C++ and other popular programming languages, even though the
+      approach still varies from one to another technology.
+    </para>
+    <para>
+      One of such approaches is called <ulink
+      url="https://en.wikipedia.org/wiki/Mixin"><type>Mixin</type></ulink>.
+    </para>
+    <para>
+      BMixin stands for <emphasis>Bombolla Mixin</emphasis> - it brings multiple inheiritance to C programming through mixins.
+    </para>
+  </section>
+  <section id="side-effects">
+    <title>Powerful side effects</title>
+    <para>
+      One very interesting side effect to mention: it allows to build a single object from classes and mixins
+      written in various programming languages. For example, a class can be written in Python or JS, but
+      using BMixin, another class can be a result of this base class plus any amount of mixins written in C.
+      Such class can be instantiated and used from any programming language as well.
+    </para>
+    <para>
+      Currently BMixin mixins can only be written in C and C++, just because it has C API, but it seems to be
+      easily extendible to any programming language with language bindings (none are implemented so far).
+    </para>
+    <para>
+      Another powerful effect of BMixin, that is actuall provided by GObject, together with other features of
+      GLib Dynamic Type System is that classes can be built in runtime.
+    </para>      
+  </section>
+  <section id="multiple-inheiritance-c">
+    <title>Multiple inheiritance in C</title>
+    <para>
+      For C programming theres no well-established approach yet. While linear inheiritance is trivial and can
+      be implemented by simply putting one structure into beginning of another, when it comes to a tree of
+      parents, existing implemented solutions (such as interfaces) still do not seem to be completely straightforward.
+    </para>
+    <para>
+      One of the goals of BMixin is to address multiple inheiritance problem in a way that would be clear in details
+      (such as order of method overrides).
+    </para>
+  </section>
+  <section id="why-gobject">
+    <title>Why GObject</title>
+    <para>
+      GObject and <ulink
+      url="https://docs.gtk.org/gobject/concepts.html"><type>GLib Dynamic Type System</type></ulink> is usually understood
+      as a framework that brings object oriented programming to C, but author of this chapter thinks that
+      such description is quite misleading: it may make someone use GObject where it's not needed, and not use it where it is needed.
+      As a consequency we find it in a base of many good technologies as a fact, but cant answer ourselves why it is there.
+    </para>
+    <para>
+      Author proposes to look on libgobject as a library thats goal is to <emphasis>give a control on the types and values to the code</emphasis>.
+      This makes some parts of this code heavily verbose and non-efficient, but it brings one very powerful feature: if the value
+      is controlled, it can be serialized, sent somewhere and then deserialized back.
+    </para>
+    <para>
+      The most trivial use of this feature is a cross-language development. Code wrapped into GObject can be instantiated and used from
+      any programming language, where libgobject works as a glue between two ABIs.
+    </para>
+    <para>
+      Probably this could be a convenient description for libgobject - <emphasis>a glue between two ABIs</emphasis>.
+    </para>
+    <para>
+      For example, there are two popular frameworks that are based on libgobject: GStreamer and GTK. Using only
+      libgobject the user can instantiate, set properties, execute actions, and set callbacks on its elements without
+      having any more ABI then libgobjects one.
+    </para>
+    <para>
+      Lets list what it provides:
+    </para>
+    <para>
+      - no need to link your code with the binary that implements such an element. This simplifies a lot creating a plugin-based system.
+    </para>
+    <para>
+      - the element can be controlled from any code that uses libgobject, this code could even be a glue receiving data from a socket or a file - any binary stream in fact.
+    </para>
+    <para>
+      To give a bit more hint to dear reader lets mention another technologies with a similar goal: Microsofts COM (Component Object Model, base of DirectX and many other frameworks for Windows). QObject from Qt framework. CORBA objects.
+    </para>
+    <para>
+      As a conclusion we can say that GObject is a good choice for: development of flexible frameworks, connecting two or more programming languages in one program, implementing a plugin system. And now lets bring back that it also comes with a flexible object oriented paradigm.
+    </para>
+  </section>
+    <section id="how-exactly">
+    <title>How exactly BMixin implements Multiple Inheiritance</title>
+    <para>
+      Mixins are defined with BM_DEFINE_MIXIN().
+      Every mixin can also depend on other mixins, and all this can be seen as a dependency graph.
+    </para>
+    <para>
+      For example, if we define a mixin of type Dog, you can instantiate this mixin and use its instance, but at the same time at any moment in runtime you can also define another mixin of type Wolf, that will depend on the Dog.
+    </para>
+    <para>
+      New type Wolf will inherit all the dependency tree of the Dog, but apart from Dog it can also have more dependencies, such as ForestAnimal.
+      So both Dog and Wolf will be instantiable.
+    </para>
+  <para>
+      Lets imagine dependency graph of the Wolf:
+  </para>
+  <programlisting language="X">
+          Wolf ___
+          |       \
+          |        \ 
+         Dog     ForestAnimal
+       /  | \     /    \
+      /   |  \   /      \
+ HasTail  |   Animal     ForestMatter
+          |
+        Hairy
+  </programlisting>
+      <para>
+	In fact defining the Wolf can be even limited to one single call to BM_DEFINE_MIXIN() and no more code, if all it does is adding the interfaces of ForestAnimal to the Dog. We could also write it as Wolf = Dog+ForestAnimal.
+      </para>
+      <para>
+	At the moment when the Wolf mixin is registered (the very first call of the wolf_get_type() function), the graph is going to be converter to a linear inheiritance.
+      </para>
+      <para>
+	Here's an easy way to understand the order:
+      </para>
+      <literallayout>
+	Result = Dog + ForestMatter + Wolf
+	So registering the Wolf will first process obtaining the Dog type, then the ForestMatterType. And so on. Both of these dependencies are either already registered or will be registered at the moment.
+
+	Lets build the final line step by step
+	1. Result = Dog + ForestMatter + Wolf
+	2. Result = (HasTail + Hairy + Animal + Dog) + ForestAnimal
+	3. Result = (HasTail + Hairy + Animal + Dog) + (Animal + ForestMatter + Wolf)
+
+	So the order of the final inheiritance line that will be built (from parent to child):
+      </literallayout>
+      <programlisting language="X">
+      	GObject
+	    HasTail
+	       (HasTail+Hairy)
+	           (HasTail+Hairy+Animal)
+	                Dog
+		        (Dog+ForestMatter)
+			   (Dog+ForestMatter+ForestAnimal)
+			      Wolf
+      </programlisting>
+      <para>
+	So the order of class_init (and therefore the overrides) will be the next one:
+      </para>
+      <literallayout>
+	1. has_tail_class_init()
+	2. hairy_class_init()
+	3. animal_class_init()
+	4. dog_class_init()
+	5. forest_matter_class_init()
+	6. forest_animal_class_init()
+	7. wolf_class_init()
+      </literallayout>
+      <para>
+	NOTE: this inheiritance graph is implemented in a unit test tests/wolf
+      </para>
+      <para>
+	The definition of the Wolf mixin could have a different order: ForestMatter+Dog (instead of Dog+ForestMatter). In this case the final inheiritance line would be:
+      </para>
+      <programlisting language="X">
+      	GObject
+	   Animal
+	      (Animal+ForestMatter)
+	          ForestAnimal
+	             (ForestAnimal+HasTail)
+		         (ForestAnimal+HasTail+Hairy)
+		            Dog
+			      Wolf
+      </programlisting>
+      <para>
+	So the order of class_init (and therefore the overrides) would now be different:
+      </para>
+      <literallayout>
+	1. animal_class_init()
+	2. forest_matter_class_init() 
+	3. forest_animal_class_init()
+	4. has_tail_class_init()
+	5. hairy_class_init()
+	6. dog_class_init()
+	7. wolf_class_init()
+
+	FIXME: confirm this an example + add a test
+      </literallayout>
+      <para>
+	Same order will be preserved for other GObject functions, such as init, constructed, etc.
+      </para>
+  </section>
+  <section id="how-instantiated">
+    <title>How mixed types are instantiated</title>
+    <para>
+      BM_DEFINE_MIXIN() internally defines a get_type() function, that will be returning the GType of the mixin.
+      To make instantiable class bm_register_mixed_type() must be called. This will apply one mixin on any GType derived from GObject.
+    </para>
+    <para>
+      Example:
     </para>
     <programlisting language="C">
-      #include &lt;bmixin.h&gt;
-      // And here we have some code in C !!
-      void nothing (void);
+      GType testwolf = bm_register_mixed_type ("TestWolf",
+        G_TYPE_OBJECT, wolf_get_type ());
+  
+      fixture->obj = g_object_new (testwolf, NULL);
+    </programlisting>    
+  </section>
+  <section id="how-overrides">
+    <title>Order of the overrides in details</title>
+    <para>
+      In the previous example we figured out that the order of the class_init functions happens in the dependency graph from left to right.
+      We had an order:      
+    </para>
+    <literallayout>
+      1. has_tail_class_init()
+      2. hairy_class_init()
+      3. animal_class_init()
+      4. dog_class_init()
+      5. forest_matter_class_init()
+      6. forest_animal_class_init()
+      7. wolf_class_init()
+    </literallayout>
+    <para>
+      So lets deep dive into how will Dog and ForestAnimal concurrent for overriding some value in the Animal class.
+    </para>
+    <para>
+      AnimalClass has boolean field is_domestic, Dog class overrides it to TRUE and ForestAnimal class overrides it to FALSE.
+    </para>
+    <para>
+      So the question is: if Wolf depends on both Dog and ForestAnimal, what is going to be its value inside the Wolf class?
+    </para>
+    <para>
+      The answer is: it depends on which class_init is executed last, so if the order is:
+    </para>
+    <literallayout>
+      4. dog_class_init()
+      6. forest_animal_class_init()
+    </literallayout>
+    <para>
+      then the ForestAnimal override is executed later, and it overwrites the override made by the Dog. So is_domestic of the Wolf will be FALSE.
+    </para>
+    <para>
+      But what defines the order of the class_init, how can we control it when defining a mixin?
+    </para>
+    <para>
+      The answer is: it is the order in which the dependencies are listed. Wolf mixin first lists Dog as a dependency, and then ForestAnimal, that is why ForestAnimal overrides have priority.
+    </para>
+    <programlisting language="C">
+      BM_DEFINE_MIXIN (wolf, Wolf,
+          BM_ADD_DEP (dog),
+          BM_ADD_DEP (forest_animal)
+      );
     </programlisting>
     <para>
-      Here some
-      <type>BMixinClass</type>
+      So if the order of listing the dependencies would be the way around, Wolf would be showing "TRUE" on "is-domestic" request.
     </para>
+    <programlisting language="C">
+      BM_DEFINE_MIXIN (wolf, Wolf,
+          BM_ADD_DEP (forest_animal),
+          BM_ADD_DEP (dog)
+      );
+    </programlisting>
     <para>
-      Some link <ulink
-      url="https://developer.gnome.org/glib/stable/glib-Byte-Arrays.html#GBytes"><type>GBytes</type></ulink>
-      Function <function>bm_register_mixin</function> does things.
+      P.S. Absolutelly the same happens with the overrides of the virtual functions.
     </para>
-  </section>  
-  <section id="now-what">
-    <title>So now what??</title>
-    <para>
-      Here we go
-    </para>
-  </section>  
+  </section>
 </chapter>

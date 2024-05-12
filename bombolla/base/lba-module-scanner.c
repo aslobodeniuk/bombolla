@@ -36,10 +36,6 @@ typedef enum {
 
 typedef struct _LbaModuleScanner {
   BMixinInstance i;
-  // TODO: this should be in the BMixin structure (that doesn't exist yet)
-  GObject *gobject;
-  LbaModuleScannerClass *klass;
-  // ---------------------------------------------------------------------
 
   gchar *plugin_path;
   GArray *threads;
@@ -126,7 +122,8 @@ lba_module_scanner_scan (GObject * gobject, const gchar * file) {
   self = bm_get_LbaModuleScanner (gobject);
   g_return_if_fail (file != NULL);
 
-  self->klass->have_file (self->gobject, file);
+  BM_GET_CLASS (self, LbaModuleScannerClass)->have_file (BM_GET_GOBJECT (self),
+                                                         file);
 }
 
 static void
@@ -135,12 +132,14 @@ lba_module_scanner_scan_start (LbaModuleScanner * self) {
       *l;
 
   g_return_if_fail (self->plugin_path != NULL);
-  g_return_if_fail (self->klass->have_file != NULL);
+  g_return_if_fail (BM_GET_CLASS (self, LbaModuleScannerClass)->have_file != NULL);
 
   modules_files =
-      lba_module_scanner_scan_path (self->klass, self->plugin_path, NULL);
+      lba_module_scanner_scan_path (BM_GET_CLASS (self, LbaModuleScannerClass),
+                                    self->plugin_path, NULL);
   for (l = modules_files; l; l = l->next) {
-    self->klass->have_file (self->gobject, (gchar *) l->data);
+    BM_GET_CLASS (self, LbaModuleScannerClass)->have_file (BM_GET_GOBJECT (self),
+                                                           (gchar *) l->data);
   }
   g_slist_free_full (modules_files, g_free);
 }
@@ -157,7 +156,8 @@ lba_module_scanner_scan_custom_thread (gpointer data) {
   LbaModuleScanner *self = ev->scanner;
 
   LBA_LOG ("Scanuating right here: %s", ev->file);
-  self->klass->have_file (self->gobject, ev->file);
+  BM_GET_CLASS (self, LbaModuleScannerClass)->have_file (BM_GET_GOBJECT (self),
+                                                         ev->file);
 
   return NULL;
 }
@@ -203,19 +203,17 @@ static void
 lba_module_scanner_init (GObject * gobject, LbaModuleScanner * self) {
   self->threads = g_array_new (FALSE, FALSE, sizeof (LbaModuleScannerThreadScan));
   g_array_set_clear_func (self->threads, lba_module_scanner_thread_scan_clear);
-  self->gobject = gobject;
 }
 
 static void
 lba_module_scanner_constructed (GObject * gobject) {
   LbaModuleScanner *self = bm_get_LbaModuleScanner (gobject);
-
-  self->klass = bm_class_get_LbaModuleScanner (G_OBJECT_GET_CLASS (gobject));
+  LbaModuleScannerClass *klass = BM_GET_CLASS (self, LbaModuleScannerClass);
 
   /* need "scan" signal?? */
   if (!self->plugin_path) {
-    if (self->klass->plugin_path_env)
-      self->plugin_path = g_strdup (g_getenv (self->klass->plugin_path_env));
+    if (klass->plugin_path_env)
+      self->plugin_path = g_strdup (g_getenv (klass->plugin_path_env));
 
     if (!self->plugin_path && 0) {
       // FIXME: that's nasty
@@ -224,7 +222,7 @@ lba_module_scanner_constructed (GObject * gobject) {
     }
   }
 
-  if (self->klass->scan_on_constructed && self->plugin_path)
+  if (klass->scan_on_constructed && self->plugin_path)
     lba_module_scanner_scan_start (self);
 }
 

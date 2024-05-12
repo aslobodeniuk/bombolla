@@ -149,7 +149,7 @@ GType bm_fundamental_get_type (void);
  *
  * Get the class of the mixin
  */
-#  define BM_GET_CLASS(mx) (G_TYPE_INSTANCE_GET_CLASS ((mx), BM_TYPE_MIXIN, BMixinClass))
+#  define BM_GET_CLASS(mx, ctype) (G_TYPE_INSTANCE_GET_CLASS ((mx), BM_TYPE_MIXIN, ctype))
 
 /**
  * BM_CLASS_VFUNC_OFFSET:
@@ -394,6 +394,6 @@ static void                                                       \
  *   BM_CHAINUP (mixin, GObject)->dispose (gobject);
  * ]|
  */
-#  define BM_CHAINUP(mixin, Parent) ((Parent##Class*)(BM_GET_CLASS (mixin)->chainup_class))
+#  define BM_CHAINUP(mixin, Parent) ((Parent##Class*)(BM_GET_CLASS (mixin, BMixinClass)->chainup_class))
 
 #endif /* _BMIXIN_H */

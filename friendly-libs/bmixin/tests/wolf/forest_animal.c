@@ -1,0 +1,72 @@
+/* la Bombolla GObject shell
+ *
+ * Copyright (c) 2024, Alexander Slobodeniuk <aleksandr.slobodeniuk@gmx.es>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ *
+ * - Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * - Redistributions in binary form must reproduce the above copyright notice, this
+ *   list of conditions and the following disclaimer in the documentation and/or
+ *   other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include "animal.h"
+
+/* magic symbols to link with the mixin deps */
+GType forest_matter_get_type (void);
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+typedef struct {
+  BMixinInstance i;
+} ForestAnimal;
+
+typedef struct {
+  BMixinClass c;
+} ForestAnimalClass;
+
+BM_DEFINE_MIXIN (forest_animal, ForestAnimal,
+                 BM_ADD_DEP (animal), BM_ADD_DEP (forest_matter));
+
+static void
+forest_animal_init (GObject * object, ForestAnimal * self) {
+  g_message ("forest_animal_init");
+}
+
+static void
+forest_animal_class_init (GObjectClass * object_class, ForestAnimalClass * klass) {
+  AnimalClass *animal_klass;
+
+  g_message ("forest_animal_class_init");
+
+  /* FIXME: some useful wrapper?? Like BM_GOBJECT_CLASS_LOOKUP_MIXIN () */
+  animal_klass = (AnimalClass *) bm_class_get_mixin (object_class,
+                                                     animal_get_type ());
+
+  /* So we do an override here */
+  /* FIXME: maybe there could be something like override_value function?? */
+  animal_klass->is_domestic = FALSE;
+
+  /* Could be something like
+     BM_CLASS_DO_OVERRIDES (klass, Animal,
+     BM_OVERRIDE (is_domestic = TRUE),
+     BM_OVERRIDE (foobar = 0x0),
+     BM_OVERRIDE (their_func = my_func)
+     );
+   */
+}

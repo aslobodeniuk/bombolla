@@ -8,10 +8,16 @@
   <bookinfo>
     <title>BMixin Manual</title>
     <abstract>
-      <title>BMixin</title>
+      <title>Bombolla Mixin</title>
       <graphic fileref="light.svg" format="SVG" align="center"/>
       <para>
-	BMIXIN ROCKS
+	<literallayout>
+	Cross-platform and cross-programming-language multiple inheiritance mechanism.
+
+	Also can be seen as:
+	- a modern and powerful paradigm for C programming
+	- an extension to GLib Dynamic Type System that provides multiple inheiritance to GObject
+	</literallayout>
       </para>
     </abstract>
   </bookinfo>
@@ -20,20 +26,11 @@
     <title>User's manual</title>
       <xi:include href="usermanual.xml"/>
   </part>
-
   <part id="reference-manual">
-    <partinfo>
-      <releaseinfo>
-        This is not a release yet
-      </releaseinfo>
-    </partinfo>
-
     <title>Reference manual</title>
       <chapter id="bmixin-api">
-        <title>Core API</title>
+        <title>API reference</title>
         <xi:include href="xml/bmixin.xml"/>
       </chapter>
-
-      <index id="api-index-full"><title>API Index</title><xi:include href="xml/api-index-full.xml"><xi:fallback /></xi:include></index>
   </part>
 </book>
