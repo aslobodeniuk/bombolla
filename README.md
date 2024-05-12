@@ -57,7 +57,7 @@ Example 2 (Gtk 4)
 ```bash
 build/bombolla/tools/shell/bombolla-shell -p build/bombolla -i examples/js/plugin-in-js-gtk4.lba
 ```
-Example 1 (pure GObject)
+Example 3 (pure GObject)
 ```bash
 LBA_JS_PLUGINS_PATH=$(pwd)/examples/js/pure-gobject build/bombolla/tools/shell/bombolla-shell -p build/bombolla -i examples/js/pure-gobject.lba
 ```
