@@ -43,5 +43,6 @@ typedef struct _LbaModuleScannerClass {
 } LbaModuleScannerClass;
 
 GType lba_module_scanner_get_type (void);
+GType LbaModuleScanner_get_type (void);
 
 #endif

@@ -152,6 +152,21 @@ GType bm_fundamental_get_type (void);
 #  define BM_GET_CLASS(mx, ctype) (G_TYPE_INSTANCE_GET_CLASS ((mx), BM_TYPE_MIXIN, ctype))
 
 /**
+ * BM_CLASS_LOOKUP_MIXIN:
+ * @klass: mixin class
+ * @Name: mixin class to return
+ *
+ * Find a class of another mixin from a mixin class
+ *
+ * Returns: another mixin class
+ */
+#  define BM_CLASS_LOOKUP_MIXIN(klass, Name)                            \
+  ((Name##Class*)bm_class_get_mixin                                     \
+      (G_TYPE_CHECK_CLASS_CAST(klass,                                   \
+          BM_TYPE_MIXIN, BMixinClass)->root_object_class,               \
+          Name##_get_type ()))
+
+/**
  * BM_CLASS_VFUNC_OFFSET:
  *
  * Use this macro when attaching a signal to #BMixin
@@ -373,6 +388,7 @@ static void                                                       \
     }                                                                   \
     return g_define_type_id;                                            \
   }                                                                     \
+  GType Name##_get_type (void) { return name##_get_type (); }           \
                                                                         \
   static Name *bm_get_##Name (gpointer gobject) {                       \
     return bm_instance_get_mixin (gobject, name##_info.type);        \

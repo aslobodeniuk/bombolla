@@ -55,19 +55,6 @@ dog_class_init (GObjectClass * object_class, DogClass * klass) {
 
   g_message ("dog_class_init");
 
-  /* FIXME: some useful wrapper?? Like BM_GOBJECT_CLASS_LOOKUP_MIXIN () */
-  animal_klass = (AnimalClass *) bm_class_get_mixin (object_class,
-                                                     animal_get_type ());
-
-  /* So we do an override here */
-  /* FIXME: maybe there could be something like override_value function?? */
+  animal_klass = BM_CLASS_LOOKUP_MIXIN (klass, Animal);
   animal_klass->is_domestic = TRUE;
-
-  /* Could be something like
-     bm_class_do_overrides (klass, animal,
-     BM_OVERRIDE_BOOLEAN (Animal, is_domestic, TRUE),
-     BM_OVERRIDE_POINTER (Animal, foobar, 0x0),
-     BM_OVERRIDE_FUNCTION (Animal, their_func, my_func)
-     );
-   */
 }

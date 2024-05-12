@@ -54,19 +54,7 @@ forest_animal_class_init (GObjectClass * object_class, ForestAnimalClass * klass
 
   g_message ("forest_animal_class_init");
 
-  /* FIXME: some useful wrapper?? Like BM_GOBJECT_CLASS_LOOKUP_MIXIN () */
-  animal_klass = (AnimalClass *) bm_class_get_mixin (object_class,
-                                                     animal_get_type ());
+  animal_klass = BM_CLASS_LOOKUP_MIXIN (klass, Animal);
 
-  /* So we do an override here */
-  /* FIXME: maybe there could be something like override_value function?? */
   animal_klass->is_domestic = FALSE;
-
-  /* Could be something like
-     BM_CLASS_DO_OVERRIDES (klass, Animal,
-     BM_OVERRIDE (is_domestic = TRUE),
-     BM_OVERRIDE (foobar = 0x0),
-     BM_OVERRIDE (their_func = my_func)
-     );
-   */
 }

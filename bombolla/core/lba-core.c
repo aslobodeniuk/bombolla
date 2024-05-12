@@ -430,10 +430,7 @@ lba_core_class_init (GObjectClass * object_class, LbaCoreClass * klass) {
 
   lba_core_init_convertion_functions ();
 
-  lms_class =
-      (LbaModuleScannerClass *) bm_class_get_mixin (object_class,
-                                                    lba_module_scanner_get_type ());
-
+  lms_class = BM_CLASS_LOOKUP_MIXIN (klass, LbaModuleScanner);
   lms_class->plugin_path_env = "LBA_PLUGINS_PATH";
   lms_class->plugin_prefix = "liblba-";
   lms_class->plugin_suffix = G_MODULE_SUFFIX;

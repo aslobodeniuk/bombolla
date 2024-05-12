@@ -37,5 +37,6 @@ typedef struct {
 } AnimalClass;
 
 GType animal_get_type ();
+GType Animal_get_type ();
 
 #endif

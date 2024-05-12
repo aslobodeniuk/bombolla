@@ -170,10 +170,7 @@ lba_gjs_class_init (GObjectClass * object_class, LbaGjsClass * klass) {
   object_class->dispose = lba_gjs_dispose;
   object_class->finalize = lba_gjs_finalize;
 
-  lms_class =
-      (LbaModuleScannerClass *) bm_class_get_mixin (object_class,
-                                                    lba_module_scanner_get_type ());
-
+  lms_class = BM_CLASS_LOOKUP_MIXIN (klass, LbaModuleScanner);
   lms_class->plugin_path_env = "LBA_JS_PLUGINS_PATH";
   lms_class->plugin_prefix = "lba-";
   lms_class->plugin_suffix = ".js";
