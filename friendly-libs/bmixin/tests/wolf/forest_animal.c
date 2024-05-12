@@ -55,6 +55,5 @@ forest_animal_class_init (GObjectClass * object_class, ForestAnimalClass * klass
   g_message ("forest_animal_class_init");
 
   animal_klass = BM_CLASS_LOOKUP_MIXIN (klass, Animal);
-
   animal_klass->is_domestic = FALSE;
 }

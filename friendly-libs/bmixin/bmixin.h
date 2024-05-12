@@ -56,7 +56,7 @@
  */
 
 /**
- * BMAddType: (skip)
+ * BMAddType:
  *
  * Used internally by BM_DEFINE_MIXIN()
  */
@@ -66,19 +66,18 @@ typedef enum {
 } BMAddType;
 
 /**
- * BMParams: (skip)
+ * BMParams:
  *
  * Used internally by BM_DEFINE_MIXIN()
  */
 typedef struct {
   BMAddType add_type;
-  /* wtf is wrong with the indent here?? */
     GType (*gtype) (void);
   GInterfaceInfo iface_info;
 } BMParams;
 
 /**
- * BMInfo: (skip)
+ * BMInfo:
  *
  * Used internally by BM_DEFINE_MIXIN()
  */
@@ -157,6 +156,16 @@ GType bm_fundamental_get_type (void);
  * @Name: mixin class to return
  *
  * Find a class of another mixin from a mixin class
+ * Example:
+ * |[<!-- language="C" -->
+ *   static void
+ *   forest_animal_class_init (GObjectClass * object_class, ForestAnimalClass * klass) {
+ *     AnimalClass *animal_klass;
+ *
+ *     animal_klass = BM_CLASS_LOOKUP_MIXIN (klass, Animal);
+ *     animal_klass->is_domestic = FALSE;
+ *   }
+ * ]|
  *
  * Returns: another mixin class
  */
@@ -168,6 +177,8 @@ GType bm_fundamental_get_type (void);
 
 /**
  * BM_CLASS_VFUNC_OFFSET:
+ * @mclass: class of the mixin
+ * @member: member of the structure that is a function pointer
  *
  * Use this macro when attaching a signal to #BMixin
  * Example:
@@ -180,22 +191,10 @@ GType bm_fundamental_get_type (void);
  *                  g_cclosure_marshal_VOID__STRING,
  *                  G_TYPE_NONE, 1, G_TYPE_STRING, G_TYPE_NONE);
  * ]|
+ *
+ * Returns: a complete offset from the GObjectClass to the function pointer, that can be used in g_signal_new
  */
 #  define BM_CLASS_VFUNC_OFFSET(mclass,member) _BM_CLASS_VFUNC_OFFSET (mclass, &mclass->member)
-
-static inline int
-_BM_CLASS_VFUNC_OFFSET (gpointer mclass, gpointer member) {
-  BMixinClass *bmc = (BMixinClass *) mclass;
-
-  g_return_val_if_fail (mclass != NULL, 0);
-  g_return_val_if_fail (member != NULL, 0);
-  g_return_val_if_fail (G_TYPE_CHECK_CLASS_TYPE (bmc, BM_TYPE_MIXIN), 0);
-
-  int struct_offset = member - mclass;
-  int root_offset = mclass - (gpointer) bmc->root_object_class;
-
-  return root_offset + struct_offset;
-}
 
 /**
  * BM_GTYPE_IS_BMIXIN:
@@ -242,7 +241,7 @@ GType bm_register_mixed_type (const gchar * mixed_type_name,
                               GType base_type, GType mixin);
 
 /**
- * bm_register_mixin: (skip)
+ * bm_register_mixin:
  *
  * Used internally by BM_DEFINE_MIXIN()
 */
@@ -276,7 +275,7 @@ gpointer bm_instance_get_mixin (gpointer instance, GType mixin);
 GType bm_type_peek_mixed_type (GType mixed_type, GType mixin);
 
 /**
- * bmixin_info_qrk: (skip)
+ * bmixin_info_qrk:
  *
  * Returns: internal #GQuark
  */
@@ -412,4 +411,22 @@ static void                                                       \
  */
 #  define BM_CHAINUP(mixin, Parent) ((Parent##Class*)(BM_GET_CLASS (mixin, BMixinClass)->chainup_class))
 
+#  ifndef __GTK_DOC_IGNORE__
+static inline int
+_BM_CLASS_VFUNC_OFFSET (gpointer mclass, gpointer member) {
+  BMixinClass *bmc = (BMixinClass *) mclass;
+
+  g_return_val_if_fail (mclass != NULL, 0);
+  g_return_val_if_fail (member != NULL, 0);
+  g_return_val_if_fail (G_TYPE_CHECK_CLASS_TYPE (bmc, BM_TYPE_MIXIN), 0);
+
+  int struct_offset = member - mclass;
+  int root_offset = mclass - (gpointer) bmc->root_object_class;
+
+  return root_offset + struct_offset;
+}
+#  endif
+
+/* You're welcome :) */
+#  pragma GCC diagnostic error "-Wimplicit-function-declaration"
 #endif /* _BMIXIN_H */
