@@ -29,7 +29,6 @@
 
 typedef struct {
   guint32 ohash;
-
 } Fixture;
 
 static void
@@ -50,9 +49,10 @@ test_int_pn (Fixture * fixture, gconstpointer user_data) {
   RObjPN *pn;
   GBytes *msg;
   gint recv_val;
+  gint i = g_random_int ();
 
   g_value_init (&pval, G_TYPE_INT);
-  g_value_set_int (&pval, 123);
+  g_value_set_int (&pval, i);
   pn = robj_brain_learn_pn (fixture->ohash, "some-name", &pval);
   g_assert_nonnull (pn);
 
@@ -65,7 +65,95 @@ test_int_pn (Fixture * fixture, gconstpointer user_data) {
   pn = robj_protocol_message_to_pn (msg);
 
   recv_val = g_value_get_int (&pn->pval);
-  g_assert_cmpint (123, ==, recv_val);
+  g_assert_cmpint (i, ==, recv_val);
+
+  g_value_unset (&pval);
+  g_bytes_unref (msg);
+}
+
+static void
+test_uint_pn (Fixture * fixture, gconstpointer user_data) {
+
+  GValue pval = G_VALUE_INIT;
+  RObjPN *pn;
+  GBytes *msg;
+  guint recv_val;
+  guint i = g_random_int ();
+
+  g_value_init (&pval, G_TYPE_UINT);
+  g_value_set_uint (&pval, i);
+  pn = robj_brain_learn_pn (fixture->ohash, "some-name", &pval);
+  g_assert_nonnull (pn);
+
+  msg = robj_protocol_pn_to_message (pn);
+
+  g_assert_nonnull (msg);
+
+  /* FIXME: this overwrites the PN, need 2 different brains
+   * to handle that properly */
+  pn = robj_protocol_message_to_pn (msg);
+
+  recv_val = g_value_get_uint (&pn->pval);
+  g_assert_cmpuint (i, ==, recv_val);
+
+  g_value_unset (&pval);
+  g_bytes_unref (msg);
+}
+
+static void
+test_uint64_pn (Fixture * fixture, gconstpointer user_data) {
+
+  GValue pval = G_VALUE_INIT;
+  RObjPN *pn;
+  GBytes *msg;
+  gint64 recv_val;
+  guint64 i = g_random_int ();
+
+  g_value_init (&pval, G_TYPE_UINT64);
+  g_value_set_uint64 (&pval, i);
+  pn = robj_brain_learn_pn (fixture->ohash, "some-name", &pval);
+  g_assert_nonnull (pn);
+
+  msg = robj_protocol_pn_to_message (pn);
+
+  g_assert_nonnull (msg);
+
+  /* FIXME: this overwrites the PN, need 2 different brains
+   * to handle that properly */
+  pn = robj_protocol_message_to_pn (msg);
+
+  recv_val = g_value_get_uint64 (&pn->pval);
+  g_assert (i == recv_val);
+
+  g_value_unset (&pval);
+  g_bytes_unref (msg);
+}
+
+static void
+test_string_pn (Fixture * fixture, gconstpointer user_data) {
+
+  GValue pval = G_VALUE_INIT;
+  RObjPN *pn;
+  GBytes *msg;
+  const gchar *recv_val;
+  const gchar *str = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+
+  g_value_init (&pval, G_TYPE_STRING);
+  g_value_set_string (&pval, str);
+  pn = robj_brain_learn_pn (fixture->ohash, "some-name", &pval);
+  g_assert_nonnull (pn);
+
+  msg = robj_protocol_pn_to_message (pn);
+
+  g_assert_nonnull (msg);
+
+  /* FIXME: this overwrites the PN, need 2 different brains
+   * to handle that properly */
+  pn = robj_protocol_message_to_pn (msg);
+
+  recv_val = g_value_get_string (&pn->pval);
+  g_assert_cmpstr (str, ==, recv_val);
 
   g_value_unset (&pval);
   g_bytes_unref (msg);
@@ -75,8 +163,16 @@ int
 main (int argc, char *argv[]) {
   g_test_init (&argc, &argv, NULL);
 
+  g_test_add ("/robj/test-string-pn", Fixture, NULL,
+              fixture_set_up, test_string_pn, fixture_tear_down);
+
   g_test_add ("/robj/test-int-pn", Fixture, NULL,
               fixture_set_up, test_int_pn, fixture_tear_down);
 
+  g_test_add ("/robj/test-uint-pn", Fixture, NULL,
+              fixture_set_up, test_uint_pn, fixture_tear_down);
+
+  g_test_add ("/robj/test-uint64-pn", Fixture, NULL,
+              fixture_set_up, test_uint64_pn, fixture_tear_down);
   return g_test_run ();
 }

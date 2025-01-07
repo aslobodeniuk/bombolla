@@ -59,7 +59,7 @@ robj_string_2_transport (const GValue * src_value, GValue * dest_value) {
     memcpy ((char *)ptr + 4, str, str_size);
 
   /* So the message size is at least 4 bytes long */
-  g_value_take_boxed (dest_value, g_bytes_new (ptr, msg_size));
+  g_value_take_boxed (dest_value, g_bytes_new_take (ptr, msg_size));
 }
 
 static void
