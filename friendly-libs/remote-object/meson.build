@@ -1,6 +1,6 @@
 robj_internal_dep = declare_dependency (
   sources: files([#'robj-portal.c',
-                  'robj-protocol.c', 'robj-brain.c']),
+                  'robj-protocol.c', 'robj-map.c']),
   dependencies: [dependency('gobject-2.0', version: '>=2.58')],
   compile_args: ['-Wall', '-Werror', '-Wfatal-errors', '-Wimplicit-fallthrough'],
   include_directories : [include_directories('..')]

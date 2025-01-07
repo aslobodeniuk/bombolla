@@ -140,11 +140,13 @@ robj_protocol_init (void) {
 const guint ROBJ_PROTOCOL_PN_HEADER_LEN = 2 + 4 + 4;
 
 RObjPN *
-robj_protocol_message_to_pn (GBytes * msg) {
+robj_protocol_message_to_pn (RObjMap * map, GBytes * msg) {
   gsize msg_size;
   gchar *msg_data;
   RObjPN *pn;
   GValue transport_value = G_VALUE_INIT;
+  guint32 ohash;
+  guint32 pnhash;
 
   msg_data = (gchar *) g_bytes_get_data (msg, &msg_size);
 
@@ -154,7 +156,16 @@ robj_protocol_message_to_pn (GBytes * msg) {
   g_return_val_if_fail (msg_data[1] == 'n', NULL);
 
   msg_data += 2;
-  pn = robj_brain_lookup_pn (((guint32 *) msg_data)[0], ((guint32 *) msg_data)[1]);
+
+  ohash = ((guint32 *) msg_data)[0];
+  pnhash = ((guint32 *) msg_data)[1];
+
+  pn = robj_map_lookup_pn (map, ohash, pnhash);
+
+  if (G_UNLIKELY (pn == NULL)) {
+    g_critical ("PN (%u, %u) not found!", ohash, pnhash);
+    return NULL;
+  }
 
   /* So we already update the value in the property. There might be a race
    * condition when at this moment some other code reads or sets the property,
@@ -183,7 +194,7 @@ robj_protocol_message_to_pn (GBytes * msg) {
   g_mutex_lock (&pn->lock);
   /* At this line the object's property value that it remembers is updated.
    * Caller is going to set this value to the ghost or real object.
-   * Ghost object also remembers the value in the same brain, so there's
+   * Ghost object also remembers the value in the same map, so there's
    * no problem. Real object remembers it where it remembers, so it's
    * a bit redundant.... */
   if (!g_value_transform (&transport_value, &pn->pval)) {
