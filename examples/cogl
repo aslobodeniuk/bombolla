@@ -19,8 +19,15 @@ create LbaCoglLabel l2
 set l2.drawing-scene w
 set l2.x 0.1
 set l2.y 0.3
-set l2.text is the best shell
-set l2.font-size 30
-set l2.font-name Ani
+set l2.font-size 25
+
+create LbaClock cc
+bind l2.text cc.current-time
+set cc.tick-interval-ms 500
 
 call w.open
+
+# Shouldn't we request redraw on each property change automatically??
+on cc.notify::current-time
+call w.request-redraw
+end
