@@ -65,9 +65,10 @@ base_drawable_set_property (GObject * object,
   case PROP_TEXTURE:
     g_clear_pointer (&self->texture, g_object_unref);
     self->texture = g_value_dup_object (value);
+
     /* Update if new texture is set */
     if (self->enabled && self->scene && self->texture) {
-//      g_signal_emit_by_name (self->texture, "set", NULL);
+      g_object_set (self->texture, "drawing-scene", self->scene, NULL);
       g_signal_emit_by_name (self->scene, "request-redraw", NULL);
     }
     break;
@@ -120,6 +121,26 @@ base_drawable_set_property (GObject * object,
 static void
 base_drawable_get_property (GObject * object,
                             guint property_id, GValue * value, GParamSpec * pspec) {
+  BaseDrawable *self = (BaseDrawable *) object;
+
+  switch ((BaseDrawableProperty) property_id) {
+  case PROP_TEXTURE:
+    g_value_set_object (value, self->texture);
+    break;
+
+  case PROP_DRAWING_SCENE:
+    g_value_set_object (value, self->scene);
+    break;
+
+  case PROP_ENABLED:
+    g_value_set_boolean (value, self->enabled);
+    break;
+
+  default:
+    /* We don't have any other property... */
+    G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+    break;
+  }
 }
 
 static void

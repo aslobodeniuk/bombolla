@@ -34,6 +34,7 @@ typedef struct _LbaCoglTexture {
 
   CoglTexture *texture;
   GRecMutex lock;
+  GObject *scene;
   struct {
     guint64 last_cookie;
     guint64 cookie;
@@ -53,13 +54,15 @@ typedef struct _LbaCoglTextureClass {
 
 typedef enum {
   PROP_PICTURE_OBJECT = 1,
+  PROP_DRAWING_SCENE,
   N_PROPERTIES
 } LbaCoglTextureProperty;
 
 G_DEFINE_TYPE (LbaCoglTexture, lba_cogl_texture, G_TYPE_OBJECT);
 
 static void
-lba_cogl_texture_picture_update_cb (GObject * pic, LbaCoglTexture * self) {
+lba_cogl_texture_picture_update_cb (GObject * pic,
+                                    GParamSpec * pspec, LbaCoglTexture * self) {
   const gchar *format;
   GBytes *pic_data;
   guint w,
@@ -83,12 +86,12 @@ lba_cogl_texture_picture_update_cb (GObject * pic, LbaCoglTexture * self) {
 
   self->pic.data = pic_data;
   self->pic.w = w;
-  self->pic.w = w;
+  self->pic.h = h;
   self->pic.last_cookie = self->pic.cookie;
   self->pic.cookie++;
 
-  /* Now update drawing scene?? */
-
+  /* Now request update the drawing scene */
+  g_signal_emit_by_name (self->scene, "request-redraw", NULL);
   LBA_UNLOCK (self);
 }
 
@@ -99,18 +102,23 @@ lba_cogl_texture_set_property (GObject * object,
   LbaCoglTexture *self = (LbaCoglTexture *) object;
 
   switch ((LbaCoglTextureProperty) property_id) {
+  case PROP_DRAWING_SCENE:
+    LBA_LOCK (self);
+    self->scene = g_value_get_object (value);
+    LBA_UNLOCK (self);
+    break;
+
   case PROP_PICTURE_OBJECT:
     LBA_LOCK (self);
     if (self->pic.obj) {
       g_object_unref (self->pic.obj);
     }
 
-    self->pic.obj = g_value_get_object (value);
+    self->pic.obj = g_value_dup_object (value);
 
     if (self->pic.obj) {
-      g_signal_connect (self->pic.obj, "on-update",
+      g_signal_connect (self->pic.obj, "notify::data",
                         G_CALLBACK (lba_cogl_texture_picture_update_cb), self);
-      lba_cogl_texture_picture_update_cb (self->pic.obj, self);
     }
     LBA_UNLOCK (self);
     break;
@@ -167,7 +175,7 @@ lba_cogl_texture_set (LbaCoglTexture * self, GObject * obj_3d) {
   CoglPipeline *cogl_pipeline;
 
   /* NOTE: called in GL thread */
-  if (!obj_3d)
+  if (!obj_3d || !self->pic.data)
     return;
 
   iface = G_TYPE_INSTANCE_GET_INTERFACE (obj_3d, LBA_ICOGL, LbaICogl);
@@ -246,6 +254,14 @@ lba_cogl_texture_class_init (LbaCoglTextureClass * klass) {
                                                         G_PARAM_STATIC_STRINGS |
                                                         G_PARAM_READWRITE |
                                                         G_PARAM_CONSTRUCT));
+
+  g_object_class_install_property (gobj_class, PROP_DRAWING_SCENE,
+                                   g_param_spec_object ("drawing-scene",
+                                                        "Drawing Scene",
+                                                        "Scene that triggers drawing of the object",
+                                                        G_TYPE_OBJECT,
+                                                        G_PARAM_STATIC_STRINGS |
+                                                        G_PARAM_WRITABLE));
 
   klass->set = lba_cogl_texture_set;
   klass->unset = lba_cogl_texture_unset;

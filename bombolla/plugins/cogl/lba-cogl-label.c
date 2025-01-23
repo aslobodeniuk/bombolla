@@ -107,6 +107,18 @@ lba_cogl_label_update (LbaCoglLabel * self) {
   pango_layout_get_extents (self->hello_label, NULL, &hello_label_size);
   self->hello_label_width = PANGO_PIXELS (hello_label_size.width);
   self->hello_label_height = PANGO_PIXELS (hello_label_size.height);
+
+  {
+    GObject *scene = NULL;
+
+    g_object_get (self->m.root_object, "drawing-scene", &scene, NULL);
+    LBA_LOG ("scene = %p", scene);
+    if (scene) {
+      LBA_LOG ("Request redraw");
+      g_signal_emit_by_name (scene, "request-redraw", NULL);
+      g_object_unref (scene);
+    }
+  }
 }
 
 static void
