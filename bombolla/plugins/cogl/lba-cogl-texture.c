@@ -41,6 +41,7 @@ typedef struct _LbaCoglTexture {
     GBytes *data;
     guint w;
     guint h;
+    CoglPixelFormat format;
     GObject *obj;
   } pic;
 } LbaCoglTexture;
@@ -60,10 +61,36 @@ typedef enum {
 
 G_DEFINE_TYPE (LbaCoglTexture, lba_cogl_texture, G_TYPE_OBJECT);
 
+/* transfer-full */
+static CoglPixelFormat
+lba_cogl_texture_format_to_cogl (gchar *format)
+{
+  static const struct
+  {
+    const gchar *str;
+    CoglPixelFormat cogl;
+  } bunch[] = {
+    { "argb8888", COGL_PIXEL_FORMAT_ARGB_8888 },
+    { "rgba8888", COGL_PIXEL_FORMAT_RGBA_8888 }
+  };
+
+  CoglPixelFormat ret = COGL_PIXEL_FORMAT_RGBA_8888;
+  int i;
+  
+  for (i = 0; i < G_N_ELEMENTS (bunch); i++)
+    if (g_strcmp0 (bunch[i].str, format)) {
+      ret = bunch[i].cogl;
+    }
+  
+  g_free (format);
+
+  return ret;
+}
+
 static void
 lba_cogl_texture_picture_update_cb (GObject * pic,
                                     GParamSpec * pspec, LbaCoglTexture * self) {
-  const gchar *format;
+  gchar *format;
   GBytes *pic_data;
   guint w,
     h;
@@ -72,18 +99,17 @@ lba_cogl_texture_picture_update_cb (GObject * pic,
   g_object_get (pic, "width", &w, "height", &h,
                 "data", &pic_data, "format", &format, NULL);
 
-  LBA_LOG ("Picture update: w=%d, h=%d", w, h);
+  LBA_LOG ("Picture update: w=%d, h=%d, format=%s", w, h, format);
 
   /* TODO: GTypeEnum format */
-  LBA_ASSERT (0 == g_strcmp0 (format, "rgba8888"));
   LBA_ASSERT (w != 0 && h != 0);
   LBA_ASSERT (pic_data != NULL);
-  LBA_ASSERT (g_bytes_get_size (pic_data) >= w * h * 4);
 
   if (self->pic.data) {
     g_bytes_unref (self->pic.data);
   }
 
+  self->pic.format = lba_cogl_texture_format_to_cogl (format);
   self->pic.data = pic_data;
   self->pic.w = w;
   self->pic.h = h;
@@ -184,11 +210,11 @@ lba_cogl_texture_set (LbaCoglTexture * self, GObject * obj_3d) {
   g_assert (cogl_ctx && cogl_pipeline);
 
   LBA_LOCK (self);
-  if (!self->texture || self->pic.cookie != self->pic.last_cookie) {
+  if (!self->texture || self->pic.cookie != self->pic.last_cookie) {    
     g_clear_pointer (&self->texture, cogl_object_unref);
     self->texture = cogl_texture_2d_new_from_data (cogl_ctx,
                                                    self->pic.w, self->pic.h,
-                                                   COGL_PIXEL_FORMAT_RGBA_8888, 0,
+        self->pic.format, 0,
                                                    g_bytes_get_data (self->pic.data,
                                                                      NULL), NULL);
   }

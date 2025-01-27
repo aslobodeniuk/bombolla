@@ -9,7 +9,7 @@ It is some kind of object-oriented shell/DSL that allows to manipulate plugins.
 ## Building
 
 ```bash
-sudo apt-get install -qq libglib2.0-dev libsoup2.4-dev libgjs-dev libpython3-dev pkg-config indent valac ninja-build libcogl-pango-dev python3-pip python3-setuptools python3-wheel gtk-doc-tools
+sudo apt-get install -qq libglib2.0-dev libsoup2.4-dev libgjs-dev libpython3-dev pkg-config indent valac ninja-build libcogl-pango-dev python3-pip python3-setuptools python3-wheel gtk-doc-tools libgstreamer1.0-dev libcairo2-dev
 sudo pip install meson
 
 git clone git@ssh.gitlab.gnome.org:Sasha/bombolla.git
