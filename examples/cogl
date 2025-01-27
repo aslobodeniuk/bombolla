@@ -1,3 +1,5 @@
+log LbaCoglTexture,LbaCairo
+
 create LbaCoglWindow w
 
 create LbaCoglCube c
@@ -6,6 +8,9 @@ create LbaGst gg
 
 set c.drawing-scene w
 set c.texture tt
+set c.z -4.0
+set c.x 8.0
+set c.y -5.0
 set gg.pipeline videotestsrc ! appsink emit-signals=true name=lba_out caps="video/x-raw, format=RGBA" drop=true
 set tt.picture gg
 
@@ -24,6 +29,17 @@ set l2.drawing-scene w
 set l2.x 0.1
 set l2.y 0.8
 set l2.font-size 25
+
+create LbaCoglCube c2
+create LbaCoglTexture tt2
+create LbaCairo cairo
+set c2.drawing-scene w
+set c2.texture tt2
+set tt2.picture cairo
+
+set c2.x -0.0
+set c2.y -5.0
+set c2.z -4.0
 
 create LbaClock cc
 bind l2.text cc.current-time

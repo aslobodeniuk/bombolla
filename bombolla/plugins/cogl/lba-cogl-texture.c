@@ -143,6 +143,8 @@ lba_cogl_texture_set_property (GObject * object,
     self->pic.obj = g_value_dup_object (value);
 
     if (self->pic.obj) {
+      lba_cogl_texture_picture_update_cb (self->pic.obj, NULL, self);
+      
       g_signal_connect (self->pic.obj, "notify::data",
                         G_CALLBACK (lba_cogl_texture_picture_update_cb), self);
     }

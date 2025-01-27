@@ -125,7 +125,10 @@ lba_cairo_init (LbaCairo * self) {
     cairo_set_font_size (cr, 32.0);
     cairo_set_source_rgb (cr, 0.0, 0.0, 1.0);
     cairo_move_to (cr, 10.0, 50.0);
-    cairo_show_text (cr, "Hello, world");
+    cairo_show_text (cr, "Hello from Cairo!!");
+
+    cairo_rectangle (cr, 10.0, 70.0, 20.0, 90.0);
+    cairo_fill (cr);
     /* ---------------------------------------- */
 
     cairo_destroy (cr);
