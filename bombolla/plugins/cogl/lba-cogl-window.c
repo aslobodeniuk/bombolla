@@ -81,7 +81,7 @@ cleanup:
 }
 
 static void
-lba_cogl_window_close (BaseWindow * base) {
+lba_cogl_window_close (BaseWindow *base) {
 //  LbaCoglWindow *self = (LbaCoglWindow *) base;
 
   /* Tell main loop to close the window */
@@ -89,7 +89,7 @@ lba_cogl_window_close (BaseWindow * base) {
 }
 
 static void
-lba_cogl_window_maybe_redraw (LbaCoglWindow * self) {
+lba_cogl_window_maybe_redraw (LbaCoglWindow *self) {
   if (self->is_dirty && self->draw_ready && self->redraw_idle == 0) {
     /* We'll draw on idle instead of drawing immediately so that
      * if Cogl reports multiple dirty rectangles we won't
@@ -101,8 +101,8 @@ lba_cogl_window_maybe_redraw (LbaCoglWindow * self) {
 }
 
 static void
-lba_cogl_window_frame_event_cb (CoglOnscreen * onscreen,
-                                CoglFrameEvent event, CoglFrameInfo * info,
+lba_cogl_window_frame_event_cb (CoglOnscreen *onscreen,
+                                CoglFrameEvent event, CoglFrameInfo *info,
                                 void *user_data) {
   LbaCoglWindow *self = (LbaCoglWindow *) user_data;
 
@@ -113,7 +113,7 @@ lba_cogl_window_frame_event_cb (CoglOnscreen * onscreen,
 }
 
 static void
-lba_cogl_window_request_redraw (BaseWindow * base) {
+lba_cogl_window_request_redraw (BaseWindow *base) {
   LbaCoglWindow *self = (LbaCoglWindow *) base;
 
   self->is_dirty = TRUE;
@@ -121,14 +121,14 @@ lba_cogl_window_request_redraw (BaseWindow * base) {
 }
 
 static void
-lba_cogl_window_dirty_cb (CoglOnscreen * onscreen,
-                          const CoglOnscreenDirtyInfo * info, void *user_data) {
+lba_cogl_window_dirty_cb (CoglOnscreen *onscreen,
+                          const CoglOnscreenDirtyInfo *info, void *user_data) {
   lba_cogl_window_request_redraw ((BaseWindow *) user_data);
 }
 
 /* Fixme: defaults are not set */
 static void
-lba_cogl_window_open (BaseWindow * base) {
+lba_cogl_window_open (BaseWindow *base) {
   LbaCoglWindow *self = (LbaCoglWindow *) base;
 
   CoglOnscreen *onscreen;
@@ -161,17 +161,11 @@ lba_cogl_window_open (BaseWindow * base) {
 
   cogl_source = cogl_glib_source_new (self->ctx, G_PRIORITY_DEFAULT);
 
-  /* TODO/base: x_pos, y_pos, title */
-
   /* FIXME: this is a 3d-only thing: */
+  /* ====================================================== */
   {
     int framebuffer_width;
     int framebuffer_height;
-    float fovy,
-      aspect,
-      z_near,
-      z_far,
-      z_2d;
 
     framebuffer_width = cogl_framebuffer_get_width (self->fb);
     framebuffer_height = cogl_framebuffer_get_height (self->fb);
@@ -182,50 +176,17 @@ lba_cogl_window_open (BaseWindow * base) {
     cogl_framebuffer_set_viewport (self->fb, 0, 0,
                                    framebuffer_width, framebuffer_height);
 
-    fovy = 60;                  /* y-axis field of view */
-    aspect = (float)framebuffer_width / (float)framebuffer_height;
-    z_near = 0.1;               /* distance to near clipping plane */
-    z_2d = 1000;                /* position to 2d plane */
-    z_far = 2000;               /* distance to far clipping plane */
-
-    cogl_framebuffer_perspective (self->fb, fovy, aspect, z_near, z_far);
-
-    /* FIXME: pango + 3d thing */
-    {
-      CoglMatrix view;
-
-      /* Since the pango renderer emits geometry in pixel/device coordinates
-       * and the anti aliasing is implemented with the assumption that the
-       * geometry *really* does end up pixel aligned, we setup a modelview
-       * matrix so that for geometry in the plane z = 0 we exactly map x
-       * coordinates in the range [0,stage_width] and y coordinates in the
-       * range [0,stage_height] to the framebuffer extents with (0,0) being
-       * the top left.
-       *
-       * This is roughly what Clutter does for a ClutterStage, but this
-       * demonstrates how it is done manually using Cogl.
-       */
-      cogl_matrix_init_identity (&view);
-      cogl_matrix_view_2d_in_perspective (&view, fovy, aspect, z_near, z_2d,
-                                          framebuffer_width, framebuffer_height);
-      cogl_framebuffer_set_modelview_matrix (self->fb, &view);
-
-    }
-
-    /* FIXME: rectangle thing */
     {
       CoglDepthState depth_state;
 
-      /* Since the box is made of multiple triangles that will overlap
-       * when drawn and we don't control the order they are drawn in, we
-       * enable depth testing to make sure that triangles that shouldn't
-       * be visible get culled by the GPU. */
+      /* Needed for proper 3d rendering */
       cogl_depth_state_init (&depth_state);
       cogl_depth_state_set_test_enabled (&depth_state, TRUE);
 
       cogl_pipeline_set_depth_state (self->pipeline, &depth_state, NULL);
     }
   }
+  /* ========================================================= */
 
   g_source_attach (cogl_source, NULL);
 
@@ -238,7 +199,7 @@ cleanup:
 }
 
 static void
-lba_cogl_window_init (LbaCoglWindow * self) {
+lba_cogl_window_init (LbaCoglWindow *self) {
   g_rec_mutex_init (&self->lock);
 }
 
@@ -250,9 +211,8 @@ typedef enum {
 } LbaCoglWindowProperty;
 
 static void
-lba_cogl_window_get_property (GObject * object,
-                              guint property_id, GValue * value, GParamSpec * pspec) 
-{
+lba_cogl_window_get_property (GObject *object,
+                              guint property_id, GValue *value, GParamSpec *pspec) {
   LbaCoglWindow *self = (LbaCoglWindow *) object;
 
   switch ((LbaCoglWindowProperty) property_id) {
@@ -276,7 +236,7 @@ lba_cogl_window_get_property (GObject * object,
 }
 
 static void
-lba_cogl_window_finalize (GObject * obj) {
+lba_cogl_window_finalize (GObject *obj) {
   LbaCoglWindow *self = (LbaCoglWindow *) obj;
 
   LBA_LOCK (self);
@@ -286,7 +246,7 @@ lba_cogl_window_finalize (GObject * obj) {
 }
 
 static void
-lba_cogl_window_class_init (LbaCoglWindowClass * klass) {
+lba_cogl_window_class_init (LbaCoglWindowClass *klass) {
   GObjectClass *gobj_class = G_OBJECT_CLASS (klass);
   BaseWindowClass *base_class = BASE_WINDOW_CLASS (klass);
 

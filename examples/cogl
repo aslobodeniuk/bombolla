@@ -1,5 +1,3 @@
-log LbaCoglTexture,LbaCairo
-
 create LbaCoglWindow w
 
 create LbaCoglCube c
