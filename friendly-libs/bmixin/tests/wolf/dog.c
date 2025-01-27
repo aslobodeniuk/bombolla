@@ -41,8 +41,18 @@ typedef struct {
   BMixinClass c;
 } DogClass;
 
+static void
+dog_base_init (gpointer class_ptr)
+{
+  AnimalClass *animal_klass =
+      bm_class_get_mixin (class_ptr, animal_get_type ());
+
+  animal_klass->maybe_domestic = TRUE;
+}
+
 BM_DEFINE_MIXIN (dog, Dog,
-                 BM_ADD_DEP (has_tail), BM_ADD_DEP (hairy), BM_ADD_DEP (animal));
+    BM_ADD_DEP (has_tail), BM_ADD_DEP (hairy), BM_ADD_DEP (animal),
+    BM_ADD_BASE_INIT (dog_base_init));
 
 static void
 dog_init (GObject * object, Dog * self) {
@@ -56,5 +66,7 @@ dog_class_init (GObjectClass * object_class, DogClass * klass) {
   g_message ("dog_class_init");
 
   animal_klass = BM_CLASS_LOOKUP_MIXIN (klass, Animal);
+
+  g_assert (animal_klass->maybe_domestic);
   animal_klass->is_domestic = TRUE;
 }

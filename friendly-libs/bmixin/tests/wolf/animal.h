@@ -34,6 +34,7 @@ typedef struct {
   BMixinClass c;
 
   gboolean is_domestic;
+  gboolean maybe_domestic;
 } AnimalClass;
 
 GType animal_get_type ();

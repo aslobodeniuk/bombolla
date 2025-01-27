@@ -62,16 +62,22 @@ animal_get_property (GObject * object,
 
 static void
 animal_class_init (GObjectClass * gobject_class, AnimalClass * klass) {
+  GParamFlags domestic_prop_flags =
+      G_PARAM_STATIC_STRINGS |
+      G_PARAM_READABLE;
+  
   g_message ("animal_class_init");
 
   gobject_class->get_property = animal_get_property;
   klass->is_domestic = TRUE;
 
+  if (klass->maybe_domestic)
+    domestic_prop_flags |= G_PARAM_WRITABLE;
+    
   g_object_class_install_property (gobject_class, PROP_IS_DOMESTIC,
                                    g_param_spec_boolean ("is-domestic",
                                                          "Is domestic",
                                                          "If this animal is domestic",
                                                          TRUE,
-                                                         G_PARAM_STATIC_STRINGS |
-                                                         G_PARAM_READABLE));
+                                                         domestic_prop_flags));
 }

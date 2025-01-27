@@ -63,6 +63,7 @@
 typedef enum {
   BM_ADD_TYPE_IFACE,
   BM_ADD_TYPE_DEP,
+  BM_ADD_TYPE_BASE_INIT,
 } BMAddType;
 
 /**
@@ -74,6 +75,7 @@ typedef struct {
   BMAddType add_type;
     GType (*gtype) (void);
   GInterfaceInfo iface_info;
+  GBaseInitFunc base_init;
 } BMParams;
 
 /**
@@ -315,6 +317,30 @@ GQuark bmixin_info_qrk (void);
 #  define BM_ADD_IFACE(head, body, iface, ...)                   \
   { .add_type = BM_ADD_TYPE_IFACE, .gtype = head##_##iface##_get_type,  \
         .iface_info = { (GInterfaceInitFunc)head##_##body##_##iface##_init, __VA_ARGS__ } }
+
+/**
+ * BM_ADD_BASE_INIT:
+ * 
+ * Install custom `base_init` function.
+ * This macro is used together with BM_DEFINE_MIXIN()
+ *
+ * Example:
+ * |[<!-- language="C" -->
+ *  static void
+ *  lba_custom_picture_base_init (gpointer class_ptr)
+ *  {
+ *    LbaPictureClass *pklass =
+ *        bm_class_get_mixin (class_ptr, lba_picture_get_type ());
+ *
+ *    pklass->writable_format = TRUE;
+ *  }
+ *
+ *  BM_DEFINE_MIXIN (lba_custom_picture, LbaCustomPicture,
+ *      BM_ADD_DEP (lba_picture),
+ *      BM_ADD_BASE_INIT (lba_custom_picture_base_init));
+ * ]|
+ */
+#  define BM_ADD_BASE_INIT(func) { .add_type = BM_ADD_TYPE_BASE_INIT, .base_init = func }
 
 /**
  * BM_DEFINE_MIXIN:

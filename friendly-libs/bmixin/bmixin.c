@@ -89,6 +89,7 @@ bm_register_mixed_type (const gchar * mixed_type_name, GType base_type, GType mi
   gint i;
   GTypeFlags result_type_flags = 0;
   gchar *mixed_type_name_on_fly = NULL;
+  GBaseInitFunc base_init = NULL;
 
   g_return_val_if_fail (mixin, G_TYPE_INVALID);
   g_return_val_if_fail (base_type, G_TYPE_INVALID);
@@ -101,6 +102,11 @@ bm_register_mixed_type (const gchar * mixed_type_name, GType base_type, GType mi
     const BMParams *param = &minfo->params[i];
 
     switch (param->add_type) {
+    case BM_ADD_TYPE_BASE_INIT:
+      g_warn_if_fail (base_init == NULL);
+      base_init = param->base_init;
+      continue;
+
     case BM_ADD_TYPE_IFACE:
       /* Will proccess after type registration */
       continue;
@@ -186,6 +192,7 @@ bm_register_mixed_type (const gchar * mixed_type_name, GType base_type, GType mi
   mixed_type_info = minfo->info;
   mixed_type_info.class_size += base_info.class_size;
   mixed_type_info.instance_size += base_info.instance_size;
+  mixed_type_info.base_init = base_init;
 
   if (mixed_type_name == NULL) {
     mixed_type_name_on_fly = g_strdup_printf ("%s+%s", g_type_name (base_type),
