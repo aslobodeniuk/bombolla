@@ -32,7 +32,6 @@
 
 typedef struct _LbaGst {
   GObject parent;
-  GInputStream *stream;
   gchar *pipeline_desc;
   GstElement *pipeline;
 
@@ -48,8 +47,7 @@ typedef struct _LbaGstClass {
 } LbaGstClass;
 
 typedef enum {
-  PROP_STREAM = 1,
-  PROP_PIPELINE,
+  PROP_PIPELINE = 1,
   PROP_H,
   PROP_W,
   PROP_DATA,
@@ -70,7 +68,7 @@ lba_gst_new_sample (GstElement * object, gpointer user_data) {
   buffer = gst_sample_get_buffer (samp);
 
   gst_buffer_map (buffer, &map, GST_MAP_READ);
-  /* This buffer will travel with the data throug the GInputStream */
+  /* This buffer will travel with the data through the LbaPicture mixin */
   GBytes *bytes = g_bytes_new_with_free_func (map.data,
                                               map.size,
                                               (GDestroyNotify) gst_buffer_unref,
@@ -100,9 +98,7 @@ static void
 lba_gst_pipeline_update (LbaGst * self, const gchar * desc) {
   g_free (self->pipeline_desc);
   self->pipeline_desc = g_strdup (desc);
-  if (self->stream) {
-    g_object_unref (self->stream);
-  }
+
   if (self->pipeline) {
     gst_element_set_state (self->pipeline, GST_STATE_NULL);
     gst_object_unref (self->pipeline);
@@ -188,7 +184,7 @@ lba_gst_dispose (GObject * gobject) {
 
   g_clear_pointer (&self->format, g_free);
   g_clear_pointer (&self->pipeline_desc, g_free);
-  g_clear_object (&self->stream);
+  g_clear_pointer (&self->data, g_bytes_unref);
 
   G_OBJECT_CLASS (lba_gst_parent_class)->dispose (gobject);
 }
