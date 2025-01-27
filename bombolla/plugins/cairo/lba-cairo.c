@@ -111,7 +111,7 @@ lba_cairo_init (LbaCairo * self) {
   /* set LbaPicture things */
   self->w = 512;
   self->h = 512;
-  self->format = g_strdup ("rgb888");
+  self->format = g_strdup ("argb8888");
 
   /* Cairo */
   self->surface =
@@ -137,7 +137,7 @@ lba_cairo_init (LbaCairo * self) {
 
   /* LbaPicture */
   self->data = g_bytes_new_with_free_func (cairo_image_surface_get_data (self->surface),
-      self->w * self->h *3,
+      self->w * self->h *4,
       /* TODO need to block and unblock when the surface have been rendered
        * (in the OpenGL thread). So we don't modify the surface meanwhile. */
       NULL,

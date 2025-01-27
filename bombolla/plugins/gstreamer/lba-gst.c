@@ -34,6 +34,7 @@ typedef struct _LbaGst {
   GObject parent;
   gchar *pipeline_desc;
   GstElement *pipeline;
+  GstElement *appsrc;
 
   /* Picture mixin */
   gint w;
@@ -96,6 +97,8 @@ lba_gst_new_sample (GstElement * object, gpointer user_data) {
 
 static void
 lba_gst_pipeline_update (LbaGst * self, const gchar * desc) {
+  GstElement *appsink;
+  
   g_free (self->pipeline_desc);
   self->pipeline_desc = g_strdup (desc);
 
@@ -107,12 +110,40 @@ lba_gst_pipeline_update (LbaGst * self, const gchar * desc) {
   LBA_LOG ("Starting the pipeline '%s'", self->pipeline_desc);
   self->pipeline = gst_parse_launch (self->pipeline_desc, NULL);
 
-  GstElement *appsink = gst_bin_get_by_name (GST_BIN (self->pipeline), "lba_out");
+  g_clear_pointer (&self->appsrc, gst_object_unref);
+  self->appsrc = gst_bin_get_by_name (GST_BIN (self->pipeline), "lba_in");
 
-  g_signal_connect (appsink, "new-sample", G_CALLBACK (lba_gst_new_sample), self);
-  gst_object_unref (appsink);
+  appsink = gst_bin_get_by_name (GST_BIN (self->pipeline), "lba_out");
+  if (appsink) {
+    g_signal_connect (appsink, "new-sample", G_CALLBACK (lba_gst_new_sample), self);
+
+    g_warn_if_fail (self->appsrc == NULL || appsink == NULL);
+    gst_object_unref (appsink);
+  }
 
   gst_element_set_state (self->pipeline, GST_STATE_PLAYING);
+}
+
+static const char*
+lba_gst_format_to_gst (const char *fmt)
+{
+  static const struct
+  {
+    const gchar *lba;
+    const gchar *gst;
+  } bunch[] = {
+    { "argb8888", "ARGB" },
+    { "rgba8888", "RGBA" }
+  };
+
+  int i;
+  
+  for (i = 0; i < G_N_ELEMENTS (bunch); i++)
+    if (g_strcmp0 (bunch[i].lba, fmt)) {
+      return bunch[i].gst;
+    }
+
+  return NULL;
 }
 
 static void
@@ -134,6 +165,37 @@ lba_gst_set_property (GObject * object,
   case PROP_H:
     self->h = g_value_get_uint (value);
     break;
+  case PROP_DATA:
+    g_return_if_fail (self->appsrc != NULL);
+
+    g_clear_pointer (&self->data, g_bytes_unref);
+    self->data = (GBytes *)g_value_dup_boxed (value);
+
+    /* So now we push this data to the appsrc */
+    {
+      GstSample *sample;
+      GstBuffer *buf = gst_buffer_new_wrapped_bytes (self->data);
+      GstCaps *caps = gst_caps_new_simple ("video/x-raw",
+          "width", G_TYPE_INT, self->w,
+          "height", G_TYPE_INT, self->h,
+          "format", G_TYPE_STRING, lba_gst_format_to_gst (self->format),
+          NULL);
+      GstSegment segment;
+
+      gst_segment_init (&segment, GST_FORMAT_TIME);
+      sample = gst_sample_new (buf, caps, &segment, NULL);
+
+      /* TODO push only buffer if the format is kept the same */
+      /* TODO handle ret value */
+      GstFlowReturn ret;
+      g_signal_emit_by_name (self->appsrc, "push-sample", sample, &ret);
+
+      gst_sample_unref (sample);
+      gst_buffer_unref (buf);
+      gst_caps_unref (caps);
+    }
+    break;
+
   default:
     /* We don't have any other property... */
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -182,6 +244,7 @@ lba_gst_dispose (GObject * gobject) {
     g_clear_object (&self->pipeline);
   }
 
+  g_clear_object (&self->appsrc);
   g_clear_pointer (&self->format, g_free);
   g_clear_pointer (&self->pipeline_desc, g_free);
   g_clear_pointer (&self->data, g_bytes_unref);
@@ -230,7 +293,7 @@ lba_gst_class_init (LbaGstClass * klass) {
        PROP_DATA,
        g_param_spec_boxed ("data",
                            "Data", "Data",
-                           G_TYPE_BYTES, G_PARAM_STATIC_STRINGS | G_PARAM_READABLE));
+                           G_TYPE_BYTES, G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE));
 
   g_object_class_install_property (gobj_class, PROP_FORMAT,
                                    g_param_spec_string ("format",

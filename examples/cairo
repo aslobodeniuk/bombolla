@@ -1,0 +1,9 @@
+create LbaCairo c
+create LbaGst gst
+
+set gst.pipeline appsrc name=lba_in ! videoconvert ! autovideosink
+
+bind c.width gst.width
+bind c.height gst.height
+bind c.format gst.format
+bind c.data gst.data
