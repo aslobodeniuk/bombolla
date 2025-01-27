@@ -231,6 +231,7 @@ lba_cogl_texture_init_picture (LbaCoglTexture * self) {
 
   self->pic.w = 32;
   self->pic.h = 32;
+  self->pic.format = COGL_PIXEL_FORMAT_RGBA_8888;
 
   for (i = 0; i < DEFAULT_PICTURE_SIZE_BYTES; i++) {
     test_rgba_tex[i] = g_random_int_range (0, 256);

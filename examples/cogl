@@ -29,4 +29,4 @@ create LbaClock cc
 bind l2.text cc.current-time
 set cc.tick-interval-ms 500
 
-call w.open
+async call w.open

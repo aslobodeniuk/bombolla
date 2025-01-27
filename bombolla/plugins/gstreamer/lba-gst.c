@@ -58,6 +58,41 @@ typedef enum {
 
 G_DEFINE_TYPE (LbaGst, lba_gst, G_TYPE_OBJECT);
 
+static const struct
+{
+  const gchar *lba;
+  const gchar *gst;
+} bunch[] = {
+  { "argb8888", "ARGB" },
+  { "rgba8888", "RGBA" }
+};
+
+static const char*
+lba_gst_format_to_gst (const char *fmt)
+{
+  int i;
+  
+  for (i = 0; i < G_N_ELEMENTS (bunch); i++)
+    if (g_strcmp0 (bunch[i].lba, fmt)) {
+      return bunch[i].gst;
+    }
+
+  return NULL;
+}
+
+static const char*
+lba_gst_format_to_lba (const char *fmt)
+{
+  int i;
+  
+  for (i = 0; i < G_N_ELEMENTS (bunch); i++)
+    if (g_strcmp0 (bunch[i].gst, fmt)) {
+      return bunch[i].lba;
+    }
+
+  return NULL;
+}
+
 static GstFlowReturn
 lba_gst_new_sample (GstElement * object, gpointer user_data) {
   LbaGst *self = (LbaGst *) user_data;
@@ -87,7 +122,17 @@ lba_gst_new_sample (GstElement * object, gpointer user_data) {
       g_bytes_unref (self->data);
     self->data = bytes;
 
+    const gchar *fmt = lba_gst_format_to_lba (gst_structure_get_string (s, "format"));
+    if (g_strcmp0 (fmt, self->format) != 0) {
+      LBA_LOG ("Format change %s --> %s", self->format, fmt);
+      g_free (self->format);
+      self->format = g_strdup (fmt);
+      g_object_notify (G_OBJECT (self), "format");
+    }
+
     LBA_LOG ("Notifying bytes of size %" G_GSIZE_FORMAT, map.size);
+
+    /* FIXME: must be atomic */
     g_object_notify (G_OBJECT (self), "data");
   }
 
@@ -122,28 +167,6 @@ lba_gst_pipeline_update (LbaGst * self, const gchar * desc) {
   }
 
   gst_element_set_state (self->pipeline, GST_STATE_PLAYING);
-}
-
-static const char*
-lba_gst_format_to_gst (const char *fmt)
-{
-  static const struct
-  {
-    const gchar *lba;
-    const gchar *gst;
-  } bunch[] = {
-    { "argb8888", "ARGB" },
-    { "rgba8888", "RGBA" }
-  };
-
-  int i;
-  
-  for (i = 0; i < G_N_ELEMENTS (bunch); i++)
-    if (g_strcmp0 (bunch[i].lba, fmt)) {
-      return bunch[i].gst;
-    }
-
-  return NULL;
 }
 
 static void
