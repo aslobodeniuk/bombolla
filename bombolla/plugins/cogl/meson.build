@@ -20,7 +20,7 @@ shared_library('lba-cogl-window',
 shared_library('lba-cogl-texture',
                'lba-cogl-texture.c',
                dependencies: [bombolla_dep, cogl_dep],
-               link_with: bombolla_icogl
+               link_with: [bombolla_icogl, lba_picture]
               )
 
 shared_library('lba-cogl-cube',

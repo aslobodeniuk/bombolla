@@ -28,6 +28,7 @@
 #include "base/icogl.h"
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
+#include "bombolla/base/lba-picture.h"
 
 typedef struct _LbaCoglTexture {
   GObject parent;
@@ -59,11 +60,12 @@ typedef enum {
   N_PROPERTIES
 } LbaCoglTextureProperty;
 
+/* TODO: make mixin */
 G_DEFINE_TYPE (LbaCoglTexture, lba_cogl_texture, G_TYPE_OBJECT);
 
 /* transfer-full */
 static CoglPixelFormat
-lba_cogl_texture_format_to_cogl (gchar *format)
+lba_cogl_texture_format_to_cogl (const gchar *format)
 {
   static const struct
   {
@@ -81,8 +83,6 @@ lba_cogl_texture_format_to_cogl (gchar *format)
     if (g_strcmp0 (bunch[i].str, format)) {
       ret = bunch[i].cogl;
     }
-  
-  g_free (format);
 
   return ret;
 }
@@ -90,21 +90,21 @@ lba_cogl_texture_format_to_cogl (gchar *format)
 static void
 lba_cogl_texture_picture_update_cb (GObject * pic,
                                     GParamSpec * pspec, LbaCoglTexture * self) {
-  gchar *format;
+  gchar format[16];
   GBytes *pic_data;
   guint w,
     h;
 
-  LBA_LOCK (self);
-  g_object_get (pic, "width", &w, "height", &h,
-                "data", &pic_data, "format", &format, NULL);
+  pic_data = (GBytes *) lba_picture_get (pic, format, &w, &h);
+  if (!pic_data)
+    return;
 
   LBA_LOG ("Picture update: w=%d, h=%d, format=%s", w, h, format);
 
-  /* TODO: GTypeEnum format */
   LBA_ASSERT (w != 0 && h != 0);
   LBA_ASSERT (pic_data != NULL);
 
+  LBA_LOCK (self);
   if (self->pic.data) {
     g_bytes_unref (self->pic.data);
   }
@@ -115,10 +115,10 @@ lba_cogl_texture_picture_update_cb (GObject * pic,
   self->pic.h = h;
   self->pic.last_cookie = self->pic.cookie;
   self->pic.cookie++;
+  LBA_UNLOCK (self);
 
   /* Now request update the drawing scene */
   g_signal_emit_by_name (self->scene, "request-redraw", NULL);
-  LBA_UNLOCK (self);
 }
 
 static void
@@ -225,9 +225,10 @@ lba_cogl_texture_set (LbaCoglTexture * self, GObject * obj_3d) {
   LBA_UNLOCK (self);
 }
 
-static void
-lba_cogl_texture_init_picture (LbaCoglTexture * self) {
 #define DEFAULT_PICTURE_SIZE_BYTES (4 * 32 * 32)
+
+static void
+lba_cogl_texture_default_picture (LbaCoglTexture * self) {
   int i;
   static uint8_t test_rgba_tex[DEFAULT_PICTURE_SIZE_BYTES];
 
@@ -245,7 +246,7 @@ lba_cogl_texture_init_picture (LbaCoglTexture * self) {
 static void
 lba_cogl_texture_init (LbaCoglTexture * self) {
   g_rec_mutex_init (&self->lock);
-  lba_cogl_texture_init_picture (self);
+  lba_cogl_texture_default_picture (self);
 }
 
 static void
@@ -304,7 +305,6 @@ lba_cogl_texture_class_init (LbaCoglTextureClass * klass) {
                 G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
                 G_STRUCT_OFFSET (LbaCoglTextureClass, unset), NULL, NULL,
                 NULL, G_TYPE_NONE, 1, G_TYPE_OBJECT);
-
 }
 
 /* Export plugin */

@@ -28,35 +28,37 @@
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 #include <gst/gst.h>
-#include <gio/gio.h>
+#include "bombolla/base/lba-picture.h"
 
 typedef struct _LbaGst {
-  GObject parent;
+  BMixinInstance i;
+
   gchar *pipeline_desc;
   GstElement *pipeline;
   GstElement *appsrc;
-
-  /* Picture mixin */
-  gint w;
-  gint h;
-  gchar *format;
-  GBytes *data;
 } LbaGst;
 
 typedef struct _LbaGstClass {
-  GObjectClass parent;
+  BMixinClass c;
 } LbaGstClass;
 
 typedef enum {
   PROP_PIPELINE = 1,
-  PROP_H,
-  PROP_W,
-  PROP_DATA,
-  PROP_FORMAT,
   N_PROPERTIES
 } LbaGstProperty;
 
-G_DEFINE_TYPE (LbaGst, lba_gst, G_TYPE_OBJECT);
+static void
+lba_custom_picture_base_init (gpointer class_ptr)
+{
+  LbaPictureClass *pklass =
+      bm_class_get_mixin (class_ptr, lba_picture_get_type ());
+
+  /* TODO: make function lba_picture_class_set_writable_properties() */
+  pklass->writable_properties = TRUE;
+}
+
+BM_DEFINE_MIXIN (lba_gst, LbaGst, BM_ADD_DEP (lba_picture),
+    BM_ADD_BASE_INIT (lba_custom_picture_base_init));
 
 static const struct
 {
@@ -112,32 +114,57 @@ lba_gst_new_sample (GstElement * object, gpointer user_data) {
 
   gst_buffer_unmap (buffer, &map);
 
-  /* set w and h from caps */
   GstStructure *s = gst_caps_get_structure (gst_sample_get_caps (samp), 0);
-
-  if (s && gst_structure_get_int (s, "width", &self->w)
-      && gst_structure_get_int (s, "height", &self->h)) {
-    /* TODO: format. For now we stick with RGBA */
-    if (self->data)
-      g_bytes_unref (self->data);
-    self->data = bytes;
+  gint w, h;
+  if (s && gst_structure_get_int (s, "width", &w)
+      && gst_structure_get_int (s, "height", &h)) {
 
     const gchar *fmt = lba_gst_format_to_lba (gst_structure_get_string (s, "format"));
-    if (g_strcmp0 (fmt, self->format) != 0) {
-      LBA_LOG ("Format change %s --> %s", self->format, fmt);
-      g_free (self->format);
-      self->format = g_strdup (fmt);
-      g_object_notify (G_OBJECT (self), "format");
-    }
 
     LBA_LOG ("Notifying bytes of size %" G_GSIZE_FORMAT, map.size);
 
-    /* FIXME: must be atomic */
-    g_object_notify (G_OBJECT (self), "data");
+    lba_picture_set (BM_GET_GOBJECT (self), fmt, w, h, bytes);
   }
 
   gst_sample_unref (samp);
   return GST_FLOW_OK;
+}
+
+static void
+lba_gst_data_update_cb (GObject * pic,
+    GParamSpec * pspec, LbaGst * self) {
+  gchar format[16];
+  guint w, h;
+  GBytes * data;
+  
+  g_return_if_fail (self->appsrc != NULL);
+
+  /* g_clear_pointer (&self->data, g_bytes_unref); */
+  data = (GBytes *) lba_picture_get (pic, format, &w, &h);
+
+  /* So now we push this data to the appsrc */
+  {
+    GstSample *sample;
+    GstBuffer *buf = gst_buffer_new_wrapped_bytes (data);
+    GstCaps *caps = gst_caps_new_simple ("video/x-raw",
+        "width", G_TYPE_INT, w,
+          "height", G_TYPE_INT, h,
+          "format", G_TYPE_STRING, lba_gst_format_to_gst (format),
+          NULL);
+      GstSegment segment;
+
+      gst_segment_init (&segment, GST_FORMAT_TIME);
+      sample = gst_sample_new (buf, caps, &segment, NULL);
+
+      /* TODO push only buffer if the format is kept the same */
+      /* TODO handle ret value */
+      GstFlowReturn ret;
+      g_signal_emit_by_name (self->appsrc, "push-sample", sample, &ret);
+
+      gst_sample_unref (sample);
+      gst_buffer_unref (buf);
+      gst_caps_unref (caps);
+    }
 }
 
 static void
@@ -157,6 +184,11 @@ lba_gst_pipeline_update (LbaGst * self, const gchar * desc) {
 
   g_clear_pointer (&self->appsrc, gst_object_unref);
   self->appsrc = gst_bin_get_by_name (GST_BIN (self->pipeline), "lba_in");
+  if (self->appsrc) {
+    /* NOTE: this is a hack, we must have input pictures and output pictures */
+    g_signal_connect (BM_GET_GOBJECT (self), "notify::data",
+        G_CALLBACK (lba_gst_data_update_cb), self);
+  }
 
   appsink = gst_bin_get_by_name (GST_BIN (self->pipeline), "lba_out");
   if (appsink) {
@@ -172,51 +204,11 @@ lba_gst_pipeline_update (LbaGst * self, const gchar * desc) {
 static void
 lba_gst_set_property (GObject * object,
                       guint property_id, const GValue * value, GParamSpec * pspec) {
-  LbaGst *self = (LbaGst *) object;
+  LbaGst *self = bm_get_LbaGst (object);
 
   switch ((LbaGstProperty) property_id) {
   case PROP_PIPELINE:
     lba_gst_pipeline_update (self, g_value_get_string (value));
-    break;
-  case PROP_FORMAT:
-    g_free (self->format);
-    self->format = g_value_dup_string (value);
-    break;
-  case PROP_W:
-    self->w = g_value_get_uint (value);
-    break;
-  case PROP_H:
-    self->h = g_value_get_uint (value);
-    break;
-  case PROP_DATA:
-    g_return_if_fail (self->appsrc != NULL);
-
-    g_clear_pointer (&self->data, g_bytes_unref);
-    self->data = (GBytes *)g_value_dup_boxed (value);
-
-    /* So now we push this data to the appsrc */
-    {
-      GstSample *sample;
-      GstBuffer *buf = gst_buffer_new_wrapped_bytes (self->data);
-      GstCaps *caps = gst_caps_new_simple ("video/x-raw",
-          "width", G_TYPE_INT, self->w,
-          "height", G_TYPE_INT, self->h,
-          "format", G_TYPE_STRING, lba_gst_format_to_gst (self->format),
-          NULL);
-      GstSegment segment;
-
-      gst_segment_init (&segment, GST_FORMAT_TIME);
-      sample = gst_sample_new (buf, caps, &segment, NULL);
-
-      /* TODO push only buffer if the format is kept the same */
-      /* TODO handle ret value */
-      GstFlowReturn ret;
-      g_signal_emit_by_name (self->appsrc, "push-sample", sample, &ret);
-
-      gst_sample_unref (sample);
-      gst_buffer_unref (buf);
-      gst_caps_unref (caps);
-    }
     break;
 
   default:
@@ -229,23 +221,11 @@ lba_gst_set_property (GObject * object,
 static void
 lba_gst_get_property (GObject * object,
                       guint property_id, GValue * value, GParamSpec * pspec) {
-  LbaGst *self = (LbaGst *) object;
+  LbaGst *self = bm_get_LbaGst (object);
 
   switch ((LbaGstProperty) property_id) {
   case PROP_PIPELINE:
     g_value_set_string (value, self->pipeline_desc);
-    break;
-  case PROP_W:
-    g_value_set_uint (value, self->w);
-    break;
-  case PROP_H:
-    g_value_set_uint (value, self->h);
-    break;
-  case PROP_DATA:
-    g_value_set_boxed (value, self->data);
-    break;
-  case PROP_FORMAT:
-    g_value_set_string (value, self->format);
     break;
   default:
     /* We don't have any other property... */
@@ -255,12 +235,13 @@ lba_gst_get_property (GObject * object,
 }
 
 static void
-lba_gst_init (LbaGst * self) {
+lba_gst_init (GObject * gobj, LbaGst * self) {
+  /* TODO: input-picture and output-picture?? */
 }
 
 static void
 lba_gst_dispose (GObject * gobject) {
-  LbaGst *self = (LbaGst *) gobject;
+  LbaGst *self = bm_get_LbaGst (gobject);
 
   if (self->pipeline) {
     gst_element_set_state (self->pipeline, GST_STATE_NULL);
@@ -268,17 +249,13 @@ lba_gst_dispose (GObject * gobject) {
   }
 
   g_clear_object (&self->appsrc);
-  g_clear_pointer (&self->format, g_free);
   g_clear_pointer (&self->pipeline_desc, g_free);
-  g_clear_pointer (&self->data, g_bytes_unref);
 
-  G_OBJECT_CLASS (lba_gst_parent_class)->dispose (gobject);
+  BM_CHAINUP (self, GObject)->finalize (gobject);
 }
 
 static void
-lba_gst_class_init (LbaGstClass * klass) {
-  GObjectClass *gobj_class = G_OBJECT_CLASS (klass);
-
+lba_gst_class_init (GObjectClass * gobj_class, LbaGstClass * mixin_class) {
   gobj_class->dispose = lba_gst_dispose;
   gobj_class->set_property = lba_gst_set_property;
   gobj_class->get_property = lba_gst_get_property;
@@ -290,42 +267,6 @@ lba_gst_class_init (LbaGstClass * klass) {
                                                         "videotestsrc ! videoconvert ! appsink name=lba_out emit-signals=true",
                                                         G_PARAM_STATIC_STRINGS |
                                                         G_PARAM_READWRITE));
-
-  g_object_class_install_property
-      (gobj_class,
-       PROP_W,
-       g_param_spec_uint ("width",
-                          "W", "Width",
-                          2, 2048,
-                          32,
-                          G_PARAM_STATIC_STRINGS |
-                          G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
-
-  g_object_class_install_property
-      (gobj_class,
-       PROP_H,
-       g_param_spec_uint ("height",
-                          "H", "Height",
-                          2, 2048,
-                          32,
-                          G_PARAM_STATIC_STRINGS |
-                          G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
-
-  g_object_class_install_property
-      (gobj_class,
-       PROP_DATA,
-       g_param_spec_boxed ("data",
-                           "Data", "Data",
-                           G_TYPE_BYTES, G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE));
-
-  g_object_class_install_property (gobj_class, PROP_FORMAT,
-                                   g_param_spec_string ("format",
-                                                        "Format",
-                                                        "Format",
-                                                        "rgba8888",
-                                                        G_PARAM_STATIC_STRINGS |
-                                                        G_PARAM_READWRITE |
-                                                        G_PARAM_CONSTRUCT));
 
   static int gstinit = 0;
 

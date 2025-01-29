@@ -22,6 +22,12 @@ lba_2d = shared_library('lba-2d',
                link_with: [lba_base]
               )
 
+lba_picture = shared_library('lba-picture',
+               'lba-picture.c',
+               dependencies: [bombolla_dep],
+               link_with: [lba_base]
+              )
+
 lba_async = shared_library('lba-async',
                'lba-async.c',
                dependencies: [bombolla_dep],
