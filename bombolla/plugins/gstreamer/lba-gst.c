@@ -48,17 +48,22 @@ typedef enum {
 } LbaGstProperty;
 
 static void
-lba_custom_picture_base_init (gpointer class_ptr)
+lba_picture_class_setup (gpointer class_ptr)
 {
   LbaPictureClass *pklass =
       bm_class_get_mixin (class_ptr, lba_picture_get_type ());
 
-  /* TODO: make function lba_picture_class_set_writable_properties() */
+  /* FIXME: split this setup into another mixin "LbaWritablePicture".
+   * also LbaGst should have a multitude of pictures on input and multitude on
+   * output. Probably it should be split into various mixins. Such as LbaGstInput
+   * LbaGstOutput.
+   * Or LbaGstPicture, LbaGstWritablePicture */
+  
   pklass->writable_properties = TRUE;
 }
 
 BM_DEFINE_MIXIN (lba_gst, LbaGst, BM_ADD_DEP (lba_picture),
-    BM_ADD_BASE_INIT (lba_custom_picture_base_init));
+    BM_ADD_CLASS_SETUP (lba_picture));
 
 static const struct
 {

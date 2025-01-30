@@ -63,7 +63,7 @@
 typedef enum {
   BM_ADD_TYPE_IFACE,
   BM_ADD_TYPE_DEP,
-  BM_ADD_TYPE_BASE_INIT,
+  BM_ADD_TYPE_CLASS_SETUP,
 } BMAddType;
 
 /**
@@ -75,7 +75,7 @@ typedef struct {
   BMAddType add_type;
     GType (*gtype) (void);
   GInterfaceInfo iface_info;
-  GBaseInitFunc base_init;
+  GBaseInitFunc class_setup;
 } BMParams;
 
 /**
@@ -216,6 +216,7 @@ GType bm_fundamental_get_type (void);
  *   of the @mixin will be applied in between. Since any mixed type is #GObject-based,
  *   mixed type is suitable here.
  * @mixin: a BMixin type to apply on top of the #GObject-based @base_type.
+ * @class_setup: allows to set base_init on the type. %NULL otherwise
  *
  * This function registers and returns a new #GType for a mixed type, based on the
  * @base_type with all the dependency tree of the @mixin applied to it. If @mixin has
@@ -240,7 +241,7 @@ GType bm_fundamental_get_type (void);
  * Returns: a #GType of newly registered mixed type or #G_TYPE_INVALID if failed
  */
 GType bm_register_mixed_type (const gchar * mixed_type_name,
-                              GType base_type, GType mixin);
+    GType base_type, GType mixin, GBaseInitFunc class_setup);
 
 /**
  * bm_register_mixin:
@@ -319,15 +320,19 @@ GQuark bmixin_info_qrk (void);
         .iface_info = { (GInterfaceInitFunc)head##_##body##_##iface##_init, __VA_ARGS__ } }
 
 /**
- * BM_ADD_BASE_INIT:
+ * BM_ADD_CLASS_SETUP:
  * 
- * Install custom `base_init` function.
- * This macro is used together with BM_DEFINE_MIXIN()
+ * Install custom `class_setup` function.
+ * This macro is used together with BM_DEFINE_MIXIN().
+ * class_setup() is going to be executed before the class_init() for a type with a
+ * correspontent mixin on top of it. This is used to set up parts of the
+ * class structure of the type. Note that this class is not going to have access to
+ * other mixins.
  *
  * Example:
  * |[<!-- language="C" -->
  *  static void
- *  lba_custom_picture_base_init (gpointer class_ptr)
+ *  lba_picture_class_setup (gpointer class_ptr)
  *  {
  *    LbaPictureClass *pklass =
  *        bm_class_get_mixin (class_ptr, lba_picture_get_type ());
@@ -335,12 +340,12 @@ GQuark bmixin_info_qrk (void);
  *    pklass->writable_format = TRUE;
  *  }
  *
- *  BM_DEFINE_MIXIN (lba_custom_picture, LbaCustomPicture,
+ *  BM_DEFINE_MIXIN (lba_writable_picture, LbaWritablePicture,
  *      BM_ADD_DEP (lba_picture),
- *      BM_ADD_BASE_INIT (lba_custom_picture_base_init));
+ *      BM_ADD_CLASS_SETUP (lba_picture));
  * ]|
  */
-#  define BM_ADD_BASE_INIT(func) { .add_type = BM_ADD_TYPE_BASE_INIT, .base_init = func }
+#  define BM_ADD_CLASS_SETUP(head) { .add_type = BM_ADD_TYPE_CLASS_SETUP, .class_setup = head##_class_setup, .gtype = head##_get_type }
 
 /**
  * BM_DEFINE_MIXIN:

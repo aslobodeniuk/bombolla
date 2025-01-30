@@ -47,7 +47,7 @@ fixture_set_up (Fixture * fixture, gconstpointer user_data) {
 
   /* Doesn't warn on running multiple times */
   async_type = bm_register_mixed_type (NULL, G_TYPE_OBJECT,
-                                       lba_async_string_input_get_type ());
+      lba_async_string_input_get_type (), NULL);
   fixture->inp = g_object_new (async_type, NULL);
 }
 

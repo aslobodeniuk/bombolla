@@ -37,7 +37,7 @@ fixture_set_up (Fixture * fixture, gconstpointer user_data) {
   GType wolf_get_type (void);
 
   g_message ("registering testwolf");
-  testwolf = bm_register_mixed_type ("TestWolf", G_TYPE_OBJECT, wolf_get_type ());
+  testwolf = bm_register_mixed_type ("TestWolf", G_TYPE_OBJECT, wolf_get_type (), NULL);
 
   fixture->obj = g_object_new (testwolf, NULL);
 }
@@ -66,7 +66,7 @@ test_domestic_override (Fixture * fixture, gconstpointer user_data) {
     GType wolf2_get_type (void);
 
     g_message ("registering Wolf2");
-    wolf2 = bm_register_mixed_type ("TestWolf2", G_TYPE_OBJECT, wolf2_get_type ());
+    wolf2 = bm_register_mixed_type ("TestWolf2", G_TYPE_OBJECT, wolf2_get_type (), NULL);
 
     obj = g_object_new (wolf2, NULL);
 

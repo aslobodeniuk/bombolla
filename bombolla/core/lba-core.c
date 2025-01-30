@@ -444,5 +444,5 @@ lba_core_object_get_type (void) {
 
   return ret ? ret : (ret =
                       bm_register_mixed_type ("LbaCoreObject", G_TYPE_OBJECT,
-                                              lba_core_get_type ()));
+                          lba_core_get_type (), NULL));
 }

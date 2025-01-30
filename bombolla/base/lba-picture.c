@@ -167,8 +167,7 @@ lba_picture_class_init (GObjectClass * gobj_class, LbaPictureClass * mixin_class
   {
     GParamFlags maybe_writable = 0;
 
-    /* FIXME?? */
-    if (TRUE/* mixin_class->writable_properties */)
+    if (mixin_class->writable_properties)
       maybe_writable |= G_PARAM_WRITABLE;
     
     g_object_class_install_property

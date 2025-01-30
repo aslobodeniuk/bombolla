@@ -55,7 +55,7 @@ lba_command_create (BombollaContext * ctx, gchar ** tokens) {
   /* If the type is mixin, then we might be able to instantiate
    * the mixed_type. If it's not abstract. */
   if (BM_GTYPE_IS_BMIXIN (obj_type))
-    obj_type = bm_register_mixed_type (NULL, G_TYPE_OBJECT, obj_type);
+    obj_type = bm_register_mixed_type (NULL, G_TYPE_OBJECT, obj_type, NULL);
 
   obj = g_object_new (obj_type, NULL);
 
@@ -223,7 +223,7 @@ lba_command_dump_type (GType plugin_type) {
   if (BM_GTYPE_IS_BMIXIN (plugin_type)) {
     g_printf ("Mixin %s\n", g_type_name (plugin_type));
     lba_command_dump_type (bm_register_mixed_type
-                           (NULL, G_TYPE_OBJECT, plugin_type));
+        (NULL, G_TYPE_OBJECT, plugin_type, NULL));
     return;
   }
 
@@ -545,11 +545,11 @@ lba_command_dna (BombollaContext * ctx, gchar ** tokens) {
 
     /* Final type */
     if (tokens[t + 1] == NULL) {
-      base_type = bm_register_mixed_type (mixed_type_name, base_type, mixin_type);
+      base_type = bm_register_mixed_type (mixed_type_name, base_type, mixin_type, NULL);
       base_name = g_type_name (base_type);
     } else {
       /* Intermediate type */
-      base_type = bm_register_mixed_type (NULL, base_type, mixin_type);
+      base_type = bm_register_mixed_type (NULL, base_type, mixin_type, NULL);
       base_name = g_type_name (base_type);
     }
 

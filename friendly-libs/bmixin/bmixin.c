@@ -81,7 +81,7 @@ bm_type_peek_mixed_type (GType mixed_type, GType mixin) {
 }
 
 GType
-bm_register_mixed_type (const gchar * mixed_type_name, GType base_type, GType mixin) {
+bm_register_mixed_type (const gchar * mixed_type_name, GType base_type, GType mixin, GBaseInitFunc class_setup) {
   GType ret;
   GTypeQuery base_info;
   BMInfo *minfo;
@@ -89,7 +89,11 @@ bm_register_mixed_type (const gchar * mixed_type_name, GType base_type, GType mi
   gint i;
   GTypeFlags result_type_flags = 0;
   gchar *mixed_type_name_on_fly = NULL;
-  GBaseInitFunc base_init = NULL;
+  struct {
+    GType type;
+    GBaseInitFunc base_init;
+  } class_setups[16] = {0};
+  guint cs = 0;
 
   g_return_val_if_fail (mixin, G_TYPE_INVALID);
   g_return_val_if_fail (base_type, G_TYPE_INVALID);
@@ -101,12 +105,41 @@ bm_register_mixed_type (const gchar * mixed_type_name, GType base_type, GType mi
   for (i = 0; i < minfo->num_params; i++) {
     const BMParams *param = &minfo->params[i];
 
-    switch (param->add_type) {
-    case BM_ADD_TYPE_BASE_INIT:
-      g_warn_if_fail (base_init == NULL);
-      base_init = param->base_init;
-      continue;
+    if (param->add_type == BM_ADD_TYPE_CLASS_SETUP) {
+      GType type;
 
+      type = param->gtype ();
+      if (G_UNLIKELY (type == 0)) {
+        g_critical ("Type for class setup not found");
+        continue;
+      }
+
+      if (G_UNLIKELY (!BM_GTYPE_IS_BMIXIN (type))) {
+        g_critical ("Wrong type for class setup: '%s' is not a mixin",
+                    g_type_name (type));
+        continue;
+      }
+      
+      if (G_UNLIKELY (cs == G_N_ELEMENTS (class_setups))) {
+        g_critical ("Can't install class setup for (%s): "
+            "too many class setups, maximum " G_STRINGIFY (G_N_ELEMENTS (class_setups)),
+            g_type_name (type));
+        break;
+      }
+      
+      class_setups[cs].type = type;
+      class_setups[cs].base_init = param->class_setup;
+      cs++;
+    }
+  }
+  
+  for (i = 0; i < minfo->num_params; i++) {
+    const BMParams *param = &minfo->params[i];
+
+    switch (param->add_type) {
+    case BM_ADD_TYPE_CLASS_SETUP:
+      /* Already handled */
+      continue;
     case BM_ADD_TYPE_IFACE:
       /* Will proccess after type registration */
       continue;
@@ -149,20 +182,38 @@ bm_register_mixed_type (const gchar * mixed_type_name, GType base_type, GType mi
         }
 
         if (BM_GTYPE_IS_BMIXIN (dep_type)) {
+          GBaseInitFunc base_init = NULL;
+          
           /* Mixin:
            * So, our dep is a mixin. Here come 2 scenarios: either base_type already has it,
            * either not. If it's already included to the base class, then we're done, and there's
            * nothing to do.
            * If required mutoge is not contained in the dna yet, then we add it.
            */
+
+          {
+            guint ccs;
+            for (ccs = 0; ccs < cs; ccs++) {
+              if (class_setups[ccs].type == dep_type) {
+                base_init = class_setups[ccs].base_init;
+                break;
+              }
+            }
+          }
+          
           if (bm_type_peek_mixed_type (base_type, dep_type)) {
             /* Mixin found in the base class, nothing to do */
+            if (G_UNLIKELY (base_init)) {
+              g_critical ("class_setup is defined for %s, but it's already "
+                  "a part of the base (%s), this scenario is not supported",
+                  g_type_name (dep_type), g_type_name (base_type));
+            }
             continue;
           }
 
           /* Dependency mixin is not found in the base class: then we add it
            * on top of the base. */
-          base_type = bm_register_mixed_type (NULL, base_type, dep_type);
+          base_type = bm_register_mixed_type (NULL, base_type, dep_type, base_init);
           if (base_type == 0)
             return 0;
           /* Done, now the base_type is updated and contains the dependency. */
@@ -192,12 +243,22 @@ bm_register_mixed_type (const gchar * mixed_type_name, GType base_type, GType mi
   mixed_type_info = minfo->info;
   mixed_type_info.class_size += base_info.class_size;
   mixed_type_info.instance_size += base_info.instance_size;
-  mixed_type_info.base_init = base_init;
+  mixed_type_info.base_init = class_setup;
 
   if (mixed_type_name == NULL) {
-    mixed_type_name_on_fly = g_strdup_printf ("%s+%s", g_type_name (base_type),
-                                              g_type_name (mixin));
+    gchar *maybe_wsetup = NULL;
+
+    if (class_setup != NULL) {
+      /* Here we use the pointer to class_setup as a random value, since this
+       * pointer persists in a static memory, and can't collide */
+      maybe_wsetup = g_strdup_printf("+%p", class_setup);
+    }
+    
+    mixed_type_name_on_fly = g_strdup_printf ("%s+%s%s", g_type_name (base_type),
+        g_type_name (mixin),
+        maybe_wsetup ? maybe_wsetup : "");
     mixed_type_name = mixed_type_name_on_fly;
+    g_free (maybe_wsetup);
   }
 
   if (g_type_from_name (mixed_type_name)) {
