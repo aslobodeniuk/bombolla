@@ -139,7 +139,6 @@ lba_gst_data_update_cb (GObject * pic,
   
   g_return_if_fail (self->appsrc != NULL);
 
-  /* g_clear_pointer (&self->data, g_bytes_unref); */
   data = (GBytes *) lba_picture_get (pic, format, &w, &h);
 
   /* So now we push this data to the appsrc */
@@ -164,6 +163,7 @@ lba_gst_data_update_cb (GObject * pic,
       gst_sample_unref (sample);
       gst_buffer_unref (buf);
       gst_caps_unref (caps);
+      g_bytes_unref (data);
     }
 }
 
@@ -251,7 +251,7 @@ lba_gst_dispose (GObject * gobject) {
   g_clear_object (&self->appsrc);
   g_clear_pointer (&self->pipeline_desc, g_free);
 
-  BM_CHAINUP (self, GObject)->finalize (gobject);
+  BM_CHAINUP (self, GObject)->dispose (gobject);
 }
 
 static void
