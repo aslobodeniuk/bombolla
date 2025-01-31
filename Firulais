@@ -160,8 +160,7 @@ commit_hook()
     build_and_test "" || exit 1
 }
 
-if test "x$1" = "x--ci-mode"; then
-    message "CI mode"
+if test "x$1" = "x--check-format-all"; then
     message "Checking all the files"
     for file in `find * . 2>&1 | grep \\\.[ch]\$ | grep -v "^\\\./build/" | grep -v "^build/"` ; do
 	# nf is the temporary checkout. This makes sure we check against the
@@ -170,7 +169,11 @@ if test "x$1" = "x--ci-mode"; then
 	cp ${file} $nf
 	check_format $nf
     done
+    exit 0
+fi
 
+if test "x$1" = "x--ci-mode"; then
+    message "CI mode"
     build_and_test "--ci-mode" || (angry_message "Testing failed" "" && exit 1)
     message "Firulais allows this traveller to pass"
     exit 0

@@ -1,0 +1,22 @@
+name: Code formatting check
+on:
+  pull_request:
+    paths:
+      - '**.c'
+      - '**.h'
+      - '.github/workflows/indent.yml'
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  check_indent:
+    runs-on: ubuntu-latest
+    steps:
+    - name: bootstrap
+      run: |
+        DEBIAN_FRONTEND=noninteractive sudo apt install -qq indent
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: indent
+      run: ./Firulais --check-format-all
