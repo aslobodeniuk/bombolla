@@ -41,10 +41,10 @@ typedef struct {
  * of the signal, but for now we just ignore them.
  * So, it executes the commands, stored for that "on" instance. */
 static void
-lba_command_on_cb (GClosure * closure,
-                   GValue * return_value,
+lba_command_on_cb (GClosure *closure,
+                   GValue *return_value,
                    guint n_param_values,
-                   const GValue * param_values,
+                   const GValue *param_values,
                    gpointer invocation_hint, gpointer marshal_data) {
   gpointer user_data;
   GSList *l;
@@ -66,10 +66,10 @@ lba_command_on_cb (GClosure * closure,
 }
 
 static void
-lba_command_on_marshal (GClosure * closure,
-                        GValue * return_value,
+lba_command_on_marshal (GClosure *closure,
+                        GValue *return_value,
                         guint n_param_values,
-                        const GValue * param_values,
+                        const GValue *param_values,
                         gpointer invocation_hint, gpointer marshal_data) {
   /* this is our "passthrough" marshaller. We could also just omit
    * the closure's callback and do what we want here, given that it's passthrough, but
@@ -86,7 +86,7 @@ lba_command_on_marshal (GClosure * closure,
 }
 
 static void
-lba_command_on_destroy (gpointer data, GClosure * closure) {
+lba_command_on_destroy (gpointer data, GClosure *closure) {
   BombollaOnCommandCtx *ctx = data;
 
   /* unref ctx->self */
@@ -95,7 +95,7 @@ lba_command_on_destroy (gpointer data, GClosure * closure) {
 }
 
 gboolean
-lba_command_on_append (gpointer ctx_ptr, const gchar * command) {
+lba_command_on_append (gpointer ctx_ptr, const gchar *command) {
   BombollaOnCommandCtx *ctx = ctx_ptr;
 
   if (0 == g_strcmp0 (command, "end")) {
@@ -113,7 +113,7 @@ lba_command_on_append (gpointer ctx_ptr, const gchar * command) {
 }
 
 gboolean
-lba_command_on (BombollaContext * ctx, gchar ** tokens) {
+lba_command_on (BombollaContext *ctx, gchar **tokens) {
   const gchar *objname,
    *signal_name;
   GObject *obj;

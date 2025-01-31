@@ -34,7 +34,7 @@ typedef struct {
 BM_DEFINE_MIXIN (animal, Animal);
 
 static void
-animal_init (GObject * object, Animal * self) {
+animal_init (GObject *object, Animal *self) {
   g_message ("animal_init");
 }
 
@@ -43,8 +43,8 @@ typedef enum {
 } AnimalProperty;
 
 static void
-animal_get_property (GObject * object,
-                     guint property_id, GValue * value, GParamSpec * pspec) {
+animal_get_property (GObject *object,
+                     guint property_id, GValue *value, GParamSpec *pspec) {
   Animal *self = bm_get_Animal (object);
 
   switch ((AnimalProperty) property_id) {
@@ -61,11 +61,9 @@ animal_get_property (GObject * object,
 }
 
 static void
-animal_class_init (GObjectClass * gobject_class, AnimalClass * klass) {
-  GParamFlags domestic_prop_flags =
-      G_PARAM_STATIC_STRINGS |
-      G_PARAM_READABLE;
-  
+animal_class_init (GObjectClass *gobject_class, AnimalClass *klass) {
+  GParamFlags domestic_prop_flags = G_PARAM_STATIC_STRINGS | G_PARAM_READABLE;
+
   g_message ("animal_class_init");
 
   gobject_class->get_property = animal_get_property;
@@ -73,11 +71,10 @@ animal_class_init (GObjectClass * gobject_class, AnimalClass * klass) {
 
   if (klass->maybe_domestic)
     domestic_prop_flags |= G_PARAM_WRITABLE;
-    
+
   g_object_class_install_property (gobject_class, PROP_IS_DOMESTIC,
                                    g_param_spec_boolean ("is-domestic",
                                                          "Is domestic",
                                                          "If this animal is domestic",
-                                                         TRUE,
-                                                         domestic_prop_flags));
+                                                         TRUE, domestic_prop_flags));
 }

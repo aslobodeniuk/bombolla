@@ -55,7 +55,7 @@ typedef enum {
 } LbaMixin3DProperty;
 
 static void
-lba_mixin_3d_xyz (GObject * object, gdouble * x, gdouble * y, gdouble * z) {
+lba_mixin_3d_xyz (GObject *object, gdouble *x, gdouble *y, gdouble *z) {
   LbaMixin3D *self = bm_get_LbaMixin3D (object);
 
   if (x)
@@ -67,14 +67,14 @@ lba_mixin_3d_xyz (GObject * object, gdouble * x, gdouble * y, gdouble * z) {
 }
 
 static void
-lba_mixin_i3d_init (LbaI3D * iface) {
+lba_mixin_i3d_init (LbaI3D *iface) {
   iface->xyz = lba_mixin_3d_xyz;
 }
 
 static void
-lba_mixin_3d_set_property (GObject * object,
-                           guint property_id, const GValue * value,
-                           GParamSpec * pspec) {
+lba_mixin_3d_set_property (GObject *object,
+                           guint property_id, const GValue *value,
+                           GParamSpec *pspec) {
   LbaMixin3D *self = bm_get_LbaMixin3D (object);
 
   switch ((LbaMixin3DProperty) property_id) {
@@ -97,8 +97,8 @@ lba_mixin_3d_set_property (GObject * object,
 }
 
 static void
-lba_mixin_3d_get_property (GObject * object,
-                           guint property_id, GValue * value, GParamSpec * pspec) {
+lba_mixin_3d_get_property (GObject *object,
+                           guint property_id, GValue *value, GParamSpec *pspec) {
   LbaMixin3D *self = bm_get_LbaMixin3D (object);
 
   switch ((LbaMixin3DProperty) property_id) {
@@ -121,11 +121,11 @@ lba_mixin_3d_get_property (GObject * object,
 }
 
 static void
-lba_mixin_3d_init (GObject * object, LbaMixin3D * self) {
+lba_mixin_3d_init (GObject *object, LbaMixin3D *self) {
 }
 
 static void
-lba_mixin_3d_class_init (GObjectClass * object_class, LbaMixin3DClass * mixin_class) {
+lba_mixin_3d_class_init (GObjectClass *object_class, LbaMixin3DClass *mixin_class) {
 
   object_class->set_property = lba_mixin_3d_set_property;
   object_class->get_property = lba_mixin_3d_get_property;

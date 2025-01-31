@@ -38,11 +38,11 @@ typedef struct {
 BM_DEFINE_MIXIN (hairy, Hairy);
 
 static void
-hairy_init (GObject * object, Hairy * self) {
+hairy_init (GObject *object, Hairy *self) {
   g_message ("hairy_init");
 }
 
 static void
-hairy_class_init (GObjectClass * object_class, HairyClass * klass) {
+hairy_class_init (GObjectClass *object_class, HairyClass *klass) {
   g_message ("hairy_class_init");
 }

@@ -108,7 +108,7 @@ lba_async_proxy_class_init (gpointer class, gpointer p) {
 }
 
 static void
-lba_async_proxy_init (GTypeInstance * instance, gpointer gclass) {
+lba_async_proxy_init (GTypeInstance *instance, gpointer gclass) {
   BMixinInstance *bmi = (BMixinInstance *) bm_get_LbaAsync (instance);
 
   bmi->type_instance.g_class = bm_class_get_mixin (gclass, lba_async_info.type);
@@ -151,7 +151,7 @@ lba_async_cmd_free (gpointer gobject) {
 }
 
 static void
-lba_async_call_through_main_loop (LbaAsync * self, GSourceFunc cmd) {
+lba_async_call_through_main_loop (LbaAsync *self, GSourceFunc cmd) {
   g_warn_if_fail (self->async_ctx == NULL);
   if (g_main_context_is_owner (NULL)) {
     LBA_LOG ("Already in the MainContext. Calling synchronously");
@@ -178,7 +178,7 @@ lba_async_dispose_cmd (gpointer ptr) {
 }
 
 static void
-lba_async_dispose (GObject * gobject) {
+lba_async_dispose (GObject *gobject) {
   LbaAsync *self = bm_get_LbaAsync (gobject);
 
   LBA_LOG ("Schedulling [%s]->dispose", G_OBJECT_TYPE_NAME (gobject));
@@ -194,7 +194,7 @@ lba_async_finalize_cmd (gpointer ptr) {
 }
 
 static void
-lba_async_finalize (GObject * gobject) {
+lba_async_finalize (GObject *gobject) {
   LbaAsync *self = bm_get_LbaAsync (gobject);
 
   LBA_LOG ("Scheduling [%s]->finalize", G_OBJECT_TYPE_NAME (gobject));
@@ -231,7 +231,7 @@ lba_async_toggle_notify_cmd (gpointer ptr) {
 }
 
 static void
-lba_async_toggle_notify (gpointer data, GObject * object, gboolean is_last_ref) {
+lba_async_toggle_notify (gpointer data, GObject *object, gboolean is_last_ref) {
   LbaAsync *self = (LbaAsync *) data;
 
   LBA_LOG ("(%s) is_last_ref = %d", G_OBJECT_TYPE_NAME (object), is_last_ref);
@@ -253,7 +253,7 @@ lba_async_constructed_cmd (gpointer ptr) {
 }
 
 static void
-lba_async_constructed (GObject * gobject) {
+lba_async_constructed (GObject *gobject) {
   LbaAsync *self = bm_get_LbaAsync (gobject);
 
   /* We want to set the very first toggle ref. To do that we
@@ -292,7 +292,7 @@ lba_async_constructor_cmd (gpointer ptr) {
 
 static GObject *
 lba_async_constructor (GType type, guint n_construct_properties,
-                       GObjectConstructParam * construct_properties) {
+                       GObjectConstructParam *construct_properties) {
   GObjectClass *parent_klass;
   GObject *ret;
 
@@ -335,7 +335,7 @@ lba_async_constructor (GType type, guint n_construct_properties,
 }
 
 static void
-lba_async_class_init (GObjectClass * gobject_class, LbaAsyncClass * self_class) {
+lba_async_class_init (GObjectClass *gobject_class, LbaAsyncClass *self_class) {
 
   if (G_UNLIKELY (!toggle_refs_qrk))
     toggle_refs_qrk = g_quark_from_static_string ("GObject-toggle-references");
@@ -392,7 +392,7 @@ lba_async_class_init (GObjectClass * gobject_class, LbaAsyncClass * self_class) 
 }
 
 static void
-lba_async_init (GObject * object, LbaAsync * self) {
+lba_async_init (GObject *object, LbaAsync *self) {
   g_mutex_init (&self->lock);
   g_cond_init (&self->cond);
 }

@@ -32,28 +32,29 @@ typedef struct {
 } Fixture;
 
 static void
-fixture_set_up (Fixture * fixture, gconstpointer user_data) {
+fixture_set_up (Fixture *fixture, gconstpointer user_data) {
   GType testwolf;
   GType wolf_get_type (void);
 
   g_message ("registering testwolf");
-  testwolf = bm_register_mixed_type ("TestWolf", G_TYPE_OBJECT, wolf_get_type (), NULL);
+  testwolf =
+      bm_register_mixed_type ("TestWolf", G_TYPE_OBJECT, wolf_get_type (), NULL);
 
   fixture->obj = g_object_new (testwolf, NULL);
 }
 
 static void
-fixture_tear_down (Fixture * fixture, gconstpointer user_data) {
+fixture_tear_down (Fixture *fixture, gconstpointer user_data) {
   g_clear_object (&fixture->obj);
 }
 
 static void
-test_wolf_howl (Fixture * fixture, gconstpointer user_data) {
+test_wolf_howl (Fixture *fixture, gconstpointer user_data) {
   g_signal_emit_by_name (fixture->obj, "howl");
 }
 
 static void
-test_domestic_override (Fixture * fixture, gconstpointer user_data) {
+test_domestic_override (Fixture *fixture, gconstpointer user_data) {
   gboolean domestic;
 
   g_object_get (fixture->obj, "is-domestic", &domestic, NULL);
@@ -66,7 +67,8 @@ test_domestic_override (Fixture * fixture, gconstpointer user_data) {
     GType wolf2_get_type (void);
 
     g_message ("registering Wolf2");
-    wolf2 = bm_register_mixed_type ("TestWolf2", G_TYPE_OBJECT, wolf2_get_type (), NULL);
+    wolf2 =
+        bm_register_mixed_type ("TestWolf2", G_TYPE_OBJECT, wolf2_get_type (), NULL);
 
     obj = g_object_new (wolf2, NULL);
 

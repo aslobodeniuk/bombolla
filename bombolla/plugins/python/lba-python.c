@@ -49,7 +49,7 @@ typedef struct _LbaPythonClass {
 BM_DEFINE_MIXIN (lba_python, LbaPython, BM_ADD_DEP (lba_module_scanner));
 
 static void
-lba_python_eval_file (GObject * gobject, const gchar * filename) {
+lba_python_eval_file (GObject *gobject, const gchar *filename) {
   LbaPython *self = bm_get_LbaPython (gobject);
   FILE *fp;
 
@@ -71,7 +71,7 @@ lba_python_eval_file (GObject * gobject, const gchar * filename) {
 }
 
 static gboolean
-lba_python_fill_vtable_local (LbaPython * self) {
+lba_python_fill_vtable_local (LbaPython *self) {
   self->py_initialize = (void (*)(void))dlsym (NULL, "Py_Initialize");
   if (!self->py_initialize) {
     g_critical ("Couldn't load Py_Initialize");
@@ -105,7 +105,7 @@ lba_python_fill_vtable_local (LbaPython * self) {
 }
 
 static gboolean
-lba_python_fill_vtable (LbaPython * self) {
+lba_python_fill_vtable (LbaPython *self) {
   GModule *module = NULL;
   gint i;
 
@@ -169,7 +169,7 @@ lba_python_fill_vtable (LbaPython * self) {
 }
 
 static void
-lba_python_constructed (GObject * gobject) {
+lba_python_constructed (GObject *gobject) {
   LbaPython *self = bm_get_LbaPython (gobject);
 
   self->py_run_simple_string ("print('Hello from Bombolla home python')");
@@ -180,7 +180,7 @@ lba_python_constructed (GObject * gobject) {
 }
 
 static void
-lba_python_init (GObject * object, LbaPython * self) {
+lba_python_init (GObject *object, LbaPython *self) {
   if (!lba_python_fill_vtable (self)) {
     g_warn_if_reached ();
     return;
@@ -188,7 +188,7 @@ lba_python_init (GObject * object, LbaPython * self) {
 }
 
 static void
-lba_python_dispose (GObject * gobject) {
+lba_python_dispose (GObject *gobject) {
   LbaPython *self = bm_get_LbaPython (gobject);
 
   if (self->initialized) {
@@ -199,7 +199,7 @@ lba_python_dispose (GObject * gobject) {
 }
 
 static void
-lba_python_finalize (GObject * gobject) {
+lba_python_finalize (GObject *gobject) {
   LbaPython *self = bm_get_LbaPython (gobject);
 
   if (self->initialized) {
@@ -212,7 +212,7 @@ lba_python_finalize (GObject * gobject) {
 }
 
 static void
-lba_python_class_init (GObjectClass * object_class, LbaPythonClass * klass) {
+lba_python_class_init (GObjectClass *object_class, LbaPythonClass *klass) {
   LbaModuleScannerClass *lms_class;
 
   object_class->constructed = lba_python_constructed;

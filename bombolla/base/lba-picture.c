@@ -32,7 +32,7 @@
 
 typedef struct _LbaPicture {
   BMixinInstance i;
-  
+
   gchar *format;
   GValue data;
   GRecMutex lock;
@@ -41,8 +41,7 @@ typedef struct _LbaPicture {
 BM_DEFINE_MIXIN (lba_picture, LbaPicture);
 
 gpointer
-lba_picture_get (GObject *obj, gchar fmt[16], guint *w, guint *h)
-{
+lba_picture_get (GObject *obj, gchar fmt[16], guint *w, guint *h) {
   LbaPicture *self = bm_get_LbaPicture (obj);
 
   g_return_val_if_fail (self != NULL, NULL);
@@ -62,8 +61,7 @@ lba_picture_get (GObject *obj, gchar fmt[16], guint *w, guint *h)
 }
 
 void
-lba_picture_set (GObject *obj, const gchar fmt[16], guint w, guint h, gpointer data)
-{
+lba_picture_set (GObject *obj, const gchar fmt[16], guint w, guint h, gpointer data) {
   LbaPicture *self = bm_get_LbaPicture (obj);
 
   g_return_if_fail (self != NULL);
@@ -93,11 +91,11 @@ typedef enum {
 } LbaPictureProperty;
 
 static void
-lba_picture_set_property (GObject * object,
-                           guint property_id, const GValue * value,
-                           GParamSpec * pspec) {
+lba_picture_set_property (GObject *object,
+                          guint property_id, const GValue *value,
+                          GParamSpec *pspec) {
   LbaPicture *self = bm_get_LbaPicture (object);
-  
+
   g_rec_mutex_lock (&self->lock);
   switch ((LbaPictureProperty) property_id) {
   case PROP_FORMAT:
@@ -115,8 +113,8 @@ lba_picture_set_property (GObject * object,
 }
 
 static void
-lba_picture_get_property (GObject * object,
-                           guint property_id, GValue * value, GParamSpec * pspec) {
+lba_picture_get_property (GObject *object,
+                          guint property_id, GValue *value, GParamSpec *pspec) {
   LbaPicture *self = bm_get_LbaPicture (object);
 
   g_rec_mutex_lock (&self->lock);
@@ -135,15 +133,15 @@ lba_picture_get_property (GObject * object,
 }
 
 static void
-lba_picture_init (GObject * object, LbaPicture * self) {
-  LbaPictureClass * mc = BM_GET_CLASS (self, LbaPictureClass);
-  
+lba_picture_init (GObject *object, LbaPicture *self) {
+  LbaPictureClass *mc = BM_GET_CLASS (self, LbaPictureClass);
+
   g_rec_mutex_init (&self->lock);
   g_value_init (&self->data, mc->data_type);
 }
 
 static void
-lba_picture_finalize (GObject * gobject) {
+lba_picture_finalize (GObject *gobject) {
   LbaPicture *self = bm_get_LbaPicture (gobject);
 
   g_value_unset (&self->data);
@@ -154,7 +152,7 @@ lba_picture_finalize (GObject * gobject) {
 }
 
 static void
-lba_picture_class_init (GObjectClass * gobj_class, LbaPictureClass * mixin_class) {
+lba_picture_class_init (GObjectClass *gobj_class, LbaPictureClass *mixin_class) {
   gobj_class->set_property = lba_picture_set_property;
   gobj_class->get_property = lba_picture_get_property;
   gobj_class->finalize = lba_picture_finalize;
@@ -163,28 +161,30 @@ lba_picture_class_init (GObjectClass * gobj_class, LbaPictureClass * mixin_class
     mixin_class->data_type = G_TYPE_BYTES;
 
   g_return_if_fail (G_TYPE_IS_BOXED (mixin_class->data_type));
-  
+
   {
     GParamFlags maybe_writable = 0;
 
     if (mixin_class->writable_properties)
       maybe_writable |= G_PARAM_WRITABLE;
-    
+
     g_object_class_install_property
         (gobj_class,
-            PROP_DATA,
-            g_param_spec_boxed ("data",
-                "Data", "Data",
-                mixin_class->data_type,
-                G_PARAM_STATIC_STRINGS | G_PARAM_READABLE | maybe_writable));
+         PROP_DATA,
+         g_param_spec_boxed ("data",
+                             "Data", "Data",
+                             mixin_class->data_type,
+                             G_PARAM_STATIC_STRINGS | G_PARAM_READABLE |
+                             maybe_writable));
 
     g_object_class_install_property (gobj_class, PROP_FORMAT,
-        g_param_spec_string ("format",
-            "Format",
-            "Format",
-            "rgba8888 w(128) h(128)",
-            G_PARAM_STATIC_STRINGS |
-            G_PARAM_READABLE | maybe_writable));
+                                     g_param_spec_string ("format",
+                                                          "Format",
+                                                          "Format",
+                                                          "rgba8888 w(128) h(128)",
+                                                          G_PARAM_STATIC_STRINGS |
+                                                          G_PARAM_READABLE |
+                                                          maybe_writable));
   }
 }
 

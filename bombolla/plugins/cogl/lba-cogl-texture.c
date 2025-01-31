@@ -65,10 +65,8 @@ G_DEFINE_TYPE (LbaCoglTexture, lba_cogl_texture, G_TYPE_OBJECT);
 
 /* transfer-full */
 static CoglPixelFormat
-lba_cogl_texture_format_to_cogl (const gchar *format)
-{
-  static const struct
-  {
+lba_cogl_texture_format_to_cogl (const gchar *format) {
+  static const struct {
     const gchar *str;
     CoglPixelFormat cogl;
   } bunch[] = {
@@ -78,7 +76,7 @@ lba_cogl_texture_format_to_cogl (const gchar *format)
 
   CoglPixelFormat ret = COGL_PIXEL_FORMAT_RGBA_8888;
   int i;
-  
+
   for (i = 0; i < G_N_ELEMENTS (bunch); i++)
     if (g_strcmp0 (bunch[i].str, format)) {
       ret = bunch[i].cogl;
@@ -88,8 +86,8 @@ lba_cogl_texture_format_to_cogl (const gchar *format)
 }
 
 static void
-lba_cogl_texture_picture_update_cb (GObject * pic,
-                                    GParamSpec * pspec, LbaCoglTexture * self) {
+lba_cogl_texture_picture_update_cb (GObject *pic,
+                                    GParamSpec *pspec, LbaCoglTexture *self) {
   gchar format[16];
   GBytes *pic_data;
   guint w,
@@ -122,9 +120,9 @@ lba_cogl_texture_picture_update_cb (GObject * pic,
 }
 
 static void
-lba_cogl_texture_set_property (GObject * object,
-                               guint property_id, const GValue * value,
-                               GParamSpec * pspec) {
+lba_cogl_texture_set_property (GObject *object,
+                               guint property_id, const GValue *value,
+                               GParamSpec *pspec) {
   LbaCoglTexture *self = (LbaCoglTexture *) object;
 
   switch ((LbaCoglTextureProperty) property_id) {
@@ -144,7 +142,7 @@ lba_cogl_texture_set_property (GObject * object,
 
     if (self->pic.obj) {
       lba_cogl_texture_picture_update_cb (self->pic.obj, NULL, self);
-      
+
       g_signal_connect (self->pic.obj, "notify::data",
                         G_CALLBACK (lba_cogl_texture_picture_update_cb), self);
     }
@@ -158,9 +156,8 @@ lba_cogl_texture_set_property (GObject * object,
 }
 
 static void
-lba_cogl_texture_get_property (GObject * object,
-                               guint property_id, GValue * value,
-                               GParamSpec * pspec) {
+lba_cogl_texture_get_property (GObject *object,
+                               guint property_id, GValue *value, GParamSpec *pspec) {
   LbaCoglTexture *self = (LbaCoglTexture *) object;
 
   switch ((LbaCoglTextureProperty) property_id) {
@@ -177,7 +174,7 @@ lba_cogl_texture_get_property (GObject * object,
 }
 
 static void
-lba_cogl_texture_unset (LbaCoglTexture * self, GObject * obj_3d) {
+lba_cogl_texture_unset (LbaCoglTexture *self, GObject *obj_3d) {
   LbaICogl *iface;
   CoglContext *cogl_ctx;
   CoglPipeline *cogl_pipeline;
@@ -197,7 +194,7 @@ lba_cogl_texture_unset (LbaCoglTexture * self, GObject * obj_3d) {
 }
 
 static void
-lba_cogl_texture_set (LbaCoglTexture * self, GObject * obj_3d) {
+lba_cogl_texture_set (LbaCoglTexture *self, GObject *obj_3d) {
   LbaICogl *iface;
   CoglContext *cogl_ctx;
   CoglPipeline *cogl_pipeline;
@@ -212,11 +209,11 @@ lba_cogl_texture_set (LbaCoglTexture * self, GObject * obj_3d) {
   g_assert (cogl_ctx && cogl_pipeline);
 
   LBA_LOCK (self);
-  if (!self->texture || self->pic.cookie != self->pic.last_cookie) {    
+  if (!self->texture || self->pic.cookie != self->pic.last_cookie) {
     g_clear_pointer (&self->texture, cogl_object_unref);
     self->texture = cogl_texture_2d_new_from_data (cogl_ctx,
                                                    self->pic.w, self->pic.h,
-        self->pic.format, 0,
+                                                   self->pic.format, 0,
                                                    g_bytes_get_data (self->pic.data,
                                                                      NULL), NULL);
   }
@@ -228,7 +225,7 @@ lba_cogl_texture_set (LbaCoglTexture * self, GObject * obj_3d) {
 #define DEFAULT_PICTURE_SIZE_BYTES (4 * 32 * 32)
 
 static void
-lba_cogl_texture_default_picture (LbaCoglTexture * self) {
+lba_cogl_texture_default_picture (LbaCoglTexture *self) {
   int i;
   static uint8_t test_rgba_tex[DEFAULT_PICTURE_SIZE_BYTES];
 
@@ -244,13 +241,13 @@ lba_cogl_texture_default_picture (LbaCoglTexture * self) {
 }
 
 static void
-lba_cogl_texture_init (LbaCoglTexture * self) {
+lba_cogl_texture_init (LbaCoglTexture *self) {
   g_rec_mutex_init (&self->lock);
   lba_cogl_texture_default_picture (self);
 }
 
 static void
-lba_cogl_texture_dispose (GObject * gobject) {
+lba_cogl_texture_dispose (GObject *gobject) {
   LbaCoglTexture *self = (LbaCoglTexture *) gobject;
 
   if (self->texture) {
@@ -270,7 +267,7 @@ lba_cogl_texture_dispose (GObject * gobject) {
 }
 
 static void
-lba_cogl_texture_class_init (LbaCoglTextureClass * klass) {
+lba_cogl_texture_class_init (LbaCoglTextureClass *klass) {
   GObjectClass *gobj_class = G_OBJECT_CLASS (klass);
 
   gobj_class->dispose = lba_cogl_texture_dispose;

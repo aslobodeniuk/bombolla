@@ -241,7 +241,8 @@ GType bm_fundamental_get_type (void);
  * Returns: a #GType of newly registered mixed type or #G_TYPE_INVALID if failed
  */
 GType bm_register_mixed_type (const gchar * mixed_type_name,
-    GType base_type, GType mixin, GBaseInitFunc class_setup);
+                              GType base_type, GType mixin,
+                              GBaseInitFunc class_setup);
 
 /**
  * bm_register_mixin:

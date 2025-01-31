@@ -68,7 +68,7 @@ BM_DEFINE_MIXIN (lba_cogl_label, LbaCoglLabel,
 /* *INDENT-ON* */ 
 
 static void
-lba_cogl_label_paint (GObject * obj, CoglFramebuffer * fb, CoglPipeline * pipeline) {
+lba_cogl_label_paint (GObject *obj, CoglFramebuffer *fb, CoglPipeline *pipeline) {
   double x,
     y;
   int framebuffer_width;
@@ -91,7 +91,7 @@ lba_cogl_label_paint (GObject * obj, CoglFramebuffer * fb, CoglPipeline * pipeli
 }
 
 static void
-lba_cogl_label_update (LbaCoglLabel * self) {
+lba_cogl_label_update (LbaCoglLabel *self) {
   PangoRectangle hello_label_size;
 
   if (!self->pango_font_desc || !self->hello_label)
@@ -122,8 +122,8 @@ lba_cogl_label_update (LbaCoglLabel * self) {
 }
 
 static void
-lba_cogl_label_reopen (GObject * base, CoglFramebuffer * fb,
-                       CoglPipeline * pipeline, CoglContext * ctx) {
+lba_cogl_label_reopen (GObject *base, CoglFramebuffer *fb,
+                       CoglPipeline *pipeline, CoglContext *ctx) {
   LbaCoglLabel *self = bm_get_LbaCoglLabel (base);
   int framebuffer_width;
   int framebuffer_height;
@@ -184,7 +184,7 @@ lba_cogl_label_reopen (GObject * base, CoglFramebuffer * fb,
 }
 
 static void
-lba_cogl_label_init (GObject * object, LbaCoglLabel * self) {
+lba_cogl_label_init (GObject *object, LbaCoglLabel *self) {
 }
 
 typedef enum {
@@ -196,9 +196,9 @@ typedef enum {
 } LbaCoglLabelProperty;
 
 static void
-lba_cogl_label_set_property (GObject * object,
-                             guint property_id, const GValue * value,
-                             GParamSpec * pspec) {
+lba_cogl_label_set_property (GObject *object,
+                             guint property_id, const GValue *value,
+                             GParamSpec *pspec) {
   LbaCoglLabel *self = bm_get_LbaCoglLabel (object);
 
   switch ((LbaCoglLabelProperty) property_id) {
@@ -230,8 +230,8 @@ lba_cogl_label_set_property (GObject * object,
 }
 
 static void
-lba_cogl_label_get_property (GObject * object,
-                             guint property_id, GValue * value, GParamSpec * pspec) {
+lba_cogl_label_get_property (GObject *object,
+                             guint property_id, GValue *value, GParamSpec *pspec) {
   LbaCoglLabel *self = bm_get_LbaCoglLabel (object);
 
   switch ((LbaCoglLabelProperty) property_id) {
@@ -255,7 +255,7 @@ lba_cogl_label_get_property (GObject * object,
 }
 
 static void
-lba_cogl_label_class_init (GObjectClass * klass, LbaCoglLabelClass * mixin_class) {
+lba_cogl_label_class_init (GObjectClass *klass, LbaCoglLabelClass *mixin_class) {
   GObjectClass *gobj_class = G_OBJECT_CLASS (klass);
 
   gobj_class->set_property = lba_cogl_label_set_property;
@@ -293,7 +293,7 @@ lba_cogl_label_class_init (GObjectClass * klass, LbaCoglLabelClass * mixin_class
 }
 
 static void
-lba_cogl_label_icogl_init (LbaICogl * iface) {
+lba_cogl_label_icogl_init (LbaICogl *iface) {
   iface->paint = lba_cogl_label_paint;
   iface->reopen = lba_cogl_label_reopen;
 }

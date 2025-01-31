@@ -42,25 +42,23 @@ typedef struct {
 } DogClass;
 
 static void
-animal_class_setup (gpointer class_ptr)
-{
-  AnimalClass *animal_klass =
-      bm_class_get_mixin (class_ptr, animal_get_type ());
+animal_class_setup (gpointer class_ptr) {
+  AnimalClass *animal_klass = bm_class_get_mixin (class_ptr, animal_get_type ());
 
   animal_klass->maybe_domestic = TRUE;
 }
 
 BM_DEFINE_MIXIN (dog, Dog,
-    BM_ADD_DEP (has_tail), BM_ADD_DEP (hairy), BM_ADD_DEP (animal),
-    BM_ADD_CLASS_SETUP (animal));
+                 BM_ADD_DEP (has_tail), BM_ADD_DEP (hairy), BM_ADD_DEP (animal),
+                 BM_ADD_CLASS_SETUP (animal));
 
 static void
-dog_init (GObject * object, Dog * self) {
+dog_init (GObject *object, Dog *self) {
   g_message ("dog_init");
 }
 
 static void
-dog_class_init (GObjectClass * object_class, DogClass * klass) {
+dog_class_init (GObjectClass *object_class, DogClass *klass) {
   AnimalClass *animal_klass;
 
   g_message ("dog_class_init");

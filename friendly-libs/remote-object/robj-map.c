@@ -8,7 +8,7 @@ typedef struct {
 } RObjMapObject;
 
 static RObjMapObject *
-robj_map_peek_object (RObjMap * map, guint32 o_hash) {
+robj_map_peek_object (RObjMap *map, guint32 o_hash) {
   RObjMapObject *obj = NULL;
 
   g_mutex_lock (&map->lock);
@@ -20,7 +20,7 @@ robj_map_peek_object (RObjMap * map, guint32 o_hash) {
 }
 
 static RObjPN *
-robj_map_peek_pn (RObjMapObject * obj, guint32 pn_hash) {
+robj_map_peek_pn (RObjMapObject *obj, guint32 pn_hash) {
   RObjPN *pn;
 
   g_mutex_lock (&obj->lock);
@@ -32,7 +32,7 @@ robj_map_peek_pn (RObjMapObject * obj, guint32 pn_hash) {
 }
 
 RObjPN *
-robj_map_lookup_pn (RObjMap * map, guint32 o_hash, guint32 pn_hash) {
+robj_map_lookup_pn (RObjMap *map, guint32 o_hash, guint32 pn_hash) {
   RObjMapObject *obj;
 
   obj = robj_map_peek_object (map, o_hash);
@@ -45,8 +45,8 @@ robj_map_lookup_pn (RObjMap * map, guint32 o_hash, guint32 pn_hash) {
 }
 
 RObjPN *
-robj_map_new_pn (RObjMap * map, guint32 o_hash, const gchar * pname,
-                 const GValue * pval) {
+robj_map_new_pn (RObjMap *map, guint32 o_hash, const gchar *pname,
+                 const GValue *pval) {
   gboolean didnt_exist;
   RObjPN *pn = NULL;
   RObjMapObject *obj = robj_map_peek_object (map, o_hash);
@@ -109,7 +109,7 @@ robj_map_destroy_obj (gpointer data) {
 }
 
 guint32
-robj_map_add_object (RObjMap * map, const gchar * name) {
+robj_map_add_object (RObjMap *map, const gchar *name) {
   RObjMapObject *obj;
   G_GNUC_UNUSED gboolean didnt_exist;
   guint32 ohash;
@@ -133,7 +133,7 @@ robj_map_add_object (RObjMap * map, const gchar * name) {
 }
 
 void
-robj_map_remove_object (RObjMap * map, guint32 ohash) {
+robj_map_remove_object (RObjMap *map, guint32 ohash) {
   G_GNUC_UNUSED gboolean found;
 
   g_mutex_lock (&map->lock);
@@ -144,13 +144,13 @@ robj_map_remove_object (RObjMap * map, guint32 ohash) {
 }
 
 void
-robj_map_init (RObjMap * map) {
+robj_map_init (RObjMap *map) {
   g_mutex_init (&map->lock);
   map->objects = g_hash_table_new_full (NULL, NULL, NULL, robj_map_destroy_obj);
 }
 
 void
-robj_map_clear (RObjMap * map) {
+robj_map_clear (RObjMap *map) {
   g_mutex_clear (&map->lock);
   g_hash_table_unref (map->objects);
 }

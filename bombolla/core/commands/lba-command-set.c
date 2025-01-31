@@ -32,7 +32,7 @@
 static const gchar *global_lba_plugin_name = "LbaCore";
 
 static void
-_str2float (const GValue * src_value, GValue * dest_value) {
+_str2float (const GValue *src_value, GValue *dest_value) {
   gfloat ret = 0;
   const gchar *s = g_value_get_string (src_value);
 
@@ -45,7 +45,7 @@ _str2float (const GValue * src_value, GValue * dest_value) {
 }
 
 static void
-_str2double (const GValue * src_value, GValue * dest_value) {
+_str2double (const GValue *src_value, GValue *dest_value) {
   gdouble ret = 0;
   const gchar *s = g_value_get_string (src_value);
 
@@ -58,7 +58,7 @@ _str2double (const GValue * src_value, GValue * dest_value) {
 }
 
 static void
-_str2bool (const GValue * src_value, GValue * dest_value) {
+_str2bool (const GValue *src_value, GValue *dest_value) {
   guint ret = 0;
   const gchar *s = g_value_get_string (src_value);
 
@@ -71,7 +71,7 @@ _str2bool (const GValue * src_value, GValue * dest_value) {
 }
 
 static void
-_str2int (const GValue * src_value, GValue * dest_value) {
+_str2int (const GValue *src_value, GValue *dest_value) {
   guint ret = 0;
   const gchar *s = g_value_get_string (src_value);
 
@@ -84,7 +84,7 @@ _str2int (const GValue * src_value, GValue * dest_value) {
 }
 
 static void
-_str2uint (const GValue * src_value, GValue * dest_value) {
+_str2uint (const GValue *src_value, GValue *dest_value) {
   guint ret = 0;
   const gchar *s = g_value_get_string (src_value);
 
@@ -97,7 +97,7 @@ _str2uint (const GValue * src_value, GValue * dest_value) {
 }
 
 static void
-_str2gtype (const GValue * src_value, GValue * dest_value) {
+_str2gtype (const GValue *src_value, GValue *dest_value) {
   GType t = G_TYPE_NONE;
   const gchar *s = g_value_get_string (src_value);
 
@@ -113,8 +113,8 @@ _str2gtype (const GValue * src_value, GValue * dest_value) {
 }
 
 gboolean
-lba_command_set_str2obj (BombollaContext * ctx,
-                         const GValue * src_value, GValue * dest_value) {
+lba_command_set_str2obj (BombollaContext *ctx,
+                         const GValue *src_value, GValue *dest_value) {
   GObject *obj = NULL;
   const gchar *s = g_value_get_string (src_value);
 
@@ -132,8 +132,8 @@ lba_command_set_str2obj (BombollaContext * ctx,
 }
 
 gboolean
-lba_core_parse_obj_fld (BombollaContext * ctx, const gchar * str, GObject ** obj,
-                        gchar ** fld) {
+lba_core_parse_obj_fld (BombollaContext *ctx, const gchar *str, GObject **obj,
+                        gchar **fld) {
   gchar **tmp;
   gboolean ret = FALSE;
 
@@ -176,7 +176,7 @@ lba_core_init_convertion_functions (void) {
 }
 
 gboolean
-lba_command_set (BombollaContext * ctx, gchar ** tokens) {
+lba_command_set (BombollaContext *ctx, gchar **tokens) {
 
   GValue inp = G_VALUE_INIT;
   GValue outp = G_VALUE_INIT;

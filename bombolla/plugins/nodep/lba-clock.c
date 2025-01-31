@@ -60,9 +60,8 @@ lba_clock_tick (gpointer ptr) {
 }
 
 static void
-lba_clock_set_property (GObject * object,
-                        guint property_id, const GValue * value,
-                        GParamSpec * pspec) {
+lba_clock_set_property (GObject *object,
+                        guint property_id, const GValue *value, GParamSpec *pspec) {
   LbaClock *self = (LbaClock *) object;
 
   switch ((LbaClockProperty) property_id) {
@@ -124,8 +123,8 @@ lba_clock_set_property (GObject * object,
 }
 
 static void
-lba_clock_get_property (GObject * object,
-                        guint property_id, GValue * value, GParamSpec * pspec) {
+lba_clock_get_property (GObject *object,
+                        guint property_id, GValue *value, GParamSpec *pspec) {
   LbaClock *self = (LbaClock *) object;
 
   switch ((LbaClockProperty) property_id) {
@@ -144,11 +143,11 @@ lba_clock_get_property (GObject * object,
 }
 
 static void
-lba_clock_init (LbaClock * self) {
+lba_clock_init (LbaClock *self) {
 }
 
 static void
-lba_clock_dispose (GObject * gobject) {
+lba_clock_dispose (GObject *gobject) {
   LbaClock *self = (LbaClock *) gobject;
 
   /* NOTE: is there a race condition?
@@ -162,14 +161,14 @@ lba_clock_dispose (GObject * gobject) {
 }
 
 static void
-_datetime2str (const GValue * src_value, GValue * dest_value) {
+_datetime2str (const GValue *src_value, GValue *dest_value) {
   g_value_take_string (dest_value, g_date_time_format_iso8601 ((GDateTime *)
                                                                g_value_get_boxed
                                                                (src_value)));
 }
 
 static void
-lba_clock_class_init (LbaClockClass * klass) {
+lba_clock_class_init (LbaClockClass *klass) {
   GObjectClass *gobj_class = G_OBJECT_CLASS (klass);
 
   gobj_class->dispose = lba_clock_dispose;

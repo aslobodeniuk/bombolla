@@ -39,7 +39,7 @@ typedef struct {
 } Fixture;
 
 static void
-fixture_set_up (Fixture * fixture, gconstpointer user_data) {
+fixture_set_up (Fixture *fixture, gconstpointer user_data) {
   GType async_type;
 
   /* Needed to have GMainContext running */
@@ -47,25 +47,25 @@ fixture_set_up (Fixture * fixture, gconstpointer user_data) {
 
   /* Doesn't warn on running multiple times */
   async_type = bm_register_mixed_type (NULL, G_TYPE_OBJECT,
-      lba_async_string_input_get_type (), NULL);
+                                       lba_async_string_input_get_type (), NULL);
   fixture->inp = g_object_new (async_type, NULL);
 }
 
 static void
-fixture_tear_down (Fixture * fixture, gconstpointer user_data) {
+fixture_tear_down (Fixture *fixture, gconstpointer user_data) {
   g_clear_object (&fixture->core);
   g_clear_object (&fixture->inp);
 }
 
 static void
-test_have_string (GObject * obj, gchar * string, Fixture * fixture) {
+test_have_string (GObject *obj, gchar *string, Fixture *fixture) {
   g_assert (obj == fixture->inp);
   g_assert_cmpstr (string, ==, "test");
   fixture->executed = TRUE;
 }
 
 static void
-test_async_stream_input (Fixture * fixture, gconstpointer user_data) {
+test_async_stream_input (Fixture *fixture, gconstpointer user_data) {
   /* execute empty string, to start  */
   g_signal_emit_by_name (fixture->core, "execute", "\n");
 

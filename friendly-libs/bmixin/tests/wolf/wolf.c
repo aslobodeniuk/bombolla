@@ -46,17 +46,17 @@ typedef struct {
 BM_DEFINE_MIXIN (wolf, Wolf, BM_ADD_DEP (dog), BM_ADD_DEP (forest_animal));
 
 void
-wolf_howl (GObject * obj) {
+wolf_howl (GObject *obj) {
   g_message ("auuuuuuuuuu");
 }
 
 static void
-wolf_init (GObject * object, Wolf * self) {
+wolf_init (GObject *object, Wolf *self) {
   g_message ("wolf_init");
 }
 
 static void
-wolf_class_init (GObjectClass * object_class, WolfClass * klass) {
+wolf_class_init (GObjectClass *object_class, WolfClass *klass) {
   g_message ("wolf_class_init");
 
   klass->howl = wolf_howl;

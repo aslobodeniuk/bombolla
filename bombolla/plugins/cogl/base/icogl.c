@@ -30,7 +30,7 @@
 G_DEFINE_INTERFACE (LbaICogl, lba_icogl, 0);
 
 void
-lba_icogl_default_init (LbaICogl * iface) {
+lba_icogl_default_init (LbaICogl *iface) {
   iface->paint = NULL;
   iface->reopen = NULL;
 }

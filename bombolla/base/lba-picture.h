@@ -38,10 +38,11 @@ typedef struct _LbaPictureClass {
 
 GType lba_picture_get_type (void);
 
-
-gpointer
-lba_picture_get (GObject *obj, gchar fmt[16], guint *w, guint *h);
+gpointer lba_picture_get (GObject * obj, gchar fmt[16], guint * w, guint * h);
 void
-lba_picture_set (GObject *obj, const gchar fmt[16], guint w, guint h, gpointer data);
+
+
+lba_picture_set (GObject * obj, const gchar fmt[16], guint w, guint h,
+                 gpointer data);
 
 #endif

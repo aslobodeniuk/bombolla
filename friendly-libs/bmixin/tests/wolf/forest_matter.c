@@ -38,11 +38,11 @@ typedef struct {
 BM_DEFINE_MIXIN (forest_matter, ForestMatter);
 
 static void
-forest_matter_init (GObject * object, ForestMatter * self) {
+forest_matter_init (GObject *object, ForestMatter *self) {
   g_message ("forest_matter_init");
 }
 
 static void
-forest_matter_class_init (GObjectClass * object_class, ForestMatterClass * klass) {
+forest_matter_class_init (GObjectClass *object_class, ForestMatterClass *klass) {
   g_message ("forest_matter_class_init");
 }

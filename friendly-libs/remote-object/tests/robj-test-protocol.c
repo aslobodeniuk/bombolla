@@ -34,7 +34,7 @@ typedef struct {
 } Fixture;
 
 static void
-fixture_set_up (Fixture * fixture, gconstpointer user_data) {
+fixture_set_up (Fixture *fixture, gconstpointer user_data) {
   robj_protocol_init ();
 
   robj_map_init (&fixture->recv_map);
@@ -45,13 +45,13 @@ fixture_set_up (Fixture * fixture, gconstpointer user_data) {
 }
 
 static void
-fixture_tear_down (Fixture * fixture, gconstpointer user_data) {
+fixture_tear_down (Fixture *fixture, gconstpointer user_data) {
   robj_map_clear (&fixture->recv_map);
   robj_map_clear (&fixture->send_map);
 }
 
 static GBytes *
-send (GValue * val, Fixture * fixture) {
+send (GValue *val, Fixture *fixture) {
   GBytes *msg;
   RObjPN *pn_send;
   RObjPN *pn_recv;
@@ -69,7 +69,7 @@ send (GValue * val, Fixture * fixture) {
 }
 
 static RObjPN *
-recv (GBytes * msg, Fixture * fixture) {
+recv (GBytes *msg, Fixture *fixture) {
   RObjPN *pn;
 
   pn = robj_protocol_message_to_pn (&fixture->send_map, msg);
@@ -79,7 +79,7 @@ recv (GBytes * msg, Fixture * fixture) {
 }
 
 static void
-test_int_pn (Fixture * fixture, gconstpointer user_data) {
+test_int_pn (Fixture *fixture, gconstpointer user_data) {
   GValue pval = G_VALUE_INIT;
   gint recvi;
   gint i = g_random_int ();
@@ -94,7 +94,7 @@ test_int_pn (Fixture * fixture, gconstpointer user_data) {
 }
 
 static void
-test_uint_pn (Fixture * fixture, gconstpointer user_data) {
+test_uint_pn (Fixture *fixture, gconstpointer user_data) {
   GValue pval = G_VALUE_INIT;
   guint recvi;
   guint u = g_random_int ();
@@ -109,7 +109,7 @@ test_uint_pn (Fixture * fixture, gconstpointer user_data) {
 }
 
 static void
-test_uint64_pn (Fixture * fixture, gconstpointer user_data) {
+test_uint64_pn (Fixture *fixture, gconstpointer user_data) {
   GValue pval = G_VALUE_INIT;
   guint64 recvi;
   guint64 u64 = (((guint64) g_random_int ()) << 32) | (guint64) g_random_int ();
@@ -124,7 +124,7 @@ test_uint64_pn (Fixture * fixture, gconstpointer user_data) {
 }
 
 static void
-test_string_pn (Fixture * fixture, gconstpointer user_data) {
+test_string_pn (Fixture *fixture, gconstpointer user_data) {
   GValue pval = G_VALUE_INIT;
   const gchar *recv_str;
   const gchar *str = (const gchar *)user_data;

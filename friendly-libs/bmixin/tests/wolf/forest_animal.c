@@ -44,12 +44,12 @@ BM_DEFINE_MIXIN (forest_animal, ForestAnimal,
                  BM_ADD_DEP (animal), BM_ADD_DEP (forest_matter));
 
 static void
-forest_animal_init (GObject * object, ForestAnimal * self) {
+forest_animal_init (GObject *object, ForestAnimal *self) {
   g_message ("forest_animal_init");
 }
 
 static void
-forest_animal_class_init (GObjectClass * object_class, ForestAnimalClass * klass) {
+forest_animal_class_init (GObjectClass *object_class, ForestAnimalClass *klass) {
   AnimalClass *animal_klass;
 
   g_message ("forest_animal_class_init");

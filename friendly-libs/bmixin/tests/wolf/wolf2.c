@@ -45,11 +45,11 @@ typedef struct {
 BM_DEFINE_MIXIN (wolf2, Wolf2, BM_ADD_DEP (forest_animal), BM_ADD_DEP (dog));
 
 static void
-wolf2_init (GObject * object, Wolf2 * self) {
+wolf2_init (GObject *object, Wolf2 *self) {
   g_message ("wolf2_init");
 }
 
 static void
-wolf2_class_init (GObjectClass * object_class, Wolf2Class * klass) {
+wolf2_class_init (GObjectClass *object_class, Wolf2Class *klass) {
   g_message ("wolf2_class_init");
 }

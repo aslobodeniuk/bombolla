@@ -43,7 +43,7 @@ typedef struct _LbaCairoClass {
 BM_DEFINE_MIXIN (lba_cairo, LbaCairo, BM_ADD_DEP (lba_picture));
 
 static void
-lba_cairo_init (GObject * obj, LbaCairo * self) {
+lba_cairo_init (GObject *obj, LbaCairo *self) {
 
   const char fmt[16] = "argb8888";
   guint w = 512;
@@ -58,7 +58,8 @@ lba_cairo_init (GObject * obj, LbaCairo * self) {
     cairo_t *cr = cairo_create (self->surface);
 
     /* --------------------------------------- how to?? */
-    cairo_select_font_face (cr, "serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face (cr, "serif", CAIRO_FONT_SLANT_NORMAL,
+                            CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size (cr, 32.0);
     cairo_set_source_rgb (cr, 0.0, 0.0, 1.0);
     cairo_move_to (cr, 10.0, 50.0);
@@ -76,16 +77,15 @@ lba_cairo_init (GObject * obj, LbaCairo * self) {
   }
 
   lba_picture_set (obj, fmt, w, h,
-    g_bytes_new_with_free_func (cairo_image_surface_get_data (self->surface),
-      w * h *4,
-      /* TODO need to block and unblock when the surface have been rendered
-       * (in the OpenGL thread). So we don't modify the surface meanwhile. */
-      NULL,
-        NULL));
+                   g_bytes_new_with_free_func (cairo_image_surface_get_data
+                                               (self->surface), w * h * 4,
+                                               /* TODO need to block and unblock when the surface have been rendered
+                                                * (in the OpenGL thread). So we don't modify the surface meanwhile. */
+                                               NULL, NULL));
 }
 
 static void
-lba_cairo_dispose (GObject * gobject) {
+lba_cairo_dispose (GObject *gobject) {
   LbaCairo *self = bm_get_LbaCairo (gobject);
 
   g_clear_pointer (&self->surface, cairo_surface_destroy);
@@ -94,7 +94,7 @@ lba_cairo_dispose (GObject * gobject) {
 }
 
 static void
-lba_cairo_class_init (GObjectClass *gobj_class, LbaCairoClass * klass) {
+lba_cairo_class_init (GObjectClass *gobj_class, LbaCairoClass *klass) {
   gobj_class->dispose = lba_cairo_dispose;
 }
 

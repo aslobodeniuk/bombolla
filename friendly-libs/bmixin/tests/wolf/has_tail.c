@@ -38,11 +38,11 @@ typedef struct {
 BM_DEFINE_MIXIN (has_tail, HasTail);
 
 static void
-has_tail_init (GObject * object, HasTail * self) {
+has_tail_init (GObject *object, HasTail *self) {
   g_message ("has_tail_init");
 }
 
 static void
-has_tail_class_init (GObjectClass * object_class, HasTailClass * klass) {
+has_tail_class_init (GObjectClass *object_class, HasTailClass *klass) {
   g_message ("has_tail_class_init");
 }

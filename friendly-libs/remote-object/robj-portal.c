@@ -61,7 +61,7 @@ typedef struct _LbaRemoteObjectPortalClass {
 G_DEFINE_TYPE (LbaRemoteObjectPortal, lba_robj_portal, G_TYPE_OBJECT);
 
 static GBytes *
-lba_robj_portal_value2bytes (const GValue * src_val) {
+lba_robj_portal_value2bytes (const GValue *src_val) {
   GBytes *ret = NULL;
   GValue dst_val = G_VALUE_INIT;
 
@@ -94,8 +94,8 @@ exit:
 }
 
 void
-lba_robj_portal_property_notify (GObject * gobject,
-                                 GParamSpec * pspec, gpointer user_data) {
+lba_robj_portal_property_notify (GObject *gobject,
+                                 GParamSpec *pspec, gpointer user_data) {
   LbaRemoteObjectPortal *self = (LbaRemoteObjectPortal *) user_data;
 
   /* FIXME: lock mutex */
@@ -112,7 +112,7 @@ lba_robj_portal_property_notify (GObject * gobject,
 }
 
 static gboolean
-lba_robj_portal_send_source_header (LbaRemoteObjectPortal * self) {
+lba_robj_portal_send_source_header (LbaRemoteObjectPortal *self) {
   GError *err = NULL;
   GType t,
     ti;
@@ -354,10 +354,10 @@ typedef struct _LbaRemoteObjectPortalSignalCtx {
 } LbaRemoteObjectPortalSignalCtx;
 
 static void
-lba_robj_portal_signal_cb (GClosure * closure,
-                           GValue * return_value,
+lba_robj_portal_signal_cb (GClosure *closure,
+                           GValue *return_value,
                            guint n_param_values,
-                           const GValue * param_values,
+                           const GValue *param_values,
                            gpointer invocation_hint, gpointer marshal_data) {
   LbaRemoteObjectPortalSignalCtx *signal_ctx;
   LbaRemoteObjectPortal *self;
@@ -440,15 +440,15 @@ lba_robj_portal_signal_cb (GClosure * closure,
 }
 
 static void
-lba_robj_portal_free_signal_ctx (gpointer data, GClosure * closure) {
+lba_robj_portal_free_signal_ctx (gpointer data, GClosure *closure) {
   g_free (data);
 }
 
 static void
-lba_robj_passthrough_marshal (GClosure * closure,
-                              GValue * return_value,
+lba_robj_passthrough_marshal (GClosure *closure,
+                              GValue *return_value,
                               guint n_param_values,
-                              const GValue * param_values,
+                              const GValue *param_values,
                               gpointer invocation_hint, gpointer marshal_data) {
   /* this is our "passthrough" marshaller. We could also just omit
    * the closure's callback and do what we want here, given that it's passthrough, but
@@ -466,7 +466,7 @@ lba_robj_passthrough_marshal (GClosure * closure,
 
 /* FIXME: should return gboolean ?? */
 static void
-lba_robj_portal_start (LbaRemoteObjectPortal * self) {
+lba_robj_portal_start (LbaRemoteObjectPortal *self) {
   GError *err = NULL;
   GType t;
   static volatile gboolean once;
@@ -578,9 +578,9 @@ lba_robj_portal_start (LbaRemoteObjectPortal * self) {
 }
 
 static void
-lba_robj_portal_set_property (GObject * object,
-                              guint property_id, const GValue * value,
-                              GParamSpec * pspec) {
+lba_robj_portal_set_property (GObject *object,
+                              guint property_id, const GValue *value,
+                              GParamSpec *pspec) {
   LbaRemoteObjectPortal *self = (LbaRemoteObjectPortal *) object;
 
   switch ((LbaRemoteObjectPortalProperty) property_id) {
@@ -627,9 +627,8 @@ lba_robj_portal_set_property (GObject * object,
 }
 
 static void
-lba_robj_portal_get_property (GObject * object,
-                              guint property_id, GValue * value,
-                              GParamSpec * pspec) {
+lba_robj_portal_get_property (GObject *object,
+                              guint property_id, GValue *value, GParamSpec *pspec) {
   LbaRemoteObjectPortal *self = (LbaRemoteObjectPortal *) object;
 
   switch ((LbaRemoteObjectPortalProperty) property_id) {
@@ -648,11 +647,11 @@ lba_robj_portal_get_property (GObject * object,
 }
 
 static void
-lba_robj_portal_init (LbaRemoteObjectPortal * self) {
+lba_robj_portal_init (LbaRemoteObjectPortal *self) {
 }
 
 static void
-lba_robj_portal_dispose (GObject * gobject) {
+lba_robj_portal_dispose (GObject *gobject) {
   LbaRemoteObjectPortal *self = (LbaRemoteObjectPortal *) gobject;
 
   /* FIXME: lock mutex */
@@ -672,7 +671,7 @@ lba_robj_portal_dispose (GObject * gobject) {
 }
 
 static void
-lba_robj_portal_class_init (LbaRemoteObjectPortalClass * klass) {
+lba_robj_portal_class_init (LbaRemoteObjectPortalClass *klass) {
   GObjectClass *object_class = (GObjectClass *) klass;
 
   klass->start = lba_robj_portal_start;

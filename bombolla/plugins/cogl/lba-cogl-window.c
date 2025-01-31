@@ -172,7 +172,7 @@ lba_cogl_window_open (BaseWindow *base) {
     // -- LbaCoglFrameBuffer - ctx, pipeline, framebuffer. Also implements Open ??
     //    Other use of the FrameBuffer is rendering to a texture that has width/height..
     //    So FrameBuffer should actually export the Texture interface ??
-    
+
     int framebuffer_width;
     int framebuffer_height;
 

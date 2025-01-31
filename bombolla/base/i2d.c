@@ -31,6 +31,6 @@
 G_DEFINE_INTERFACE (LbaI2D, lba_i2d, G_TYPE_OBJECT);
 
 void
-lba_i2d_default_init (LbaI2D * iface) {
+lba_i2d_default_init (LbaI2D *iface) {
   iface->xy = NULL;
 }

@@ -50,13 +50,13 @@ typedef enum {
 static GParamSpec *obj_properties[N_PROPERTIES] = { NULL, };
 
 void
-base_window_notify_display (BaseWindow * self) {
+base_window_notify_display (BaseWindow *self) {
   g_signal_emit (self, base_window_signals[SIGNAL_ON_DISPLAY], 0);
   g_signal_emit (self, base_window_signals[SIGNAL_ON_DRAW], 0);
 }
 
 static void
-base_window_request_redraw (BaseWindow * self) {
+base_window_request_redraw (BaseWindow *self) {
   BaseWindowClass *klass = BASE_WINDOW_GET_CLASS (self);
 
   if (klass->request_redraw)
@@ -64,9 +64,9 @@ base_window_request_redraw (BaseWindow * self) {
 }
 
 static void
-base_window_set_property (GObject * object,
-                          guint property_id, const GValue * value,
-                          GParamSpec * pspec) {
+base_window_set_property (GObject *object,
+                          guint property_id, const GValue *value,
+                          GParamSpec *pspec) {
   BaseWindow *self = (BaseWindow *) object;
 
   switch ((BaseWindowProperty) property_id) {
@@ -99,8 +99,8 @@ base_window_set_property (GObject * object,
 }
 
 static void
-base_window_get_property (GObject * object,
-                          guint property_id, GValue * value, GParamSpec * pspec) {
+base_window_get_property (GObject *object,
+                          guint property_id, GValue *value, GParamSpec *pspec) {
   BaseWindow *self = (BaseWindow *) object;
 
   switch ((BaseWindowProperty) property_id) {
@@ -132,13 +132,13 @@ base_window_get_property (GObject * object,
 }
 
 static void
-base_window_init (BaseWindow * self) {
+base_window_init (BaseWindow *self) {
   g_signal_connect (self, "request-redraw",
                     G_CALLBACK (base_window_request_redraw), NULL);
 }
 
 static void
-base_window_dispose (GObject * gobject) {
+base_window_dispose (GObject *gobject) {
   BaseWindow *self = (BaseWindow *) gobject;
   BaseWindowClass *klass = BASE_WINDOW_GET_CLASS (self);
 
@@ -149,7 +149,7 @@ base_window_dispose (GObject * gobject) {
 }
 
 static void
-base_window_class_init (BaseWindowClass * klass) {
+base_window_class_init (BaseWindowClass *klass) {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
   object_class->dispose = base_window_dispose;

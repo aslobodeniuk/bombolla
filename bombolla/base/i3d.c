@@ -31,6 +31,6 @@
 G_DEFINE_INTERFACE (LbaI3D, lba_i3d, G_TYPE_OBJECT);
 
 void
-lba_i3d_default_init (LbaI3D * iface) {
+lba_i3d_default_init (LbaI3D *iface) {
   iface->xyz = NULL;
 }

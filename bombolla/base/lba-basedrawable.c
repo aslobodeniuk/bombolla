@@ -39,7 +39,7 @@ typedef enum {
 } BaseDrawableProperty;
 
 static void
-base_drawable_scene_on_draw_cb (GObject * scene, BaseDrawable * self) {
+base_drawable_scene_on_draw_cb (GObject *scene, BaseDrawable *self) {
   BaseDrawableClass *klass = BASE_DRAWABLE_GET_CLASS (self);
 
   if (self->enabled) {
@@ -56,9 +56,9 @@ base_drawable_scene_on_draw_cb (GObject * scene, BaseDrawable * self) {
 }
 
 static void
-base_drawable_set_property (GObject * object,
-                            guint property_id, const GValue * value,
-                            GParamSpec * pspec) {
+base_drawable_set_property (GObject *object,
+                            guint property_id, const GValue *value,
+                            GParamSpec *pspec) {
   BaseDrawable *self = (BaseDrawable *) object;
 
   switch ((BaseDrawableProperty) property_id) {
@@ -119,8 +119,8 @@ base_drawable_set_property (GObject * object,
 }
 
 static void
-base_drawable_get_property (GObject * object,
-                            guint property_id, GValue * value, GParamSpec * pspec) {
+base_drawable_get_property (GObject *object,
+                            guint property_id, GValue *value, GParamSpec *pspec) {
   BaseDrawable *self = (BaseDrawable *) object;
 
   switch ((BaseDrawableProperty) property_id) {
@@ -144,11 +144,11 @@ base_drawable_get_property (GObject * object,
 }
 
 static void
-base_drawable_init (BaseDrawable * self) {
+base_drawable_init (BaseDrawable *self) {
 }
 
 static void
-base_drawable_dispose (GObject * gobject) {
+base_drawable_dispose (GObject *gobject) {
   BaseDrawable *self = (BaseDrawable *) gobject;
 
   g_clear_pointer (&self->texture, g_object_unref);
@@ -156,7 +156,7 @@ base_drawable_dispose (GObject * gobject) {
 }
 
 static void
-base_drawable_class_init (BaseDrawableClass * klass) {
+base_drawable_class_init (BaseDrawableClass *klass) {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
   object_class->set_property = base_drawable_set_property;

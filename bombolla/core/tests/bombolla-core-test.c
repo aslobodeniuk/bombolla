@@ -35,23 +35,23 @@ typedef struct {
 } Fixture;
 
 static void
-fixture_set_up (Fixture * fixture, gconstpointer user_data) {
+fixture_set_up (Fixture *fixture, gconstpointer user_data) {
   fixture->obj = g_object_new (lba_core_object_get_type (), NULL);
 }
 
 static void
-fixture_tear_down (Fixture * fixture, gconstpointer user_data) {
+fixture_tear_down (Fixture *fixture, gconstpointer user_data) {
   g_clear_object (&fixture->obj);
 }
 
 static void
-test_empty_string (Fixture * fixture, gconstpointer user_data) {
+test_empty_string (Fixture *fixture, gconstpointer user_data) {
   /* execute empty string */
   g_signal_emit_by_name (fixture->obj, "execute", "\n");
 }
 
 static void
-test_singleton (Fixture * fixture, gconstpointer user_data) {
+test_singleton (Fixture *fixture, gconstpointer user_data) {
   GObject *more_lba_cores[2];
 
   more_lba_cores[0] = g_object_new (lba_core_object_get_type (), NULL);

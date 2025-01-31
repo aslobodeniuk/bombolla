@@ -38,7 +38,7 @@ G_STATIC_ASSERT (sizeof (float) == 4);
 G_STATIC_ASSERT (sizeof (double) == 8);
 
 static void
-robj_string_2_transport (const GValue * src_value, GValue * dest_value) {
+robj_string_2_transport (const GValue *src_value, GValue *dest_value) {
   guint msg_size;
   guint str_size = 0;
   gchar *ptr = NULL;
@@ -63,7 +63,7 @@ robj_string_2_transport (const GValue * src_value, GValue * dest_value) {
 }
 
 static void
-robj_transport_2_string (const GValue * src_value, GValue * dest_value) {
+robj_transport_2_string (const GValue *src_value, GValue *dest_value) {
   /* [string size] - 4 bytes, BE. Includes 0-terminator.
      If the size == 0, then the string is NULL. */
   /* [string value] - 'string size' bytes. */
@@ -140,7 +140,7 @@ robj_protocol_init (void) {
 const guint ROBJ_PROTOCOL_PN_HEADER_LEN = 2 + 4 + 4;
 
 RObjPN *
-robj_protocol_message_to_pn (RObjMap * map, GBytes * msg) {
+robj_protocol_message_to_pn (RObjMap *map, GBytes *msg) {
   gsize msg_size;
   gchar *msg_data;
   RObjPN *pn;
@@ -211,7 +211,7 @@ robj_protocol_message_to_pn (RObjMap * map, GBytes * msg) {
 
 /* returns transfer-full, takes transfer-full */
 static GBytes *
-robj_wrap_tvalue_to_pn (GValue * tval, const RObjPN * pn) {
+robj_wrap_tvalue_to_pn (GValue *tval, const RObjPN *pn) {
   GBytes *bval;
   gsize vsize;
   gconstpointer vdata;
@@ -248,7 +248,7 @@ robj_wrap_tvalue_to_pn (GValue * tval, const RObjPN * pn) {
 
 /* returns transfer-full */
 GBytes *
-robj_protocol_pn_to_message (RObjPN * pn) {
+robj_protocol_pn_to_message (RObjPN *pn) {
   gboolean could_transform;
   GValue val_tval = G_VALUE_INIT;
 

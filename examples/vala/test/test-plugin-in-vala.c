@@ -30,7 +30,7 @@ typedef struct {
 GType vala_test_get_type ();
 
 static void
-fixture_set_up (Fixture * fixture, gconstpointer user_data) {
+fixture_set_up (Fixture *fixture, gconstpointer user_data) {
   /* Register type manually. */
   vala_test_get_type ();
 
@@ -38,12 +38,12 @@ fixture_set_up (Fixture * fixture, gconstpointer user_data) {
 }
 
 static void
-fixture_tear_down (Fixture * fixture, gconstpointer user_data) {
+fixture_tear_down (Fixture *fixture, gconstpointer user_data) {
   g_clear_object (&fixture->obj);
 }
 
 static void
-on (Fixture * fixture, gconstpointer user_data) {
+on (Fixture *fixture, gconstpointer user_data) {
   const gchar commands[] = {
     /* *INDENT-OFF* */
     "create ValaTest t1\n"
@@ -63,7 +63,7 @@ on (Fixture * fixture, gconstpointer user_data) {
 }
 
 static void
-bindings (Fixture * fixture, gconstpointer user_data) {
+bindings (Fixture *fixture, gconstpointer user_data) {
   const gchar commands[] = {
     /* *INDENT-OFF* */
     "create ValaTest t1\n"
@@ -90,7 +90,7 @@ bindings (Fixture * fixture, gconstpointer user_data) {
 }
 
 static void
-async (Fixture * fixture, gconstpointer user_data) {
+async (Fixture *fixture, gconstpointer user_data) {
   const gchar commands[] = {
     /* *INDENT-OFF* */
     "create ValaTest t1\n"
@@ -110,7 +110,7 @@ async (Fixture * fixture, gconstpointer user_data) {
 }
 
 static void
-plugin_in_vala (Fixture * fixture, gconstpointer user_data) {
+plugin_in_vala (Fixture *fixture, gconstpointer user_data) {
   const gchar commands[] = {
     /* *INDENT-OFF* */
     "create ValaTest t1\n"
