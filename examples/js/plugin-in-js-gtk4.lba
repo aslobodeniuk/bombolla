@@ -5,6 +5,6 @@
 # If only we could init some things in our bombolla script, and then
 # obtain them through gtk4 in js..
 
-create LbaGjs js
-call js.scan-in-thread examples/js/gtk4/lba-gtk4-app-in-js.js
-destroy js
+(create LbaGjs js)
+(call js.scan-in-thread examples/js/gtk4/lba-gtk4-app-in-js.js)
+(destroy js)

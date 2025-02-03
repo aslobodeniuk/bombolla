@@ -1,7 +1,7 @@
-create LbaCairo c
-create LbaGst gst
+(create LbaCairo c)
+(create LbaGst gst)
 
-set gst.pipeline appsrc name=lba_in ! videoconvert ! autovideosink
+(set gst.pipeline appsrc name=lba_in ! videoconvert ! autovideosink)
 
-bind c.format gst.format
-bind c.data gst.data
+(bind c.format gst.format)
+(bind c.data gst.data)

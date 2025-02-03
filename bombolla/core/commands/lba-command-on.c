@@ -34,7 +34,7 @@ static const gchar *global_lba_plugin_name = "LbaCore";
 typedef struct {
   GSList *commands_list;
   GObject *self;
-    gboolean (*proccess_command) (gpointer self, const gchar * command);
+  void (*proccess_command) (gpointer self, const gchar * expr, guint len);
 } BombollaOnCommandCtx;
 
 /* Callback for "on" command. It's designed to use parameters
@@ -61,7 +61,8 @@ lba_command_on_cb (GClosure *closure,
 
   /* Now execute line by line everything */
   for (l = ctx->commands_list; l; l = l->next) {
-    ctx->proccess_command (ctx->self, (const gchar *)l->data);
+    ctx->proccess_command (ctx->self, (const gchar *)l->data,
+                           strlen ((const gchar *)l->data));
   }
 }
 
@@ -94,31 +95,26 @@ lba_command_on_destroy (gpointer data, GClosure *closure) {
   g_free (ctx);
 }
 
-gboolean
-lba_command_on_append (gpointer ctx_ptr, const gchar *command) {
+static void
+lba_command_on_append (gpointer ctx_ptr, const gchar *command, guint len) {
   BombollaOnCommandCtx *ctx = ctx_ptr;
 
-  if (0 == g_strcmp0 (command, "end")) {
-    g_printf ("}\n");
-    return FALSE;
-  }
-
+  /* FIXME: */
   if (g_str_has_prefix (command, "on ")) {
-    g_warning ("setting 'on' while defining another is not allowed");
-    return TRUE;
+    g_error ("setting 'on' while defining another is not supported for now");
   }
 
-  ctx->commands_list = g_slist_append (ctx->commands_list, g_strdup (command));
-  return TRUE;
+  ctx->commands_list = g_slist_append (ctx->commands_list, g_strndup (command, len));
 }
 
 gboolean
-lba_command_on (BombollaContext *ctx, gchar **tokens) {
-  const gchar *objname,
+lba_command_on (BombollaContext *ctx, const gchar *expr, guint len) {
+  gchar *objname,
    *signal_name;
   GObject *obj;
   char **tmp = NULL;
   gboolean ret = FALSE;
+  gchar **tokens = FIXME_adapt_to_old (expr, len);
 
   tmp = g_strsplit (tokens[1], ".", 2);
 
@@ -127,13 +123,11 @@ lba_command_on (BombollaContext *ctx, gchar **tokens) {
     goto done;
   }
 
-  if (ctx->capturing_on_command) {
-    g_warning ("forbidden to call on from on");
-    goto done;
-  }
-
   objname = tmp[0];
   signal_name = tmp[1];
+  g_assert (signal_name[0]);
+  if (signal_name[strlen (signal_name) - 1] == '\n')
+    signal_name[strlen (signal_name) - 1] = 0;
 
   obj = g_hash_table_lookup (ctx->objects, objname);
 
@@ -147,11 +141,31 @@ lba_command_on (BombollaContext *ctx, gchar **tokens) {
     BombollaOnCommandCtx *on_ctx;
 
     on_ctx = g_new0 (BombollaOnCommandCtx, 1);
-    ctx->capturing_on_command = on_ctx;
-
     /* ref ?? */
     on_ctx->self = ctx->self;
     on_ctx->proccess_command = ctx->proccess_command;
+
+    {
+      guint exprlen;
+      const gchar *e;
+      guint total = len;
+
+      for (e = expr;;) {
+        const gchar *p = e;
+
+        e = lba_expr_parser_find_next (e, total, &exprlen);
+        if (!e)
+          break;
+
+        //LBA_LOG
+        g_message ("ON: Append expression [%.*s]", exprlen, e);
+        lba_command_on_append (ctx->self, e, exprlen);
+
+        g_assert (len <= total);
+        e += exprlen + 1;
+        total -= (e - p);
+      }
+    }
 
     /* User data are the lines we will execute. */
     closure =
@@ -172,13 +186,11 @@ lba_command_on (BombollaContext *ctx, gchar **tokens) {
     /* unref closure ?? */
   }
 
-  /* All the next commands until "end" will be stored as is in
-   * ctx->on_commands_list */
-  g_printf ("On %s.%s () {\n", objname, signal_name);
   ret = TRUE;
 done:
   if (tmp) {
     g_strfreev (tmp);
   }
+  g_strfreev (tokens);
   return ret;
 }

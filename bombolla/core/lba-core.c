@@ -71,6 +71,7 @@ static gpointer
 lba_core_mainloop (gpointer data) {
   LbaCore *self = (LbaCore *) data;
 
+  g_message ("heiii %s", global_lba_plugin_name);
   LBA_LOG ("starting the mainloop");
 
   /* FIXME: for the beginning we use default context */
@@ -180,62 +181,62 @@ lba_core_finalize (GObject *gobject) {
   BM_CHAINUP (self, GObject)->finalize (gobject);
 }
 
-static gboolean
-lba_core_proccess_line (gpointer obj, const gchar *str) {
-  LbaCore *self = (LbaCore *) obj;
-  gboolean ret = TRUE;
-  char **tokens;
-  const BombollaCommand *command;
+/* static gboolean */
+/* lba_core_proccess_line (gpointer obj, const gchar *str) { */
+/*   LbaCore *self = (LbaCore *) obj; */
+/*   gboolean ret = TRUE; */
+/*   char **tokens; */
+/*   const BombollaCommand *command; */
 
-  tokens = g_strsplit (str, " ", 0);
+/*   tokens = g_strsplit (str, " ", 0); */
 
-  if (!tokens || !tokens[0]) {
-    goto done;
-  }
+/*   if (!tokens || !tokens[0]) { */
+/*     goto done; */
+/*   } */
 
-  if (!self->ctx || !self->ctx->capturing_on_command) {
-    LBA_LOG ("processing '%s'", str);
-  }
+/*   if (!self->ctx || !self->ctx->capturing_on_command) { */
+/*     LBA_LOG ("processing '%s'", str); */
+/*   } */
 
-  if (!self->ctx) {
-    self->ctx = g_new0 (BombollaContext, 1);
-    self->ctx->self = (GObject *) self;
-    self->ctx->proccess_command = lba_core_proccess_line;
-    self->ctx->objects =
-        g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
+/*   if (!self->ctx) { */
+/*     self->ctx = g_new0 (BombollaContext, 1); */
+/*     self->ctx->self = (GObject *) self; */
+/*     self->ctx->proccess_command = lba_core_proccess_line; */
+/*     self->ctx->objects = */
+/*         g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref); */
 
-    // The bindings actually belong to the object, and are
-    // automatically destroyed when the objects are destroyed.
-    // The only point of storing them is the "unbind" command
-    self->ctx->bindings =
-        g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-  }
+/*     // The bindings actually belong to the object, and are */
+/*     // automatically destroyed when the objects are destroyed. */
+/*     // The only point of storing them is the "unbind" command */
+/*     self->ctx->bindings = */
+/*         g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL); */
+/*   } */
 
-  /* FIXME: that's hackish */
-  if (self->ctx->capturing_on_command) {
-    if (!lba_command_on_append (self->ctx->capturing_on_command, str)) {
-      self->ctx->capturing_on_command = NULL;
-    }
-    goto done;
-  }
+/*   /\* FIXME: that's hackish *\/ */
+/*   if (self->ctx->capturing_on_command) { */
+/*     if (!lba_command_on_append (self->ctx->capturing_on_command, str)) { */
+/*       self->ctx->capturing_on_command = NULL; */
+/*     } */
+/*     goto done; */
+/*   } */
 
-  for (command = commands; command->name != NULL; command++) {
-    if (0 == g_strcmp0 (command->name, tokens[0])) {
-      if (!command->parse (self->ctx, tokens)) {
-        /* Bad syntax. FIXME: should we optionally stop proccessing?? */
-        goto done;
-      }
+/*   for (command = commands; command->name != NULL; command++) { */
+/*     if (0 == g_strcmp0 (command->name, tokens[0])) { */
+/*       if (!command->parse (self->ctx, tokens)) { */
+/*         /\* Bad syntax. FIXME: should we optionally stop proccessing?? *\/ */
+/*         goto done; */
+/*       } */
 
-      ret = TRUE;
-      goto done;
-    }
-  }
+/*       ret = TRUE; */
+/*       goto done; */
+/*     } */
+/*   } */
 
-  g_warning ("Unknown command [%s]", tokens[0]);
-done:
-  g_strfreev (tokens);
-  return ret;
-}
+/*   g_warning ("Unknown command [%s]", tokens[0]); */
+/* done: */
+/*   g_strfreev (tokens); */
+/*   return ret; */
+/* } */
 
 static void
 lba_core_load_module (GObject *gobj, const gchar *module_filename) {
@@ -271,6 +272,131 @@ lba_core_load_module (GObject *gobj, const gchar *module_filename) {
            module_filename);
 }
 
+static gboolean
+lba_expr_parser_space (char c) {
+  return c == ' ' || c == '\t' || c == '\n';
+}
+
+const gchar *
+lba_expr_parser_find_next (const gchar *expr, guint total, guint *len) {
+  gint i;
+  guint depth = 0;
+  const gchar *expr_start;
+  const gchar *expr_end;
+
+  g_return_val_if_fail (expr != NULL, NULL);
+  g_return_val_if_fail (len != NULL, NULL);
+  g_return_val_if_fail (g_str_is_ascii (expr), NULL);
+
+  for (i = 0; i < total && expr[i] != 0; i++) {
+    char c = expr[i];
+
+    if (lba_expr_parser_space (c))
+      continue;
+
+    if (c == '(') {
+      if (G_UNLIKELY (0 == depth++))
+        /* start from the inside of an expr */
+        expr_start = &expr[i + 1];
+      continue;
+    }
+
+    if (c == '#') {
+      /* skip until next line */
+      while (expr[++i] != '\n' && i < total && expr[i] != 0);
+    }
+
+    if (c == ')') {
+      if (G_UNLIKELY (depth == 0)) {
+        /* Abort here, since we haven't designed error handling.
+         * Currently we are focused on complex design challenges. */
+        g_error ("Bad parentesis [%.*s]", total, expr);
+      }
+
+      if (G_UNLIKELY (--depth == 0)) {
+        /* NOTE: we are sure that i > 0, because depth != 0 */
+        expr_end = &expr[i - 1];
+        /* So we are done: our expression have been found */
+        *len = expr_end - expr_start + 1;
+        return expr_start;
+      }
+      continue;
+    }
+  }
+
+  if (G_UNLIKELY (depth > 0))
+    g_error ("Bad parentesis [%.*s]", total, expr);
+
+  /* VALID: no more expressions have been found */
+  return NULL;
+}
+
+static const gchar *
+lba_expr_parser_forward_trim (const char *expr, guint *len) {
+  while (*expr != 0 && *len > 0) {
+    if (!lba_expr_parser_space (*expr))
+      return expr;
+    expr++;
+    len[0]--;
+  }
+
+  /* VALID case?? Empty expression */
+  return NULL;
+}
+
+static void
+lba_core_eval_expression (gpointer selv, const char *expr, guint len) {
+  LbaCore *self = (LbaCore *) selv;
+  const BombollaCommand *command;
+
+  /* ================================= FIXMA: horrible */
+  if (!self->ctx) {
+    self->ctx = g_new0 (BombollaContext, 1);
+    self->ctx->self = (GObject *) self;
+    self->ctx->proccess_command = lba_core_eval_expression;
+    self->ctx->objects =
+        g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
+
+    // The bindings actually belong to the object, and are
+    // automatically destroyed when the objects are destroyed.
+    // The only point of storing them is the "unbind" command
+    self->ctx->bindings =
+        g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+  }
+
+  /* FIXME: that's hackish */
+  /* if (self->ctx->capturing_on_command) { */
+  /*   if (!lba_command_on_append (self->ctx->capturing_on_command, expr, len)) { */
+  /*     self->ctx->capturing_on_command = NULL; */
+  /*   } */
+  /*   return; */
+  /* } */
+  /* ========================================= */
+
+  expr = lba_expr_parser_forward_trim (expr, &len);
+  if (G_UNLIKELY (expr == NULL)) {
+    //LBA_LOG
+    g_message ("Empty expression");
+    /* Just a sanity check */
+    g_assert (len == 0);
+  }
+
+  /* So now find the command: */
+  for (command = commands; command->name != NULL; command++) {
+    if (g_str_has_prefix (expr, command->name)) {
+      g_message ("Run command %s", command->name);
+
+      if (!command->parse (self->ctx, expr, len)) {
+        g_error ("Command parse error");
+      }
+
+      return;
+    }
+  }
+
+  g_error ("Unknown command in the beginning of [%s]", expr);
+}
+
 /* TODO: return FALSE if execution fails */
 static void
 lba_core_execute (GObject *gobject, const gchar *commands) {
@@ -278,19 +404,26 @@ lba_core_execute (GObject *gobject, const gchar *commands) {
 
   /* Proccessing commands */
   if (commands) {
-    char **lines;
-    int i;
+    const gchar *expr = commands;
+    guint len = 0;
+    guint total = strlen (commands);
 
     LBA_LOG ("Going to exec: [%s]", commands);
 
-    lines = g_strsplit (commands, "\n", 0);
+    /* So here now we are not splitting by lines, but by the expressions */
+    for (expr = commands;;) {
+      const gchar *p = expr;
 
-    for (i = 0; lines[i]; i++) {
-      if (!lba_core_proccess_line (self, lines[i]))
+      expr = lba_expr_parser_find_next (expr, total, &len);
+      if (!expr)
         break;
-    }
+      LBA_LOG ("Eval expression [%.*s]", len, expr);
+      lba_core_eval_expression (self, expr, len);
 
-    g_strfreev (lines);
+      g_assert (len <= total);
+      expr += len + 1;
+      total -= (expr - p);
+    }
   }
 }
 

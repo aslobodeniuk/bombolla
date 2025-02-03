@@ -6,30 +6,30 @@
 # - JS works from any thread, but we can't resetup Gtk from
 #   other thread then the main one.
 
-dna LbaPythonAsync GObject LbaPython LbaAsync
-async create LbaPythonAsync py
-sync
+(dna LbaPythonAsync GObject LbaPython LbaAsync)
+(async create LbaPythonAsync py)
+(sync)
 
 # Put Async mixin on top of it so the dispose & finalize will be async
-dna LbaFeedParserAsync __main__+LbaFeedParser LbaAsync
-create LbaFeedParserAsync feed
+(dna LbaFeedParserAsync __main__+LbaFeedParser LbaAsync)
+(create LbaFeedParserAsync feed)
 
 # this one already does it thought the GMainLoop.
-create LbaGjs js
+(create LbaGjs js)
 
 # FIXME: LbaAsync still can't properly hack around the objects written
 # in JS. It's about how gjs chains up from the constructor: instead of
 # chaining up to the parent class, it calls the constructor of the type.
 # dna FrankNewsWindowAsync FrankNewsWindow LbaAsync
-async create FrankNewsWindow jsw
+(async create FrankNewsWindow jsw)
 
 # LbaAsync can't override properties and signals for now, that is why
 # we have to call this commands through "async" specifier
-async call feed.check-for-updates
-async bind jsw.title feed.title
-async bind jsw.my-summary feed.summary
-async call jsw.my-open
+(async call feed.check-for-updates)
+(async bind jsw.title feed.title)
+(async bind jsw.my-summary feed.summary)
+(async call jsw.my-open)
 
-sync
+(sync)
 # just print the object tree to see how nice it is
-dump FrankNewsWindow
+(dump FrankNewsWindow)

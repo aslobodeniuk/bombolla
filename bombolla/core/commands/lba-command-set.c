@@ -176,7 +176,7 @@ lba_core_init_convertion_functions (void) {
 }
 
 gboolean
-lba_command_set (BombollaContext *ctx, gchar **tokens) {
+lba_command_set (BombollaContext *ctx, const gchar *expr, guint len) {
 
   GValue inp = G_VALUE_INIT;
   GValue outp = G_VALUE_INIT;
@@ -186,6 +186,7 @@ lba_command_set (BombollaContext *ctx, gchar **tokens) {
   GParamSpec *prop;
   gboolean ret = FALSE;
   gint i;
+  gchar **tokens = FIXME_adapt_to_old (expr, len);
 
   if (FALSE == (tokens[1] && tokens[2])) {
     g_warning ("Wrong syntax for command 'set'");
@@ -244,5 +245,6 @@ done:
   g_value_unset (&inp);
   g_value_unset (&outp);
 
+  g_strfreev (tokens);
   return ret;
 }

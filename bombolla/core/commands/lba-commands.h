@@ -31,26 +31,24 @@
 typedef struct {
   GHashTable *objects;
   GHashTable *bindings;
-  gpointer capturing_on_command;
 
   gpointer self;
-    gboolean (*proccess_command) (gpointer self, const gchar * str);
+  void (*proccess_command) (gpointer self, const gchar * expr, guint len);
 
 } BombollaContext;
 
 typedef struct {
   const gchar *name;
-    gboolean (*parse) (BombollaContext * ctx, gchar ** tokens);
+    gboolean (*parse) (BombollaContext * ctx, const gchar * expr, guint len);
 } BombollaCommand;
 
 extern const BombollaCommand commands[];
 
 /* bombolla-command-on.c */
-gboolean lba_command_on_append (gpointer ctx_ptr, const gchar * command);
-gboolean lba_command_on (BombollaContext * ctx, gchar ** tokens);
+gboolean lba_command_on (BombollaContext * ctx, const gchar * expr, guint len);
 
 /* bombolla-command-set.c */
-gboolean lba_command_set (BombollaContext * ctx, gchar ** tokens);
+gboolean lba_command_set (BombollaContext * ctx, const gchar * expr, guint len);
 gboolean
 lba_core_parse_obj_fld (BombollaContext * ctx, const gchar * str, GObject ** obj,
                         gchar ** fld);
@@ -63,4 +61,8 @@ gboolean
 lba_command_set_str2obj (BombollaContext * ctx,
                          const GValue * src_value, GValue * dest_value);
 
+gchar **FIXME_adapt_to_old (const gchar * expr, guint len);
+
+const gchar *lba_expr_parser_find_next (const gchar * expr, guint total,
+                                        guint * len);
 #endif

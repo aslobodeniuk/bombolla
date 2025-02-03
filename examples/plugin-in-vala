@@ -1,8 +1,8 @@
-create ValaTest t
+(create ValaTest t)
 
-call t.say_hello
+(call t.say_hello)
 
-bind t.float-rw t.str-rw
-bind t.str-rw t.str-w
-set t.float-rw 0.12345
-set t.str-rw 123 let's see 
+(bind t.float-rw t.str-rw)
+(bind t.str-rw t.str-w)
+(set t.float-rw 0.12345)
+(set t.str-rw 123 let's see)

@@ -32,8 +32,20 @@
 /* HACK: Needed to use LBA_LOG */
 static const gchar *global_lba_plugin_name = "LbaCore";
 
+gchar **
+FIXME_adapt_to_old (const gchar *expr, guint len) {
+  gchar **tokens;
+  gchar *e = g_strndup (expr, len);
+
+  tokens = g_strsplit (e, " ", 0);
+  g_free (e);
+
+  return tokens;
+}
+
 static gboolean
-lba_command_create (BombollaContext *ctx, gchar **tokens) {
+lba_command_create (BombollaContext *ctx, const gchar *expr, guint len) {
+  gchar **tokens = FIXME_adapt_to_old (expr, len);
   const gchar *typename = tokens[1];
   const gchar *varname = tokens[2];
   GType obj_type;
@@ -68,11 +80,13 @@ lba_command_create (BombollaContext *ctx, gchar **tokens) {
     LBA_LOG ("%s %s created", typename, varname);
   }
 
+  g_strfreev (tokens);
   return TRUE;
 }
 
 static gboolean
-lba_command_destroy (BombollaContext *ctx, gchar **tokens) {
+lba_command_destroy (BombollaContext *ctx, const gchar *expr, guint len) {
+  gchar **tokens = FIXME_adapt_to_old (expr, len);
   const gchar *varname = tokens[1];
   GObject *obj;
 
@@ -81,16 +95,17 @@ lba_command_destroy (BombollaContext *ctx, gchar **tokens) {
   if (obj) {
     g_hash_table_remove (ctx->objects, varname);
     LBA_LOG ("%s destroyed", varname);
+    g_strfreev (tokens);
     return TRUE;
   }
 
-  g_warning ("object %s not found", varname);
+  g_error ("object %s not found", varname);
   return FALSE;
 
 }
 
 static gboolean
-lba_command_call (BombollaContext *ctx, gchar **tokens) {
+lba_command_call (BombollaContext *ctx, const gchar *expr, guint len) {
   const gchar *objname,
    *signame;
   GObject *obj;
@@ -98,6 +113,8 @@ lba_command_call (BombollaContext *ctx, gchar **tokens) {
   gboolean ret = FALSE;
   GValue return_value = G_VALUE_INIT;
   GArray *instance_and_params = NULL;
+
+  gchar **tokens = FIXME_adapt_to_old (expr, len);
 
   if (FALSE == (tokens[0] && tokens[1])) {
     g_warning ("wrong syntax");
@@ -208,6 +225,7 @@ done:
     g_array_unref (instance_and_params);
   if (tmp)
     g_strfreev (tmp);
+  g_strfreev (tokens);
 
   return ret;
 }
@@ -335,8 +353,10 @@ lba_command_dump_type (GType plugin_type) {
 }
 
 static gboolean
-lba_command_dump (BombollaContext *ctx, gchar **tokens) {
+lba_command_dump (BombollaContext *ctx, const gchar *expr, guint len) {
   GType t;
+
+  gchar **tokens = FIXME_adapt_to_old (expr, len);
 
   if (NULL == tokens[1]) {
     g_warning ("No type specified");
@@ -358,11 +378,13 @@ lba_command_dump (BombollaContext *ctx, gchar **tokens) {
   }
 
   lba_command_dump_type (t);
+
+  g_strfreev (tokens);
   return TRUE;
 }
 
 static gboolean
-lba_command_bind (BombollaContext *ctx, gchar **tokens) {
+lba_command_bind (BombollaContext *ctx, const gchar *expr, guint len) {
   gchar *prop_name1 = NULL;
   gchar *prop_name2 = NULL;
   GObject *obj1 = NULL;
@@ -373,6 +395,7 @@ lba_command_bind (BombollaContext *ctx, gchar **tokens) {
   GBindingFlags flags = G_BINDING_SYNC_CREATE | G_BINDING_DEFAULT;
   GBinding *binding;
   gchar *binding_name = NULL;
+  gchar **tokens = FIXME_adapt_to_old (expr, len);
 
   if (NULL == tokens[1]) {
     g_warning ("Need obj1.prop");
@@ -451,6 +474,7 @@ lba_command_bind (BombollaContext *ctx, gchar **tokens) {
   binding_name = NULL;
   ret = TRUE;
 done:
+  g_strfreev (tokens);
   g_free (binding_name);
   g_free (prop_name1);
   g_free (prop_name2);
@@ -461,6 +485,7 @@ gchar *
 assemble_line (gchar **tokens) {
   gchar *ret;
   gint i;
+  gchar *tmp;
 
   ret = g_strdup (tokens[0]);
 
@@ -468,52 +493,59 @@ assemble_line (gchar **tokens) {
     /* FIXME: we recover original string from tokens, it would be better to
      * just have an original string here an take it. This code has a bit
      * of problems, for example, tabs won't be recovered. */
-    gchar *tmp;
 
     tmp = g_strdup_printf ("%s %s", ret, tokens[i]);
     g_free (ret);
     ret = tmp;
   }
 
+  /* Wrap into (), oh what a terrible workaround */
+  ret = g_strdup_printf ("(%s)", ret);
+  g_free (tmp);
+  g_message ("assembled %s", ret);
   return ret;
 }
 
 static gboolean
-lba_command_log (BombollaContext *ctx, gchar **tokens) {
-  if (NULL == tokens[1] || NULL != tokens[2]) {
-    g_warning ("invalid syntax for 'log' command");
-  }
+lba_command_log (BombollaContext *ctx, const gchar *expr, guint len) {
+  gchar **tokens = FIXME_adapt_to_old (expr, len);
 
-  g_printf ("Warning: using g_setenv, that is not thread safe");
-  g_setenv ("G_MESSAGES_DEBUG", tokens[1], TRUE);
+  g_message ("Will log %s", tokens[1]);
+//  g_log_writer_default_set_debug_domains (&tokens[1]);
+  g_strfreev (tokens);
   return TRUE;
 }
 
 static gboolean
-lba_command_sync (BombollaContext *ctx, gchar **tokens) {
+lba_command_sync (BombollaContext *ctx, const gchar *expr, guint len) {
+  gchar **tokens = FIXME_adapt_to_old (expr, len);
+
   if (NULL != tokens[1]) {
     g_warning ("invalid syntax for 'sync' command");
   }
 
   lba_core_sync_with_async_cmds (ctx->self);
+
+  g_strfreev (tokens);
   return TRUE;
 }
 
 static gboolean
-lba_command_async (BombollaContext *ctx, gchar **tokens) {
+lba_command_async (BombollaContext *ctx, const gchar *expr, guint len) {
+  gchar **tokens = FIXME_adapt_to_old (expr, len);
+
   lba_core_shedule_async_script (ctx->self, assemble_line (tokens + 1));
+  g_strfreev (tokens);
   return TRUE;
 }
 
 static gboolean
-lba_comment (BombollaContext *ctx, gchar **tokens) {
-  return TRUE;
-}
-
-static gboolean
-lba_command_dna (BombollaContext *ctx, gchar **tokens) {
+lba_command_dna (BombollaContext *ctx, const gchar *expr, guint len) {
   gint t;
   GType base_type;
+
+  gchar **tokens = FIXME_adapt_to_old (expr, len);
+
   const gchar *mixed_type_name = tokens[1];
   const gchar *base_name = tokens[2];
 
@@ -562,11 +594,13 @@ lba_command_dna (BombollaContext *ctx, gchar **tokens) {
     g_message ("Have type %s", g_type_name (base_type));
   }
 
+  g_strfreev (tokens);
   return TRUE;
 
 syntax:
-  g_warning ("Syntax error. Expected: "
-             "dna <mixed type name> <base type> <mixin 1> ... <mixin N>");
+  g_error ("Syntax error. Expected: "
+           "dna <mixed type name> <base type> <mixin 1> ... <mixin N>");
+  g_strfreev (tokens);
   return FALSE;
 }
 
@@ -582,7 +616,6 @@ const BombollaCommand commands[] = {
   { "sync", lba_command_sync },
   { "dna", lba_command_dna },
   { "log", lba_command_log },
-  { "#", lba_comment },
   /* End of list */
   { NULL, NULL }
 };

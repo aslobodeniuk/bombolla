@@ -1,16 +1,16 @@
-create LbaGjs js
-call js.scan examples/js/gtk3/lba-gtk3-window-in-js.js
+(create LbaGjs js)
+(call js.scan examples/js/gtk3/lba-gtk3-window-in-js.js)
 
-async create MyJSWindow w
-async set w.width-request 300
-async set w.height-request 200
-async set w.title hello from bombolla
+(async create MyJSWindow w)
+(async set w.width-request 300)
+(async set w.height-request 200)
+(async set w.title hello from bombolla)
 
-sync
+(sync)
 
-on w.my-clicked
-call w.hide
-end
+(on w.my-clicked
+  (call w.hide)
+)
 
-async call w.my-open
-sync
+(async call w.my-open)
+(sync)
