@@ -224,6 +224,8 @@ lba_module_scanner_constructed (GObject *gobject) {
 
   if (klass->scan_on_constructed && self->plugin_path)
     lba_module_scanner_scan_start (self);
+
+  BM_CHAINUP (self, GObject)->constructed (gobject);
 }
 
 static void

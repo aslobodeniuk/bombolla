@@ -1,6 +1,6 @@
 /* la Bombolla GObject shell
  *
- * Copyright (c) 2024, Alexander Slobodeniuk <aleksandr.slobodeniuk@gmx.es>
+ * Copyright (c) 2025, Alexander Slobodeniuk <aleksandr.slobodeniuk@gmx.es>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -25,36 +25,55 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _BOMBOLLA_COMMANDS
-#  define _BOMBOLLA_COMMANDS
+#include "lba-boxed.h"
 
-typedef struct {
-  GHashTable *objects;
-  GHashTable *bindings;
+LBA_DEFINE_BOXED (LbaBoxed, lba_boxed);
 
-  gpointer self;
-} BombollaContext;
+void
+lba_boxed_init (LbaBoxed *bxd, GType self_type, GDestroyNotify free) {
+  bxd->self_type = self_type;
+  bxd->refcount = 1;
+  bxd->free = free;
+}
 
-typedef struct {
-  const gchar *name;
-    gboolean (*parse) (BombollaContext * ctx, const gchar * expr, guint len);
-} BombollaCommand;
+static void
+lba_boxed_clear (LbaBoxed *bxd) {
+  GDestroyNotify f;
 
-extern const BombollaCommand commands[];
+  g_assert (bxd->refcount == 0);
+  g_assert (bxd->free != NULL);
+  g_assert (bxd->self_type != 0);
 
-/* bombolla-command-set.c */
-gboolean lba_command_set (BombollaContext * ctx, const gchar * expr, guint len);
-gboolean
-lba_core_parse_obj_fld (BombollaContext * ctx, const gchar * str, GObject ** obj,
-                        gchar ** fld);
-void lba_core_init_convertion_functions (void);
+  f = bxd->free;
 
-void lba_core_shedule_async_script (GObject * obj, gchar * command);
-void lba_core_sync_with_async_cmds (gpointer core);
+  /* Spoil the data to crash on double-free */
+  bxd->self_type = 0;
+  bxd->refcount = -1;
+  bxd->free = NULL;
 
-gboolean
-lba_command_set_str2obj (BombollaContext * ctx,
-                         const GValue * src_value, GValue * dest_value);
+  f (bxd);
+}
 
-gchar **FIXME_adapt_to_old (const gchar * expr, guint len);
-#endif
+void
+lba_boxed_unref (gpointer b) {
+  LbaBoxed *bxd = (LbaBoxed *) b;
+
+  if (bxd == NULL)
+    return;
+
+  if (g_atomic_int_dec_and_test (&bxd->refcount))
+    lba_boxed_clear (bxd);
+}
+
+gpointer
+lba_boxed_ref (gpointer b) {
+  LbaBoxed *bxd = (LbaBoxed *) b;
+
+  g_return_val_if_fail (bxd != NULL, NULL);
+  g_assert (bxd->free != NULL);
+  g_assert (bxd->refcount >= 0);
+  g_assert (bxd->self_type != 0);
+
+  g_atomic_int_inc (&bxd->refcount);
+  return bxd;
+}

@@ -1,6 +1,6 @@
 /* la Bombolla GObject shell
  *
- * Copyright (c) 2024, Alexander Slobodeniuk <aleksandr.slobodeniuk@gmx.es>
+ * Copyright (c) 2025, Alexander Slobodeniuk <aleksandr.slobodeniuk@gmx.es>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -25,36 +25,43 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _BOMBOLLA_COMMANDS
-#  define _BOMBOLLA_COMMANDS
+#ifndef _LBA_BOXED
+#  define _LBA_BOXED
+#  include <glib-object.h>
 
 typedef struct {
-  GHashTable *objects;
-  GHashTable *bindings;
+  GType self_type;
 
-  gpointer self;
-} BombollaContext;
+  gint refcount;
+  GDestroyNotify free;
+} LbaBoxed;
+
+void lba_boxed_init (LbaBoxed * bxd, GType self_type, GDestroyNotify free);
+
+void lba_boxed_unref (gpointer b);
+
+gpointer lba_boxed_ref (gpointer b);
+
+#  define LBA_DEFINE_BOXED(Type, type) G_DEFINE_BOXED_TYPE (Type, type, lba_boxed_ref, lba_boxed_unref)
+
+typedef enum {
+  LBA_EXPR_NODE_IS_EXPR,
+  LBA_EXPR_NODE_IS_STONE,
+  LBA_EXPR_NODE_IS_LIST,
+  LBA_EXPR_NODE_IS_STRING,
+} LbaExprNodeType;
 
 typedef struct {
-  const gchar *name;
-    gboolean (*parse) (BombollaContext * ctx, const gchar * expr, guint len);
-} BombollaCommand;
+  LbaBoxed bxd;
 
-extern const BombollaCommand commands[];
+  GNode *node;
+  LbaExprNodeType type;
+  GValue value;
+  gchar *str;
+  gint actionrefs;
+} LbaExprNode;
 
-/* bombolla-command-set.c */
-gboolean lba_command_set (BombollaContext * ctx, const gchar * expr, guint len);
-gboolean
-lba_core_parse_obj_fld (BombollaContext * ctx, const gchar * str, GObject ** obj,
-                        gchar ** fld);
-void lba_core_init_convertion_functions (void);
+GNode *lba_expr_node_new (LbaExprNodeType type, const gchar * expr, guint len);
 
-void lba_core_shedule_async_script (GObject * obj, gchar * command);
-void lba_core_sync_with_async_cmds (gpointer core);
-
-gboolean
-lba_command_set_str2obj (BombollaContext * ctx,
-                         const GValue * src_value, GValue * dest_value);
-
-gchar **FIXME_adapt_to_old (const gchar * expr, guint len);
+void lba_expr_node_destroy (GNode * tree);
 #endif

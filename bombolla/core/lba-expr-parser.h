@@ -1,6 +1,6 @@
 /* la Bombolla GObject shell
  *
- * Copyright (c) 2024, Alexander Slobodeniuk <aleksandr.slobodeniuk@gmx.es>
+ * Copyright (c) 2025, Alexander Slobodeniuk <aleksandr.slobodeniuk@gmx.es>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -25,36 +25,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _BOMBOLLA_COMMANDS
-#  define _BOMBOLLA_COMMANDS
+#ifndef _LBA_EXPR_PARSER
+#  define _LBA_EXPR_PARSER
+#  include <glib-object.h>
+# include "lba-boxed.h"
 
-typedef struct {
-  GHashTable *objects;
-  GHashTable *bindings;
+GNode *
+lba_expr_parser_sniff (LbaExprNodeType type, const gchar *expr, guint total);
 
-  gpointer self;
-} BombollaContext;
+const gchar *
+DEPRECATED_lba_expr_parser_find_next (const gchar *expr, guint total, guint *len);
 
-typedef struct {
-  const gchar *name;
-    gboolean (*parse) (BombollaContext * ctx, const gchar * expr, guint len);
-} BombollaCommand;
-
-extern const BombollaCommand commands[];
-
-/* bombolla-command-set.c */
-gboolean lba_command_set (BombollaContext * ctx, const gchar * expr, guint len);
-gboolean
-lba_core_parse_obj_fld (BombollaContext * ctx, const gchar * str, GObject ** obj,
-                        gchar ** fld);
-void lba_core_init_convertion_functions (void);
-
-void lba_core_shedule_async_script (GObject * obj, gchar * command);
-void lba_core_sync_with_async_cmds (gpointer core);
-
-gboolean
-lba_command_set_str2obj (BombollaContext * ctx,
-                         const GValue * src_value, GValue * dest_value);
-
-gchar **FIXME_adapt_to_old (const gchar * expr, guint len);
 #endif

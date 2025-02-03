@@ -1,6 +1,9 @@
 src = files(['lba-core.c',
+	     'lba-commands-fund.c',
+	     'lba-boxed.c',
+	     'lba-expr-node.c',
+	     'lba-expr-parser.c',
              'commands/lba-commands.c',
-             'commands/lba-command-on.c',
              'commands/lba-command-set.c'])
 
 # To share statically with the test that will build it with asan

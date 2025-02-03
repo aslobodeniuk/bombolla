@@ -8,8 +8,8 @@
 
 (sync)
 
-(on w.my-clicked
-  (call w.hide)
+(on w my-clicked
+  "call w.hide"
 )
 
 (async call w.my-open)
