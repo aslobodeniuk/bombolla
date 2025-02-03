@@ -1,0 +1,28 @@
+name: Ubuntu 20.04 build
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+    - name: bootstrap
+      run: |
+        DEBIAN_FRONTEND=noninteractive sudo apt install -qq libglib2.0-dev libsoup2.4-dev libgjs-dev libpython3-dev pkg-config indent valac ninja-build libcogl-pango-dev python3-pip python3-setuptools python3-wheel gtk-doc-tools libunwind-dev libgstreamer1.0-dev libcairo2-dev
+        sudo pip install meson
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: validate
+      run: ./Firulais --ci-mode
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: artifacts
+        path: build/firulais-examples-test-log.txt
+        if-no-files-found: error
+        retention-days: 90

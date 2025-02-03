@@ -1,4 +1,6 @@
-![Ubuntu 22 build & unit tests](https://github.com/aslobodeniuk/bombolla/actions/workflows/ubuntu22.yml/badge.svg)
+![Ubuntu 20 build & unit tests](https://github.com/aslobodeniuk/bombolla/actions/workflows/ubuntu20.yml/badge.svg)
+![Ubuntu 24 build & unit tests](https://github.com/aslobodeniuk/bombolla/actions/workflows/ubuntu24.yml/badge.svg)
+
 # bombolla
 ![logo](doc/logo/dark1.svg)
 
