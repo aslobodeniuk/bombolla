@@ -80,6 +80,64 @@ bm_type_peek_mixed_type (GType mixed_type, GType mixin) {
   return 0;
 }
 
+static GType
+bm_type_rebuild_with_csetup (GType base, GType point, GBaseInitFunc csetup) {
+  GType newbase = base;
+  GArray *reverse_install;
+  gint i;
+
+  g_return_val_if_fail (base != 0, 0);
+  g_return_val_if_fail (point != 0, 0);
+  g_return_val_if_fail (csetup != 0, 0);
+
+  reverse_install = g_array_new (FALSE, FALSE, sizeof (GType));
+  for (;;) {
+    BMInfo *info;
+
+    info = g_type_get_qdata (newbase, bmixin_info_qrk ());
+    g_return_val_if_fail (info != 0, 0);
+
+    /* Found */
+    if (info->type == point)
+      break;
+
+    g_return_val_if_fail (info->type != 0, 0);
+    g_array_append_val (reverse_install, info->type);
+    newbase = g_type_parent (newbase);
+  }
+
+  g_return_val_if_fail (newbase != 0, 0);
+  newbase = g_type_parent (newbase);
+  g_return_val_if_fail (newbase != 0, 0);
+
+  /* Ok, now we are going to build a new base with a "point" on top of it,
+   * and then install all the children that the base had */
+  newbase = bm_register_mixed_type (NULL, newbase, point, csetup);
+
+  /* Ok, so we have a rebuilt base mixie with a point on the head the required
+   * class_setup() installed.
+   * Now we need to build a type that would install all the children
+   * of "base" starting from the "point", on top of the "newbase" */
+  if (reverse_install->len == 0) {
+    /* In this case "point" was already o top of the base, so we have no more
+     * clildren to install on the "newbase" */
+    goto done;
+  }
+
+  /* We were assembling the array in the reverse order, so
+   * now let's iterate it in reverse installing the children in the
+   * right order. */
+  for (i = reverse_install->len - 1; i >= 0; i--) {
+    newbase = bm_register_mixed_type (NULL, newbase,
+                                      g_array_index (reverse_install, GType, i),
+                                      NULL);
+  }
+
+done:
+  g_array_free (reverse_install, TRUE);
+  return newbase;
+}
+
 GType
 bm_register_mixed_type (const gchar *mixed_type_name, GType base_type, GType mixin,
                         GBaseInitFunc class_setup) {
@@ -206,9 +264,10 @@ bm_register_mixed_type (const gchar *mixed_type_name, GType base_type, GType mix
           if (bm_type_peek_mixed_type (base_type, dep_type)) {
             /* Mixin found in the base class, nothing to do */
             if (G_UNLIKELY (base_init)) {
-              g_critical ("class_setup is defined for %s, but it's already "
-                          "a part of the base (%s), this scenario is not supported",
-                          g_type_name (dep_type), g_type_name (base_type));
+              /* Need to install base_init() to the base that already have been built */
+              base_type =
+                  bm_type_rebuild_with_csetup (base_type, dep_type, base_init);
+              g_return_val_if_fail (base_type != 0, 0);
             }
             continue;
           }

@@ -61,16 +61,37 @@ animal_get_property (GObject *object,
 }
 
 static void
+animal_set_property (GObject *object,
+                     guint property_id, const GValue *value, GParamSpec *pspec) {
+  G_GNUC_UNUSED Animal *self = bm_get_Animal (object);
+
+  switch ((AnimalProperty) property_id) {
+  case PROP_IS_DOMESTIC:
+    if (g_value_get_boolean (value)) {
+      g_message ("Going to domestify an instance of %s",
+                 G_OBJECT_TYPE_NAME (object));
+    }
+    break;
+  default:
+    /* We don't have any other property... */
+    G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+    break;
+  }
+}
+
+static void
 animal_class_init (GObjectClass *gobject_class, AnimalClass *klass) {
   GParamFlags domestic_prop_flags = G_PARAM_STATIC_STRINGS | G_PARAM_READABLE;
 
   g_message ("animal_class_init");
 
-  gobject_class->get_property = animal_get_property;
   klass->is_domestic = TRUE;
 
-  if (klass->maybe_domestic)
+  gobject_class->get_property = animal_get_property;
+  if (klass->maybe_domestic) {
     domestic_prop_flags |= G_PARAM_WRITABLE;
+    gobject_class->set_property = animal_set_property;
+  }
 
   g_object_class_install_property (gobject_class, PROP_IS_DOMESTIC,
                                    g_param_spec_boolean ("is-domestic",
