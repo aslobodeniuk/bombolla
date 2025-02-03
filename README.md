@@ -1,4 +1,4 @@
-![Ubuntu build & unit tests](https://github.com/aslobodeniuk/bombolla/actions/workflows/ubuntu.yml/badge.svg)
+![Ubuntu 22 build & unit tests](https://github.com/aslobodeniuk/bombolla/actions/workflows/ubuntu22.yml/badge.svg)
 # bombolla
 ![logo](doc/logo/dark1.svg)
 
@@ -67,7 +67,7 @@ LBA_JS_PLUGINS_PATH=$(pwd)/examples/js/pure-gobject build/bombolla/tools/shell/b
 
 Yes, check
 ```bash
-LBA_PLUGINS_PATH=$(pwd)/examples/vala build/bombolla/tools/shell/bombolla-shell -p build/bombolla -i examples/plugin-in-vala
+build/bombolla/tools/shell/bombolla-shell -p build/examples/vala -i examples/plugin-in-vala
 ```
 
 ### So, ok I can write in many languages. Can I connect them in between?
