@@ -1,8 +1,10 @@
 # NOTE: you can see so many "async" and "LbaAsync" words
 # here, because we need to align Python and JS to their theads.
 # In fact now we align everything to the default GMainContext
-# that runs in LbaCore, because JS only works through GMainxContext.
-# Python only works from one same thread it was created from.
+# that runs in LbaCore, because:
+# - Python only from one same thread it was created from.
+# - JS works from any thread, but we can't resetup Gtk from
+#   other thread then the main one.
 
 dna LbaPythonAsync GObject LbaPython LbaAsync
 async create LbaPythonAsync py
