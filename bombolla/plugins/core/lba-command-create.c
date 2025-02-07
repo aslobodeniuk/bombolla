@@ -1,6 +1,6 @@
 /* la Bombolla GObject shell
  *
- * Copyright (c) 2024, Alexander Slobodeniuk <aleksandr.slobodeniuk@gmx.es>
+ * Copyright (c) 2025, Alexander Slobodeniuk <aleksandr.slobodeniuk@gmx.es>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -25,36 +25,38 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _BOMBOLLA_COMMANDS
-#  define _BOMBOLLA_COMMANDS
+#include <bombolla/lba-log.h>
+#include <bmixin/bmixin.h>
 
-typedef struct {
-  GHashTable *objects;
-  GHashTable *bindings;
+static void
+lba_command_create (GObject *core, const char *type_name, const char *var_name) {
+  GType obj_type;
 
-  gpointer self;
-} BombollaContext;
+  LBA_LOG ("Hello from create command ([%s] --> [%s])", type_name, var_name);
 
-typedef struct {
-  const gchar *name;
-    gboolean (*parse) (BombollaContext * ctx, const gchar * expr, guint len);
-} BombollaCommand;
+  obj_type = g_type_from_name (type_name);
 
-extern const BombollaCommand commands[];
+  if (G_UNLIKELY (obj_type == 0)) {
+    g_warning ("Type %s not found", type_name);
+    // trigger signal "report-error" on the core ??
+    return;
+  }
 
-/* bombolla-command-set.c */
-gboolean lba_command_set (BombollaContext * ctx, const gchar * expr, guint len);
-gboolean
-lba_core_parse_obj_fld (BombollaContext * ctx, const gchar * str, GObject ** obj,
-                        gchar ** fld);
-void lba_core_init_convertion_functions (void);
+  if (BM_GTYPE_IS_BMIXIN (obj_type)) {
+    obj_type = bm_register_mixed_type (NULL, G_TYPE_OBJECT, obj_type, NULL);
 
-void lba_core_shedule_async_script (GObject * obj, gchar * command);
-void lba_core_sync_with_async_cmds (gpointer core);
+    LBA_LOG ("Type '%s' is a mixin, will use '%s'", type_name,
+             g_type_name (obj_type));
+  }
 
-gboolean
-lba_command_set_str2obj (BombollaContext * ctx,
-                         const GValue * src_value, GValue * dest_value);
+  GObject *obj = g_object_new (obj_type,
+                               /* TODO: properties??
+                                * could take a list as a parameter */
+                               NULL);
 
-gchar **FIXME_adapt_to_old (const gchar * expr, guint len);
-#endif
+  g_signal_emit_by_name (core, "add", obj, var_name);
+  g_object_unref (obj);
+}
+
+BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_COMMAND (create, LBA_COMMAND_SETUP_DEFAULT,
+                                        G_TYPE_STRING, G_TYPE_STRING);

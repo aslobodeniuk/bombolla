@@ -51,6 +51,12 @@ test_empty_string (Fixture *fixture, gconstpointer user_data) {
 }
 
 static void
+test_dump (Fixture *fixture, gconstpointer user_data) {
+  /* execute empty string */
+  g_signal_emit_by_name (fixture->obj, "execute", "(dump LbaCoreObject)");
+}
+
+static void
 test_singleton (Fixture *fixture, gconstpointer user_data) {
   GObject *more_lba_cores[2];
 
@@ -72,6 +78,8 @@ main (int argc, char *argv[]) {
               fixture_set_up, test_empty_string, fixture_tear_down);
   g_test_add ("/core/singleton", Fixture, "some-user-data",
               fixture_set_up, test_singleton, fixture_tear_down);
+  g_test_add ("/core/test-dump", Fixture, NULL,
+              fixture_set_up, test_dump, fixture_tear_down);
 
   return g_test_run ();
 }

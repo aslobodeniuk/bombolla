@@ -25,36 +25,40 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _BOMBOLLA_COMMANDS
-#  define _BOMBOLLA_COMMANDS
+#include "lba-boxed.h"
 
-typedef struct {
-  GHashTable *objects;
-  GHashTable *bindings;
+LBA_DEFINE_BOXED (LbaExprNode, lba_expr_node);
 
-  gpointer self;
-} BombollaContext;
+static void
+lba_expr_node_free (gpointer p) {
+  LbaExprNode *en = (LbaExprNode *) p;
 
-typedef struct {
-  const gchar *name;
-    gboolean (*parse) (BombollaContext * ctx, const gchar * expr, guint len);
-} BombollaCommand;
+  g_value_unset (&en->value);
+  g_free (en->str);
+  g_free (en);
+}
 
-extern const BombollaCommand commands[];
+GNode *
+lba_expr_node_new (LbaExprNodeType type, const gchar *expr, guint len) {
+  LbaExprNode *ret = g_new0 (LbaExprNode, 1);
 
-/* bombolla-command-set.c */
-gboolean lba_command_set (BombollaContext * ctx, const gchar * expr, guint len);
-gboolean
-lba_core_parse_obj_fld (BombollaContext * ctx, const gchar * str, GObject ** obj,
-                        gchar ** fld);
-void lba_core_init_convertion_functions (void);
+  lba_boxed_init (&ret->bxd, lba_expr_node_get_type (), lba_expr_node_free);
+  ret->str = g_strndup (expr, len);
+  ret->type = type;
+  ret->node = g_node_new (ret);
+  return ret->node;
+}
 
-void lba_core_shedule_async_script (GObject * obj, gchar * command);
-void lba_core_sync_with_async_cmds (gpointer core);
+static gboolean
+lba_expr_node_destroy_each (GNode *node, gpointer data) {
+  g_clear_pointer (&node->data, lba_boxed_unref);
+  return FALSE;
+}
 
-gboolean
-lba_command_set_str2obj (BombollaContext * ctx,
-                         const GValue * src_value, GValue * dest_value);
-
-gchar **FIXME_adapt_to_old (const gchar * expr, guint len);
-#endif
+void
+lba_expr_node_destroy (GNode *tree) {
+  g_node_traverse (tree,
+                   G_LEVEL_ORDER, G_TRAVERSE_ALL, -1, lba_expr_node_destroy_each,
+                   NULL);
+  g_node_destroy (tree);
+}

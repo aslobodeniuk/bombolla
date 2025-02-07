@@ -27,7 +27,6 @@
 
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
-#include <glib-object.h>
 
 typedef struct _LbaClock {
   GObject parent;

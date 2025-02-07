@@ -28,15 +28,21 @@
 #include "bombolla/lba-plugin-system.h"
 #include "bombolla/lba-log.h"
 #include "bombolla/base/lba-module-scanner.h"
-#include "commands/lba-commands.h"
+#include "lba-expr-parser.h"
 #include <bmixin/bmixin.h>
 #include <glib/gstdio.h>
 #include <gmodule.h>
 #include <string.h>
 #include <stdlib.h>
 
+/* DEPRECATED: */
+#include "commands/lba-commands.h"
+/* ------------- */
+
 enum {
   SIGNAL_EXECUTE,
+  SIGNAL_ADD,
+  SIGNAL_PICK,
   LAST_SIGNAL
 };
 
@@ -60,6 +66,8 @@ typedef struct _LbaCore {
 typedef struct _LbaCoreClass {
   BMixinClass c;
   void (*execute) (GObject *, const gchar *);
+  void (*add) (GObject *, GObject *, const gchar *);
+  GObject *(*pick) (GObject *, const gchar *);
 } LbaCoreClass;
 
 BM_DEFINE_MIXIN (lba_core, LbaCore, BM_ADD_DEP (lba_module_scanner));
@@ -71,7 +79,6 @@ static gpointer
 lba_core_mainloop (gpointer data) {
   LbaCore *self = (LbaCore *) data;
 
-  g_message ("heiii %s", global_lba_plugin_name);
   LBA_LOG ("starting the mainloop");
 
   /* FIXME: for the beginning we use default context */
@@ -167,6 +174,7 @@ lba_core_dispose (GObject *gobject) {
     lba_core_stop (self);
   }
 
+  LBA_LOG ("Stopped. Disposing");
   BM_CHAINUP (self, GObject)->dispose (gobject);
 }
 
@@ -174,69 +182,14 @@ static void
 lba_core_finalize (GObject *gobject) {
   LbaCore *self = bm_get_LbaCore (gobject);
 
+  LBA_LOG ("Finalize");
+
   g_mutex_clear (&self->async_cmd_guard);
   g_mutex_clear (&self->lock);
   g_cond_clear (&self->cond);
 
   BM_CHAINUP (self, GObject)->finalize (gobject);
 }
-
-/* static gboolean */
-/* lba_core_proccess_line (gpointer obj, const gchar *str) { */
-/*   LbaCore *self = (LbaCore *) obj; */
-/*   gboolean ret = TRUE; */
-/*   char **tokens; */
-/*   const BombollaCommand *command; */
-
-/*   tokens = g_strsplit (str, " ", 0); */
-
-/*   if (!tokens || !tokens[0]) { */
-/*     goto done; */
-/*   } */
-
-/*   if (!self->ctx || !self->ctx->capturing_on_command) { */
-/*     LBA_LOG ("processing '%s'", str); */
-/*   } */
-
-/*   if (!self->ctx) { */
-/*     self->ctx = g_new0 (BombollaContext, 1); */
-/*     self->ctx->self = (GObject *) self; */
-/*     self->ctx->proccess_command = lba_core_proccess_line; */
-/*     self->ctx->objects = */
-/*         g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref); */
-
-/*     // The bindings actually belong to the object, and are */
-/*     // automatically destroyed when the objects are destroyed. */
-/*     // The only point of storing them is the "unbind" command */
-/*     self->ctx->bindings = */
-/*         g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL); */
-/*   } */
-
-/*   /\* FIXME: that's hackish *\/ */
-/*   if (self->ctx->capturing_on_command) { */
-/*     if (!lba_command_on_append (self->ctx->capturing_on_command, str)) { */
-/*       self->ctx->capturing_on_command = NULL; */
-/*     } */
-/*     goto done; */
-/*   } */
-
-/*   for (command = commands; command->name != NULL; command++) { */
-/*     if (0 == g_strcmp0 (command->name, tokens[0])) { */
-/*       if (!command->parse (self->ctx, tokens)) { */
-/*         /\* Bad syntax. FIXME: should we optionally stop proccessing?? *\/ */
-/*         goto done; */
-/*       } */
-
-/*       ret = TRUE; */
-/*       goto done; */
-/*     } */
-/*   } */
-
-/*   g_warning ("Unknown command [%s]", tokens[0]); */
-/* done: */
-/*   g_strfreev (tokens); */
-/*   return ret; */
-/* } */
 
 static void
 lba_core_load_module (GObject *gobj, const gchar *module_filename) {
@@ -272,120 +225,26 @@ lba_core_load_module (GObject *gobj, const gchar *module_filename) {
            module_filename);
 }
 
-static gboolean
-lba_expr_parser_space (char c) {
-  return c == ' ' || c == '\t' || c == '\n';
-}
-
-const gchar *
-lba_expr_parser_find_next (const gchar *expr, guint total, guint *len) {
-  gint i;
-  guint depth = 0;
-  const gchar *expr_start;
-  const gchar *expr_end;
-
-  g_return_val_if_fail (expr != NULL, NULL);
-  g_return_val_if_fail (len != NULL, NULL);
-  g_return_val_if_fail (g_str_is_ascii (expr), NULL);
-
-  for (i = 0; i < total && expr[i] != 0; i++) {
-    char c = expr[i];
-
-    if (lba_expr_parser_space (c))
-      continue;
-
-    if (c == '(') {
-      if (G_UNLIKELY (0 == depth++))
-        /* start from the inside of an expr */
-        expr_start = &expr[i + 1];
-      continue;
-    }
-
-    if (c == '#') {
-      /* skip until next line */
-      while (expr[++i] != '\n' && i < total && expr[i] != 0);
-    }
-
-    if (c == ')') {
-      if (G_UNLIKELY (depth == 0)) {
-        /* Abort here, since we haven't designed error handling.
-         * Currently we are focused on complex design challenges. */
-        g_error ("Bad parentesis [%.*s]", total, expr);
-      }
-
-      if (G_UNLIKELY (--depth == 0)) {
-        /* NOTE: we are sure that i > 0, because depth != 0 */
-        expr_end = &expr[i - 1];
-        /* So we are done: our expression have been found */
-        *len = expr_end - expr_start + 1;
-        return expr_start;
-      }
-      continue;
-    }
-  }
-
-  if (G_UNLIKELY (depth > 0))
-    g_error ("Bad parentesis [%.*s]", total, expr);
-
-  /* VALID: no more expressions have been found */
-  return NULL;
-}
-
-static const gchar *
-lba_expr_parser_forward_trim (const char *expr, guint *len) {
-  while (*expr != 0 && *len > 0) {
-    if (!lba_expr_parser_space (*expr))
-      return expr;
-    expr++;
-    len[0]--;
-  }
-
-  /* VALID case?? Empty expression */
-  return NULL;
-}
+GType lba_core_object_get_type (void);
 
 static void
-lba_core_eval_expression (gpointer selv, const char *expr, guint len) {
+DEPRECATED_lba_core_eval_expression (gpointer selv, const char *expr, guint len) {
   LbaCore *self = (LbaCore *) selv;
   const BombollaCommand *command;
 
-  /* ================================= FIXMA: horrible */
-  if (!self->ctx) {
-    self->ctx = g_new0 (BombollaContext, 1);
-    self->ctx->self = (GObject *) self;
-    self->ctx->proccess_command = lba_core_eval_expression;
-    self->ctx->objects =
-        g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
+  guint exprlen = 0;
 
-    // The bindings actually belong to the object, and are
-    // automatically destroyed when the objects are destroyed.
-    // The only point of storing them is the "unbind" command
-    self->ctx->bindings =
-        g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-  }
-
-  /* FIXME: that's hackish */
-  /* if (self->ctx->capturing_on_command) { */
-  /*   if (!lba_command_on_append (self->ctx->capturing_on_command, expr, len)) { */
-  /*     self->ctx->capturing_on_command = NULL; */
-  /*   } */
-  /*   return; */
-  /* } */
-  /* ========================================= */
-
-  expr = lba_expr_parser_forward_trim (expr, &len);
+  expr = DEPRECATED_lba_expr_parser_find_next (expr, len, &exprlen);
   if (G_UNLIKELY (expr == NULL)) {
-    //LBA_LOG
-    g_message ("Empty expression");
+    LBA_LOG ("Empty expression");
     /* Just a sanity check */
-    g_assert (len == 0);
+    g_assert (exprlen == 0);
+    return;
   }
 
   /* So now find the command: */
   for (command = commands; command->name != NULL; command++) {
     if (g_str_has_prefix (expr, command->name)) {
-      g_message ("Run command %s", command->name);
-
       if (!command->parse (self->ctx, expr, len)) {
         g_error ("Command parse error");
       }
@@ -397,34 +256,261 @@ lba_core_eval_expression (gpointer selv, const char *expr, guint len) {
   g_error ("Unknown command in the beginning of [%s]", expr);
 }
 
-/* TODO: return FALSE if execution fails */
+static void
+lba_expr_node_action_ref (GNode *node, gpointer p) {
+  LbaExprNode *parent = (LbaExprNode *) node->parent->data;
+
+  /* NOTE: this seems to be always executed sinchronously, while
+   * we are just building the action chain. So probably it's impossible
+   * to collide with other happening on '&en->actionrefs'. However JUST IN CASE
+   * we increase here atomically too. */
+  g_atomic_int_inc (&parent->actionrefs);
+}
+
+static void lba_expr_node_action_unref (GNode * node, LbaCore * self);
+
+static void
+lba_expr_node_action (gpointer data, LbaCore *self) {
+  int p;
+  guint signal_id;
+  GSignalQuery query;
+  LbaExprNode *en = (LbaExprNode *) data;
+  LbaExprNode *cen;
+
+  LBA_LOG ("Actioning [%s]", en->str);
+  /* Ok, so we are actioning a node, all of which children have
+   * GValue ready. We know it has children.
+   *
+   * So now we check the first child: it has to be a command.
+   */
+  cen = (LbaExprNode *) g_node_first_child (en->node)->data;
+  LBA_LOG ("Checking command [%s]", cen->str);
+
+  signal_id = g_signal_lookup (cen->str, lba_core_object_get_type ());
+  if (!signal_id) {
+    LBA_LOG ("No command '%s', using FIXME ones", cen->str);
+    /* Expression already has no quotes */
+    DEPRECATED_lba_core_eval_expression (self, en->str, strlen (en->str));
+    goto unref;
+  }
+
+  g_signal_query (signal_id, &query);
+
+  if (G_TYPE_NONE != query.return_type)
+    g_value_init (&en->value, query.return_type);
+
+  /* Prepare array of gvalues to exec the signal */
+  GValue instance_and_params[64] = { 0 };
+  g_assert (query.n_params + 1 < G_N_ELEMENTS (instance_and_params));
+
+  /* Set LbaCore as a first parameter */
+  //  instance_and_params[0] = G_VALUE_INIT;
+  g_value_init (&instance_and_params[0], lba_core_object_get_type ());
+  g_value_set_object (&instance_and_params[0], BM_GET_GOBJECT (self));
+
+  /* Must be exactly action + params */
+  g_assert (g_node_n_children (en->node) == query.n_params + 1);
+
+  /* So we already have our GValues of the children ready. Now the question
+   * is if we can transform them to the values of GTypes of the signal params */
+  for (p = 0; p < query.n_params; p++) {
+    GValue *dst = &instance_and_params[p + 1];
+
+    cen = cen->node->next->data;
+
+    /* Where should these lines be? */
+    /* Maybe when we unref ?? So unref == value is ready */
+    /* ------------------------------- */
+    if (cen->type == LBA_EXPR_NODE_IS_STONE || cen->type == LBA_EXPR_NODE_IS_STRING) {
+      g_value_init (&cen->value, G_TYPE_STRING);
+      g_value_set_string (&cen->value, cen->str);
+    }
+    /* ------------------------------ */
+
+    LBA_LOG ("Param[%d] (%s) will be set from <-- (%s)", p,
+             g_type_name (query.param_types[p]), G_VALUE_TYPE_NAME (&cen->value));
+
+    if (G_VALUE_TYPE (&cen->value) == G_TYPE_STRING
+        && query.param_types[p] == G_TYPE_OBJECT) {
+      g_value_init (dst, G_TYPE_OBJECT);
+      g_value_set_object (dst,
+                          g_hash_table_lookup (self->ctx->objects,
+                                               g_value_get_string (&cen->value)));
+    } else {
+      g_assert (TRUE == g_value_type_transformable (G_VALUE_TYPE (&cen->value),
+                                                    query.param_types[p]));
+
+      g_value_init (dst, query.param_types[p]);
+      /* Finally try to transform */
+      g_assert (TRUE == g_value_transform (&cen->value, dst));
+    }
+  }
+
+  /* Now we can happily emit the signal */
+  LBA_LOG ("Executing the signal %s of %d params", query.signal_name,
+           query.n_params);
+  g_signal_emitv (instance_and_params, signal_id, 0, &en->value);
+  /* Now release the values */
+  for (p = 0; p < query.n_params + 1; p++)
+    g_value_unset (&instance_and_params[p]);
+
+unref:
+  /* And now the tastiest thing:
+   * Most likely our action is a child of another action that needs the
+   * result of ours as a parameter. So we are going to "chainup" - decrease
+   * the parent's actionref */
+  if (en->node->parent->parent != NULL)
+    lba_expr_node_action_unref (en->node, self);
+}
+
+static void
+lba_expr_node_action_unref (GNode *node, LbaCore *self) {
+  g_assert (node->parent != NULL);
+
+  LbaExprNode *parent = (LbaExprNode *) node->parent->data;
+
+  g_assert (parent->actionrefs > 0);
+
+  /* This means all the components of the action are ready, so
+   * we can trigger the action on the parent */
+  if (g_atomic_int_dec_and_test (&parent->actionrefs))
+    lba_expr_node_action (parent->node->data, self);
+}
+
+static void
+lba_expr_node_ref_children (GNode *node, gpointer data) {
+  G_GNUC_UNUSED LbaExprNode *en = (LbaExprNode *) node->data;
+
+  /* Empty expressions are not supported */
+
+  lba_expr_node_action_ref (node, NULL);
+  g_node_children_foreach (node, G_TRAVERSE_ALL, lba_expr_node_ref_children, NULL);
+}
+
+static gboolean
+lba_core_eval_expr_node (GNode *node, gpointer data) {
+  LbaCore *self = (LbaCore *) data;
+  LbaExprNode *en = (LbaExprNode *) node->data;
+
+  /* So we are in the node. It might be either ((expression)), or something,
+   * such as command (most likely) */
+
+  /* If it's a command, capture parameters with node->next */
+  /* TODO: If it has "." then it might be a property or a signal (find out) */
+
+  switch (en->type) {
+  case LBA_EXPR_NODE_IS_EXPR:
+    /* Empty expressions are not supported */
+    g_assert (node->children != NULL);
+
+    break;
+
+    /* Set refs to all the children (NOT recursively) */
+    g_node_children_foreach (node, G_TRAVERSE_ALL, lba_expr_node_action_ref, NULL);
+
+    break;
+  case LBA_EXPR_NODE_IS_STONE:
+    /* Eval to GValue and decrease the ref. Could it hot be referenced?
+     * only it it doesn't have parent, that is handled too. */
+    g_assert (node->children == NULL);
+    lba_expr_node_action_unref (node, self);
+    break;
+  default:
+    g_error ("Unexpected node type: %d", en->type);
+  }
+
+  return FALSE;
+}
+
+static void
+lba_expr_root_list_expr (GNode *node, gpointer p) {
+  LbaCore *self = (LbaCore *) p;
+  LbaExprNode *en = (LbaExprNode *) node->data;
+
+  LBA_LOG ("ROOT LIST element: [%s]", en->str);
+  LBA_LOG ("Building refs");
+  /* NOTE: we don't ref the ROOT, nor unref it, because there's nothing to action */
+  g_node_children_foreach (node, G_TRAVERSE_ALL, lba_expr_node_ref_children, NULL);
+
+  LBA_LOG ("Starting the unref chain");
+  /* unreffing */
+  g_node_traverse (node,
+                   G_POST_ORDER, G_TRAVERSE_ALL, -1, lba_core_eval_expr_node, self);
+}
+
+static GObject *
+lba_core_pick (GObject *gobject, const gchar *name) {
+  LbaCore *self = bm_get_LbaCore (gobject);
+
+  g_return_val_if_fail (name != NULL, NULL);
+
+  return g_hash_table_lookup (self->ctx->objects, name);
+}
+
+static void
+lba_core_add (GObject *gobject, GObject *newcomer, const gchar *name) {
+  LbaCore *self = bm_get_LbaCore (gobject);
+
+  g_return_if_fail (G_IS_OBJECT (newcomer));
+
+  if (g_hash_table_lookup (self->ctx->objects, name)) {
+    g_warning ("variable '%s' already exists", name);
+    return;
+  }
+
+  if (g_object_is_floating (newcomer))
+    g_object_ref_sink (newcomer);
+  g_hash_table_insert (self->ctx->objects, (gpointer) g_strdup (name),
+                       g_object_ref (newcomer));
+
+  LBA_LOG ("Added '%s' of type '%s'", name, G_OBJECT_TYPE_NAME (newcomer));
+}
+
 static void
 lba_core_execute (GObject *gobject, const gchar *commands) {
   LbaCore *self = bm_get_LbaCore (gobject);
 
   /* Proccessing commands */
-  if (commands) {
-    const gchar *expr = commands;
-    guint len = 0;
-    guint total = strlen (commands);
+  if (G_UNLIKELY (!commands))
+    return;
 
-    LBA_LOG ("Going to exec: [%s]", commands);
+  /* ================================= FIXMA: horrible */
+  if (!self->ctx) {
+    self->ctx = g_new0 (BombollaContext, 1);
+    self->ctx->self = (GObject *) self;
+    self->ctx->objects =
+        g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
 
-    /* So here now we are not splitting by lines, but by the expressions */
-    for (expr = commands;;) {
-      const gchar *p = expr;
+    // The bindings actually belong to the object, and are
+    // automatically destroyed when the objects are destroyed.
+    // The only point of storing them is the "unbind" command
 
-      expr = lba_expr_parser_find_next (expr, total, &len);
-      if (!expr)
-        break;
-      LBA_LOG ("Eval expression [%.*s]", len, expr);
-      lba_core_eval_expression (self, expr, len);
-
-      g_assert (len <= total);
-      expr += len + 1;
-      total -= (expr - p);
-    }
+    /* NOTE: we could have a list of bindings attached to each object */
+    self->ctx->bindings =
+        g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
   }
+
+  /* ========================================= */
+
+  LBA_LOG ("Going to exec: [%s]", commands);
+
+  /* Root and only the root node is handled differently, since it
+   * actually IS a list of expressions:
+   * -------------------------
+   * (expr1 (bla (foo) (bar)))
+   * (expr2)
+   * (etc)
+   * -------------------------
+   * And we MUST execute them one after another.
+   */
+  LBA_LOG ("building the tree");
+  GNode *tree = lba_expr_parser_sniff (LBA_EXPR_NODE_IS_LIST,
+                                       commands, strlen (commands));
+
+  LBA_LOG ("start executing (%d children)", g_node_n_children (tree));
+  g_node_children_foreach (tree, G_TRAVERSE_ALL, lba_expr_root_list_expr, self);
+
+  lba_expr_node_destroy (tree);
 }
 
 typedef struct _LbaCoreAsyncCmd {
@@ -476,6 +562,10 @@ lba_core_sync_with_async_cmds (gpointer core) {
    * 1. copy a snap of the list of the async commands.
    * 2. iterate on this snap waiting for each. */
 
+  /* FIXME:
+   * Might be better to just send a new empty GSource and wait for it??
+   * It looses few CPU cycles, but saves a lot of code lines.
+   */
   g_mutex_lock (&self->async_cmd_guard);
   for (it = self->async_cmds; it != NULL; it = it->next) {
     LbaCoreAsyncCmd *ctx = (LbaCoreAsyncCmd *) it->data;
@@ -518,9 +608,22 @@ static GObject *singleton_object;
 
 static void
 lba_core_reset_singleton (gpointer data, GObject *where_the_object_was) {
+  LBA_LOG ("Reset singleton to NULL");
   G_LOCK (singleton_lock);
   singleton_object = NULL;
   G_UNLOCK (singleton_lock);
+}
+
+static void
+lba_core_constructed (GObject *gobject) {
+  LbaCore *self = bm_get_LbaCore (gobject);
+  static int scanned;
+
+  if (!scanned) {
+    /* Hack to avoid installing the commands multiple times */
+    BM_CHAINUP (self, GObject)->constructed (gobject);
+    scanned = 1;
+  }
 }
 
 static GObject *
@@ -528,15 +631,20 @@ lba_core_constructor (GType type, guint n_cp, GObjectConstructParam *cp) {
   GObjectClass *chain_up =
       (GObjectClass *) g_type_class_peek_parent (g_type_class_peek (type));
 
+  LBA_LOG ("Constructing");
+
   if (G_UNLIKELY (n_cp != 0 && singleton_object != NULL))
     g_warning ("Will ignore the construct properties, this object is a singleton!");
 
   G_LOCK (singleton_lock);
   if (singleton_object == NULL) {
+    LBA_LOG ("New instance of a singleton");
     singleton_object = chain_up->constructor (type, n_cp, cp);
     g_object_weak_ref (singleton_object, lba_core_reset_singleton, NULL);
-  } else
-    g_object_ref (singleton_object);
+  } else {
+    LBA_LOG ("Singleton already found");
+    singleton_object = g_object_ref (singleton_object);
+  }
   G_UNLOCK (singleton_lock);
 
   return singleton_object;
@@ -549,17 +657,30 @@ lba_core_class_init (GObjectClass *object_class, LbaCoreClass *klass) {
   object_class->dispose = lba_core_dispose;
   object_class->finalize = lba_core_finalize;
   object_class->constructor = lba_core_constructor;
+  object_class->constructed = lba_core_constructed;
 
   klass->execute = lba_core_execute;
+  klass->add = lba_core_add;
+  klass->pick = lba_core_pick;
 
-  /* TODO: change to bool_string, need some syntax checking */
   lba_core_signals[SIGNAL_EXECUTE] =
       g_signal_new ("execute", G_TYPE_FROM_CLASS (object_class),
                     G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
                     BM_CLASS_VFUNC_OFFSET (klass, execute),
                     NULL, NULL,
-                    g_cclosure_marshal_VOID__STRING,
-                    G_TYPE_NONE, 1, G_TYPE_STRING, G_TYPE_NONE);
+                    g_cclosure_marshal_VOID__STRING, G_TYPE_NONE, 1, G_TYPE_STRING);
+
+  lba_core_signals[SIGNAL_ADD] =
+      g_signal_new ("add", G_TYPE_FROM_CLASS (object_class),
+                    G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+                    BM_CLASS_VFUNC_OFFSET (klass, add),
+                    NULL, NULL, NULL, G_TYPE_NONE, 2, G_TYPE_OBJECT, G_TYPE_STRING);
+
+  lba_core_signals[SIGNAL_PICK] =
+      g_signal_new ("pick", G_TYPE_FROM_CLASS (object_class),
+                    G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+                    BM_CLASS_VFUNC_OFFSET (klass, pick),
+                    NULL, NULL, NULL, G_TYPE_OBJECT, 1, G_TYPE_STRING);
 
   lba_core_init_convertion_functions ();
 

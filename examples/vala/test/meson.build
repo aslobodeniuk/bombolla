@@ -4,8 +4,7 @@ exe = executable(
 )
 
 env = environment()
-examples_plugin_path = join_paths(meson.project_build_root(), 'examples', 'vala')
-env.set ('LBA_PLUGINS_PATH', examples_plugin_path)
+env.set ('LBA_PLUGINS_PATH', meson.project_build_root())
 env.set ('G_SLICE', 'always-malloc')
   
 test('vala', exe, env: env)

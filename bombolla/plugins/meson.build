@@ -1,3 +1,4 @@
+subdir ('core')
 subdir ('nodep')
 subdir ('cogl')
 subdir ('js')

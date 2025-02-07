@@ -44,47 +44,6 @@ FIXME_adapt_to_old (const gchar *expr, guint len) {
 }
 
 static gboolean
-lba_command_create (BombollaContext *ctx, const gchar *expr, guint len) {
-  gchar **tokens = FIXME_adapt_to_old (expr, len);
-  const gchar *typename = tokens[1];
-  const gchar *varname = tokens[2];
-  GType obj_type;
-  GObject *obj;
-
-  obj_type = g_type_from_name (typename);
-
-  if (!varname) {
-    g_warning ("need varname");
-    return FALSE;
-  } else if (g_hash_table_lookup (ctx->objects, varname)) {
-    g_warning ("variable already exists");
-    return FALSE;
-  } else if (!obj_type) {
-    g_warning ("type %s not found", typename);
-    return FALSE;
-  }
-
-  /* If the type is mixin, then we might be able to instantiate
-   * the mixed_type. If it's not abstract. */
-  if (BM_GTYPE_IS_BMIXIN (obj_type))
-    obj_type = bm_register_mixed_type (NULL, G_TYPE_OBJECT, obj_type, NULL);
-
-  obj = g_object_new (obj_type, NULL);
-
-  if (obj) {
-    g_object_set_data (obj, "bombolla-commands-ctx", ctx);
-    if (g_object_is_floating (obj))
-      g_object_ref_sink (obj);
-    g_hash_table_insert (ctx->objects, (gpointer) g_strdup (varname), obj);
-
-    LBA_LOG ("%s %s created", typename, varname);
-  }
-
-  g_strfreev (tokens);
-  return TRUE;
-}
-
-static gboolean
 lba_command_destroy (BombollaContext *ctx, const gchar *expr, guint len) {
   gchar **tokens = FIXME_adapt_to_old (expr, len);
   const gchar *varname = tokens[1];
@@ -228,159 +187,6 @@ done:
   g_strfreev (tokens);
 
   return ret;
-}
-
-static void
-lba_command_dump_type (GType plugin_type) {
-  GTypeQuery query = { 0 };
-
-  g_type_query (plugin_type, &query);
-  if (query.type)
-    g_printf ("Dumping GType '%s'\n", query.type_name);
-
-  if (BM_GTYPE_IS_BMIXIN (plugin_type)) {
-    g_printf ("Mixin %s\n", g_type_name (plugin_type));
-    lba_command_dump_type (bm_register_mixed_type
-                           (NULL, G_TYPE_OBJECT, plugin_type, NULL));
-    return;
-  }
-
-  if (G_TYPE_IS_OBJECT (plugin_type)) {
-    GParamSpec **properties;
-    guint n_properties,
-      p;
-    guint *signals,
-      s,
-      n_signals;
-    GObjectClass *klass;
-    GList *tree = NULL;
-
-    g_printf ("GType is a GObject.");
-    klass = (GObjectClass *) g_type_class_ref (plugin_type);
-
-    properties = g_object_class_list_properties (klass, &n_properties);
-
-    for (p = 0; p < n_properties; p++) {
-      GParamSpec *prop = properties[p];
-      gchar *def_val;
-
-      def_val = g_strdup_value_contents (g_param_spec_get_default_value (prop));
-
-      g_printf ("- Property: (%s) %s = %s\n",
-                G_PARAM_SPEC_TYPE_NAME (prop), g_param_spec_get_name (prop),
-                def_val);
-
-      g_printf ("\tnick = '%s', %s\n\n",
-                g_param_spec_get_nick (prop), g_param_spec_get_blurb (prop));
-      g_free (def_val);
-    }
-
-    /* Iterate signals */
-    {
-      GType t;
-      const gchar *_tab = "  ";
-      gchar *tab = g_strdup (_tab);
-
-      g_printf ("--- Signals:\n");
-      for (t = plugin_type; t; t = g_type_parent (t)) {
-        gchar *tmptab;
-
-        tree = g_list_prepend (tree, (gpointer) t);
-        signals = g_signal_list_ids (t, &n_signals);
-
-        for (s = 0; s < n_signals; s++) {
-          GSignalQuery query;
-          GTypeQuery t_query;
-
-          g_signal_query (signals[s], &query);
-          g_type_query (t, &t_query);
-
-          if (t_query.type == 0) {
-            g_warning ("Error quering type");
-            break;
-          }
-
-          g_printf ("%s%s:: %s (* %s) ", tab, t_query.type_name,
-                    g_type_name (query.return_type), query.signal_name);
-
-          g_printf ("(");
-          for (p = 0; p < query.n_params; p++) {
-            g_printf ("%s%s", p ? ", " : "", g_type_name (query.param_types[p]));
-          }
-          g_printf (");\n");
-        }
-
-        tmptab = tab;
-        tab = g_strdup_printf ("%s%s", _tab, tab);
-        g_free (tmptab);
-        g_free (signals);
-      }
-    }
-
-    /* Iterate interfaces */
-    {
-      guint i;
-      guint n_interfaces;
-      GType *in = g_type_interfaces (plugin_type,
-                                     &n_interfaces);
-
-      for (i = 0; i < n_interfaces; i++) {
-
-        g_printf ("Provides interface %s\n", g_type_name (in[i]));
-      }
-      g_free (in);
-    }
-
-    {
-      gint i;
-      gchar offset[256] = { 0 };
-      GList *l;
-
-      g_printf ("\nInheiritance tree:\n");
-      for (l = tree, i = 0; (l); l = l->next) {
-        if (i < (256 - 2))
-          i += 2;
-        memset (offset, '-', i);
-        offset[i] = 0;
-        g_printf ("%s%s\n", offset, g_type_name ((GType) l->data));
-      }
-    }
-
-    g_type_class_unref (klass);
-    g_free (properties);
-    g_list_free (tree);
-  }
-}
-
-static gboolean
-lba_command_dump (BombollaContext *ctx, const gchar *expr, guint len) {
-  GType t;
-
-  gchar **tokens = FIXME_adapt_to_old (expr, len);
-
-  if (NULL == tokens[1]) {
-    g_warning ("No type specified");
-    return FALSE;
-  }
-
-  t = g_type_from_name (tokens[1]);
-
-  if (0 == t) {
-    GObject *obj;
-
-    obj = g_hash_table_lookup (ctx->objects, tokens[1]);
-    if (!obj) {
-      g_warning ("Neither type nor an object '%s' haven't been found", tokens[1]);
-      return FALSE;
-    }
-
-    t = G_OBJECT_TYPE (obj);
-  }
-
-  lba_command_dump_type (t);
-
-  g_strfreev (tokens);
-  return TRUE;
 }
 
 static gboolean
@@ -605,12 +411,9 @@ syntax:
 }
 
 const BombollaCommand commands[] = {
-  { "create", lba_command_create },
   { "destroy", lba_command_destroy },
   { "call", lba_command_call },
-  { "on", lba_command_on },
   { "set", lba_command_set },
-  { "dump", lba_command_dump },
   { "bind", lba_command_bind },
   { "async", lba_command_async },
   { "sync", lba_command_sync },
