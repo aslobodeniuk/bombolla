@@ -35,9 +35,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-/* DEPRECATED: */
-#include "commands/lba-commands.h"
-/* ------------- */
+/* lba-type-convertions.c */
+void lba_core_init_convertion_functions (void);
 
 enum {
   SIGNAL_EXECUTE,
@@ -51,7 +50,6 @@ static guint lba_core_signals[LAST_SIGNAL] = { 0 };
 
 typedef struct _LbaCore {
   BMixinInstance i;
-  BombollaContext *ctx;
 
   gboolean started;
   GThread *mainloop_thr;
@@ -60,8 +58,7 @@ typedef struct _LbaCore {
   GMutex lock;
   GCond cond;
 
-  GMutex async_cmd_guard;
-  GList *async_cmds;
+  GHashTable *objects;
 } LbaCore;
 
 typedef struct _LbaCoreClass {
@@ -94,9 +91,7 @@ lba_core_mainloop (gpointer data) {
   return NULL;
 }
 
-/* Callback proccessed in the main loop.
- * Simply makes it quit. */
-gboolean
+static gboolean
 lba_core_quit_msg (gpointer data) {
   LbaCore *self = (LbaCore *) data;
 
@@ -129,7 +124,6 @@ lba_core_stop (LbaCore *self) {
 
 static void
 lba_core_init (GObject *object, LbaCore *self) {
-  g_mutex_init (&self->async_cmd_guard);
   g_mutex_init (&self->lock);
   g_cond_init (&self->cond);
 
@@ -147,29 +141,13 @@ lba_core_init (GObject *object, LbaCore *self) {
   }
 }
 
-void lba_core_sync_with_async_cmds (gpointer core);
-
 static void
 lba_core_dispose (GObject *gobject) {
   LbaCore *self = bm_get_LbaCore (gobject);
 
-  if (self->async_cmds) {
-    lba_core_sync_with_async_cmds (self);
-  }
-
-  if (self->ctx) {
-    if (self->ctx->bindings) {
-      // The bindings actually belong to the object, and are
-      // automatically destroyed when the objects are destroyed
-      g_hash_table_unref (self->ctx->bindings);
-    }
-    if (self->ctx->objects) {
-      g_hash_table_remove_all (self->ctx->objects);
-      g_hash_table_unref (self->ctx->objects);
-    }
-
-    g_free (self->ctx);
-    self->ctx = NULL;
+  if (self->objects) {
+    g_hash_table_remove_all (self->objects);
+    g_hash_table_unref (self->objects);
   }
 
   if (self->started) {
@@ -186,7 +164,6 @@ lba_core_finalize (GObject *gobject) {
 
   LBA_LOG ("Finalize");
 
-  g_mutex_clear (&self->async_cmd_guard);
   g_mutex_clear (&self->lock);
   g_cond_clear (&self->cond);
 
@@ -230,35 +207,6 @@ lba_core_load_module (GObject *gobj, const gchar *module_filename) {
 GType lba_core_object_get_type (void);
 
 static void
-DEPRECATED_lba_core_eval_expression (gpointer selv, const char *expr, guint len) {
-  LbaCore *self = (LbaCore *) selv;
-  const BombollaCommand *command;
-
-  guint exprlen = 0;
-
-  expr = DEPRECATED_lba_expr_parser_find_next (expr, len, &exprlen);
-  if (G_UNLIKELY (expr == NULL)) {
-    LBA_LOG ("Empty expression");
-    /* Just a sanity check */
-    g_assert (exprlen == 0);
-    return;
-  }
-
-  /* So now find the command: */
-  for (command = commands; command->name != NULL; command++) {
-    if (g_str_has_prefix (expr, command->name)) {
-      if (!command->parse (self->ctx, expr, len)) {
-        g_error ("Command parse error");
-      }
-
-      return;
-    }
-  }
-
-  g_error ("Unknown command in the beginning of [%s]", expr);
-}
-
-static void
 lba_expr_node_action_ref (GNode *node, gpointer p) {
   LbaExprNode *parent = (LbaExprNode *) node->parent->data;
 
@@ -290,9 +238,7 @@ lba_expr_node_action (gpointer data, LbaCore *self) {
 
   signal_id = g_signal_lookup (cen->str, lba_core_object_get_type ());
   if (!signal_id) {
-    LBA_LOG ("No command '%s', using FIXME ones", cen->str);
-    /* Expression already has no quotes */
-    DEPRECATED_lba_core_eval_expression (self, en->str, strlen (en->str));
+    g_warning ("No command '%s'", cen->str);
     goto unref;
   }
 
@@ -446,14 +392,14 @@ lba_core_lookup (GObject *gobject, const gchar *name) {
 
   g_return_val_if_fail (name != NULL, NULL);
 
-  return g_hash_table_lookup (self->ctx->objects, name);
+  return g_hash_table_lookup (self->objects, name);
 }
 
 static void
 lba_core_forget (GObject *gobject, const gchar *name) {
   LbaCore *self = bm_get_LbaCore (gobject);
 
-  if (G_UNLIKELY (FALSE == g_hash_table_remove (self->ctx->objects, name))) {
+  if (G_UNLIKELY (FALSE == g_hash_table_remove (self->objects, name))) {
     g_warning ("Variable '%s' didn't exist", name);
   }
 }
@@ -464,14 +410,19 @@ lba_core_add (GObject *gobject, GObject *newcomer, const gchar *name) {
 
   g_return_if_fail (G_IS_OBJECT (newcomer));
 
-  if (g_hash_table_lookup (self->ctx->objects, name)) {
+  if (G_UNLIKELY (!self->objects)) {
+    self->objects =
+        g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
+  }
+
+  if (g_hash_table_lookup (self->objects, name)) {
     g_warning ("variable '%s' already exists", name);
     return;
   }
 
   if (g_object_is_floating (newcomer))
     g_object_ref_sink (newcomer);
-  g_hash_table_insert (self->ctx->objects, (gpointer) g_strdup (name),
+  g_hash_table_insert (self->objects, (gpointer) g_strdup (name),
                        g_object_ref (newcomer));
 
   LBA_LOG ("Added '%s' of type '%s'", name, G_OBJECT_TYPE_NAME (newcomer));
@@ -484,24 +435,6 @@ lba_core_execute (GObject *gobject, const gchar *commands) {
   /* Proccessing commands */
   if (G_UNLIKELY (!commands))
     return;
-
-  /* ================================= FIXMA: horrible */
-  if (!self->ctx) {
-    self->ctx = g_new0 (BombollaContext, 1);
-    self->ctx->self = (GObject *) self;
-    self->ctx->objects =
-        g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
-
-    // The bindings actually belong to the object, and are
-    // automatically destroyed when the objects are destroyed.
-    // The only point of storing them is the "unbind" command
-
-    /* NOTE: we could have a list of bindings attached to each object */
-    self->ctx->bindings =
-        g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-  }
-
-  /* ========================================= */
 
   LBA_LOG ("Going to exec: [%s]", commands);
 
@@ -522,96 +455,6 @@ lba_core_execute (GObject *gobject, const gchar *commands) {
   g_node_children_foreach (tree, G_TRAVERSE_ALL, lba_expr_root_list_expr, self);
 
   lba_expr_node_destroy (tree);
-}
-
-typedef struct _LbaCoreAsyncCmd {
-  gchar *command;
-  LbaCore *core;
-  GSource *source;
-
-  GMutex lock;
-  GCond cond;
-  gboolean done;
-} LbaCoreAsyncCmd;
-
-static void
-lba_core_async_cmd_free (gpointer data) {
-  LbaCoreAsyncCmd *ctx = (LbaCoreAsyncCmd *) data;
-
-  g_free (ctx->command);
-  g_source_unref (ctx->source);
-  g_mutex_clear (&ctx->lock);
-  g_cond_clear (&ctx->cond);
-  g_free (ctx);
-}
-
-static void
-lba_core_async_cmd_done (gpointer data) {
-  LbaCoreAsyncCmd *ctx = (LbaCoreAsyncCmd *) data;
-
-  g_mutex_lock (&ctx->lock);
-  ctx->done = TRUE;
-  g_cond_broadcast (&ctx->cond);
-  g_mutex_unlock (&ctx->lock);
-}
-
-static gboolean
-lba_core_async_cmd (gpointer data) {
-  LbaCoreAsyncCmd *ctx = (LbaCoreAsyncCmd *) data;
-
-  lba_core_execute (BM_GET_GOBJECT (ctx->core), ctx->command);
-
-  return G_SOURCE_REMOVE;
-}
-
-void
-lba_core_sync_with_async_cmds (gpointer core) {
-  LbaCore *self = (LbaCore *) core;
-  GList *it;
-
-  /* To sync we do:
-   * 1. copy a snap of the list of the async commands.
-   * 2. iterate on this snap waiting for each. */
-
-  /* FIXME:
-   * Might be better to just send a new empty GSource and wait for it??
-   * It looses few CPU cycles, but saves a lot of code lines.
-   */
-  g_mutex_lock (&self->async_cmd_guard);
-  for (it = self->async_cmds; it != NULL; it = it->next) {
-    LbaCoreAsyncCmd *ctx = (LbaCoreAsyncCmd *) it->data;
-
-    g_mutex_lock (&ctx->lock);
-    while (!ctx->done) {
-      g_cond_wait (&ctx->cond, &ctx->lock);
-    }
-    g_mutex_unlock (&ctx->lock);
-  }
-  g_list_free_full (self->async_cmds, lba_core_async_cmd_free);
-  self->async_cmds = NULL;
-  g_mutex_unlock (&self->async_cmd_guard);
-}
-
-void
-lba_core_shedule_async_script (GObject *obj, gchar *command) {
-  LbaCore *self = (LbaCore *) obj;
-  LbaCoreAsyncCmd *ctx = g_new0 (LbaCoreAsyncCmd, 1);
-
-  LBA_LOG ("Shedulling command [%s] for async execution", command);
-
-  ctx->core = self;
-  ctx->command = command;
-  ctx->source = g_idle_source_new ();
-  g_mutex_init (&ctx->lock);
-  g_cond_init (&ctx->cond);
-
-  g_source_set_priority (ctx->source, G_PRIORITY_DEFAULT);
-
-  g_source_set_callback (ctx->source, lba_core_async_cmd, ctx,
-                         lba_core_async_cmd_done);
-
-  self->async_cmds = g_list_append (self->async_cmds, ctx);
-  g_source_attach (ctx->source, NULL);
 }
 
 G_LOCK_DEFINE_STATIC (singleton_lock);

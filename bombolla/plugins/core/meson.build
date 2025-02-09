@@ -1,24 +1,18 @@
-shared_library('lba-command-create',
-               'lba-command-create.c',
+commands = [
+  'create',
+  'dump',
+  'on',
+  'set',
+  'call',
+  'bind',
+  'dna'
+]
+
+foreach com : commands
+shared_library(['lba-command-' + com],
+               ['lba-command-' + com + '.c'],
                dependencies: [bombolla_core_dep],
               )
 
-shared_library('lba-command-dump',
-               'lba-command-dump.c',
-               dependencies: [bombolla_core_dep],
-              )
-
-shared_library('lba-command-on',
-               'lba-command-on.c',
-               dependencies: [bombolla_core_dep],
-              )
-
-shared_library('lba-command-set',
-               'lba-command-set.c',
-               dependencies: [bombolla_core_dep],
-              )
-
-shared_library('lba-command-call',
-               'lba-command-call.c',
-               dependencies: [bombolla_core_dep],
-              )
+# TODO: test for each command
+endforeach

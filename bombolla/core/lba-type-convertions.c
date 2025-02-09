@@ -26,7 +26,6 @@
  */
 
 #include "bombolla/lba-log.h"
-#include "commands/lba-commands.h"
 
 /* HACK: Needed to use LBA_LOG */
 static const gchar *global_lba_plugin_name = "LbaCore";

@@ -4,8 +4,7 @@ src = files(['lba-core.c',
 	     'lba-list.c',
 	     'lba-expr-node.c',
 	     'lba-expr-parser.c',
-	     'lba-type-convertions.c',
-             'commands/lba-commands.c'])
+	     'lba-type-convertions.c'])
 
 # To share statically with the test that will build it with asan
 bombolla_core_dep = declare_dependency(

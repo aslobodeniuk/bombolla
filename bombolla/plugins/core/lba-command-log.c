@@ -1,6 +1,6 @@
 /* la Bombolla GObject shell
  *
- * Copyright (c) 2024, Alexander Slobodeniuk <aleksandr.slobodeniuk@gmx.es>
+ * Copyright (c) 2025, Alexander Slobodeniuk <aleksandr.slobodeniuk@gmx.es>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -25,30 +25,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _BOMBOLLA_COMMANDS
-#  define _BOMBOLLA_COMMANDS
+#include <bombolla/lba-log.h>
+#include <bmixin/bmixin.h>
 
-typedef struct {
-  GHashTable *objects;
-  GHashTable *bindings;
+static gboolean
+lba_command_log (GObject *core, const gchar *cats) {
+  gchar **tokens = g_strsplit (cats, " ", 1024);
 
-  gpointer self;
-} BombollaContext;
+  g_log_writer_default_set_debug_domains ((const gchar * const *)&tokens[0]);
+  g_strfreev (tokens);
+  return TRUE;
+}
 
-typedef struct {
-  const gchar *name;
-    gboolean (*parse) (BombollaContext * ctx, const gchar * expr, guint len);
-} BombollaCommand;
-
-extern const BombollaCommand commands[];
-
-gboolean
-lba_core_parse_obj_fld (BombollaContext * ctx, const gchar * str, GObject ** obj,
-                        gchar ** fld);
-void lba_core_init_convertion_functions (void);
-
-void lba_core_shedule_async_script (GObject * obj, gchar * command);
-void lba_core_sync_with_async_cmds (gpointer core);
-
-gchar **FIXME_adapt_to_old (const gchar * expr, guint len);
-#endif
+BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_COMMAND (log, LBA_COMMAND_SETUP_DEFAULT,
+                                        G_TYPE_STRING);
