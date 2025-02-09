@@ -42,7 +42,8 @@
 enum {
   SIGNAL_EXECUTE,
   SIGNAL_ADD,
-  SIGNAL_PICK,
+  SIGNAL_FORGET,
+  SIGNAL_LOOKUP,
   LAST_SIGNAL
 };
 
@@ -67,7 +68,8 @@ typedef struct _LbaCoreClass {
   BMixinClass c;
   void (*execute) (GObject *, const gchar *);
   void (*add) (GObject *, GObject *, const gchar *);
-  GObject *(*pick) (GObject *, const gchar *);
+  void (*forget) (GObject *, const gchar *);
+  GObject *(*lookup) (GObject *, const gchar *);
 } LbaCoreClass;
 
 BM_DEFINE_MIXIN (lba_core, LbaCore, BM_ADD_DEP (lba_module_scanner));
@@ -439,12 +441,21 @@ lba_expr_root_list_expr (GNode *node, gpointer p) {
 }
 
 static GObject *
-lba_core_pick (GObject *gobject, const gchar *name) {
+lba_core_lookup (GObject *gobject, const gchar *name) {
   LbaCore *self = bm_get_LbaCore (gobject);
 
   g_return_val_if_fail (name != NULL, NULL);
 
   return g_hash_table_lookup (self->ctx->objects, name);
+}
+
+static void
+lba_core_forget (GObject *gobject, const gchar *name) {
+  LbaCore *self = bm_get_LbaCore (gobject);
+
+  if (G_UNLIKELY (FALSE == g_hash_table_remove (self->ctx->objects, name))) {
+    g_warning ("Variable '%s' didn't exist", name);
+  }
 }
 
 static void
@@ -661,13 +672,21 @@ lba_core_class_init (GObjectClass *object_class, LbaCoreClass *klass) {
 
   klass->execute = lba_core_execute;
   klass->add = lba_core_add;
-  klass->pick = lba_core_pick;
+  klass->forget = lba_core_forget;
+  klass->lookup = lba_core_lookup;
 
   lba_core_signals[SIGNAL_EXECUTE] =
       g_signal_new ("execute", G_TYPE_FROM_CLASS (object_class),
                     G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
-                    BM_CLASS_VFUNC_OFFSET (klass, execute),
-                    NULL, NULL,
+                    BM_CLASS_VFUNC_OFFSET (klass, execute), NULL, NULL,
+                    /* ?? Performance hint ?? */
+                    g_cclosure_marshal_VOID__STRING, G_TYPE_NONE, 1, G_TYPE_STRING);
+
+  lba_core_signals[SIGNAL_FORGET] =
+      g_signal_new ("forget", G_TYPE_FROM_CLASS (object_class),
+                    G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+                    BM_CLASS_VFUNC_OFFSET (klass, forget), NULL, NULL,
+                    /* ?? Performance hint ?? */
                     g_cclosure_marshal_VOID__STRING, G_TYPE_NONE, 1, G_TYPE_STRING);
 
   lba_core_signals[SIGNAL_ADD] =
@@ -676,10 +695,10 @@ lba_core_class_init (GObjectClass *object_class, LbaCoreClass *klass) {
                     BM_CLASS_VFUNC_OFFSET (klass, add),
                     NULL, NULL, NULL, G_TYPE_NONE, 2, G_TYPE_OBJECT, G_TYPE_STRING);
 
-  lba_core_signals[SIGNAL_PICK] =
-      g_signal_new ("pick", G_TYPE_FROM_CLASS (object_class),
+  lba_core_signals[SIGNAL_LOOKUP] =
+      g_signal_new ("lookup", G_TYPE_FROM_CLASS (object_class),
                     G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
-                    BM_CLASS_VFUNC_OFFSET (klass, pick),
+                    BM_CLASS_VFUNC_OFFSET (klass, lookup),
                     NULL, NULL, NULL, G_TYPE_OBJECT, 1, G_TYPE_STRING);
 
   lba_core_init_convertion_functions ();

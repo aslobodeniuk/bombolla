@@ -1,6 +1,6 @@
 /* la Bombolla GObject shell
  *
- * Copyright (c) 2024, Alexander Slobodeniuk <aleksandr.slobodeniuk@gmx.es>
+ * Copyright (c) 2025, Alexander Slobodeniuk <aleksandr.slobodeniuk@gmx.es>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -25,41 +25,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "lba-boxed.h"
+#ifndef _LBA_LIST
+#  define _LBA_LIST
+#  include <glib-object.h>
 
-LBA_DEFINE_BOXED (LbaExprNode, lba_expr_node);
+#  include "lba-boxed.h"
 
-static void
-lba_expr_node_free (gpointer p) {
-  LbaExprNode *en = (LbaExprNode *) p;
+typedef struct _LbaList LbaList;
 
-  g_value_unset (&en->value);
-  g_free (en->str);
-  g_free (en);
-}
+LbaList *lba_list_new ();
 
-GNode *
-lba_expr_node_new (LbaExprNodeType type, const gchar *expr, guint len) {
-  LbaExprNode *ret = g_new0 (LbaExprNode, 1);
+void lba_list_add (LbaList *, GValue *);
 
-  lba_boxed_init (&ret->bxd, lba_expr_node_get_type (), lba_expr_node_free);
-  ret->str = g_strndup (expr, len);
-  ret->type = type;
-  ret->node = g_node_new (ret);
-  return ret->node;
-}
+const GValue *lba_list_index (const LbaList *, gint i);
 
-static gboolean
-lba_expr_node_destroy_each (GNode *node, gpointer data) {
-  g_clear_pointer (&node->data, lba_boxed_unref);
-  return FALSE;
-}
+gint lba_list_length (const LbaList *);
 
-void
-lba_expr_node_destroy (GNode *tree) {
-  /* FIXME: redundant, should be in the _free() */
-  g_node_traverse (tree,
-                   G_LEVEL_ORDER, G_TRAVERSE_ALL, -1, lba_expr_node_destroy_each,
-                   NULL);
-  g_node_destroy (tree);
-}
+GType lba_list_get_type (void);
+
+gchar *lba_list_to_string (const LbaList *);
+
+#endif

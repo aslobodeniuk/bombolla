@@ -25,41 +25,75 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "lba-boxed.h"
+#include "lba-list.h"
 
-LBA_DEFINE_BOXED (LbaExprNode, lba_expr_node);
+struct _LbaList {
+  LbaBoxed bxd;
+
+  GArray *values;
+};
+
+LBA_DEFINE_BOXED (LbaList, lba_list);
 
 static void
-lba_expr_node_free (gpointer p) {
-  LbaExprNode *en = (LbaExprNode *) p;
+lba_list_free (gpointer p) {
+  LbaList *l = (LbaList *) p;
 
-  g_value_unset (&en->value);
-  g_free (en->str);
-  g_free (en);
+  g_array_unref (l->values);
+  g_free (l);
 }
 
-GNode *
-lba_expr_node_new (LbaExprNodeType type, const gchar *expr, guint len) {
-  LbaExprNode *ret = g_new0 (LbaExprNode, 1);
-
-  lba_boxed_init (&ret->bxd, lba_expr_node_get_type (), lba_expr_node_free);
-  ret->str = g_strndup (expr, len);
-  ret->type = type;
-  ret->node = g_node_new (ret);
-  return ret->node;
+gint
+lba_list_length (const LbaList *l) {
+  return l->values->len;
 }
 
-static gboolean
-lba_expr_node_destroy_each (GNode *node, gpointer data) {
-  g_clear_pointer (&node->data, lba_boxed_unref);
-  return FALSE;
+const GValue *
+lba_list_index (const LbaList *l, gint i) {
+  return &g_array_index (l->values, GValue, i);
+}
+
+gchar *
+lba_list_to_string (const LbaList *l) {
+  gint i;
+  GString *str = g_string_new ("{");
+
+  for (i = 0; i < lba_list_length (l); i++) {
+    GValue out = G_VALUE_INIT;
+    const GValue *in = lba_list_index (l, i);
+
+    if (i != 0)
+      str = g_string_append (str, ", ");
+
+    g_value_init (&out, G_TYPE_STRING);
+    str = g_string_append (str,
+                           g_value_transform (in, &out) ?
+                           g_value_get_string (&out) : "(ERROR!!!)");
+
+    g_value_unset (&out);
+  }
+
+  str = g_string_append (str, "}");
+
+  return g_string_free_and_steal (str);
+}
+
+LbaList *
+lba_list_new () {
+  LbaList *ret = g_new0 (LbaList, 1);
+
+  lba_boxed_init (&ret->bxd, lba_list_get_type (), lba_list_free);
+
+  ret->values = g_array_sized_new (FALSE, TRUE, sizeof (GValue), 4);
+  g_array_set_clear_func (ret->values, (GDestroyNotify) g_value_unset);
+  return ret;
 }
 
 void
-lba_expr_node_destroy (GNode *tree) {
-  /* FIXME: redundant, should be in the _free() */
-  g_node_traverse (tree,
-                   G_LEVEL_ORDER, G_TRAVERSE_ALL, -1, lba_expr_node_destroy_each,
-                   NULL);
-  g_node_destroy (tree);
+lba_list_add (LbaList *l, GValue *v) {
+  GValue cp = G_VALUE_INIT;
+
+  /* We should make this func take ownership?? */
+  g_value_copy (v, &cp);
+  g_array_append_val (l->values, cp);
 }

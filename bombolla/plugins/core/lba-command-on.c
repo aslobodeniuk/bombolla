@@ -82,7 +82,9 @@ lba_command_on_destroy (gpointer data, GClosure *closure) {
 }
 
 static void
-lba_command_on (GObject *core, GObject *obj, const char *signal, const char *expr) {
+lba_command_on (GObject *core, GObject *obj, const char *signal,
+                /* TODO: should be LbaExprNode ?? */
+                const char *expr) {
   GClosure *closure;
   BombollaOnCommandCtx *on_ctx;
 

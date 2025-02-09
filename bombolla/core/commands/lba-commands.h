@@ -42,8 +42,6 @@ typedef struct {
 
 extern const BombollaCommand commands[];
 
-/* bombolla-command-set.c */
-gboolean lba_command_set (BombollaContext * ctx, const gchar * expr, guint len);
 gboolean
 lba_core_parse_obj_fld (BombollaContext * ctx, const gchar * str, GObject ** obj,
                         gchar ** fld);
@@ -51,10 +49,6 @@ void lba_core_init_convertion_functions (void);
 
 void lba_core_shedule_async_script (GObject * obj, gchar * command);
 void lba_core_sync_with_async_cmds (gpointer core);
-
-gboolean
-lba_command_set_str2obj (BombollaContext * ctx,
-                         const GValue * src_value, GValue * dest_value);
 
 gchar **FIXME_adapt_to_old (const gchar * expr, guint len);
 #endif
