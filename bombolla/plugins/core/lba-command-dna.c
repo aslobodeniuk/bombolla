@@ -96,4 +96,4 @@ BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_COMMAND (dna, LBA_COMMAND_SETUP_DEFAULT,
                                         /* base name */
                                         G_TYPE_STRING,
                                         /* dna */
-                                        G_TYPE_STRING,);
+                                        G_TYPE_STRING);

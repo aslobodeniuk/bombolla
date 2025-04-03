@@ -40,7 +40,7 @@ lba_get_bindings_ht (GObject *core) {
     // automatically destroyed when the objects are destroyed.
     // The only point of storing them is the "unbind" command        
     ht = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-    g_object_set_data_full (core, MAGIC, ht, g_hash_table_unref);
+    g_object_set_data_full (core, MAGIC, ht, (GDestroyNotify) g_hash_table_unref);
   }
 
   return ht;
@@ -115,7 +115,6 @@ lba_command_bind (GObject *core, GObject *obj1, const gchar *prop1,
   binding_name = NULL;
   ret = TRUE;
 done:
-  g_strfreev (tokens);
   g_free (binding_name);
   return ret;
 }
@@ -128,4 +127,4 @@ BOMBOLLA_PLUGIN_SYSTEM_PROVIDE_COMMAND (bind, LBA_COMMAND_SETUP_DEFAULT,
                                         /* obj2 */
                                         G_TYPE_OBJECT,
                                         /* prop2 */
-                                        G_TYPE_STRING,);
+                                        G_TYPE_STRING);

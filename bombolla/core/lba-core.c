@@ -282,7 +282,7 @@ lba_expr_node_action (gpointer data, LbaCore *self) {
         && query.param_types[p] == G_TYPE_OBJECT) {
       g_value_init (dst, G_TYPE_OBJECT);
       g_value_set_object (dst,
-                          g_hash_table_lookup (self->ctx->objects,
+                          g_hash_table_lookup (self->objects,
                                                g_value_get_string (&cen->value)));
     } else {
       g_assert (TRUE == g_value_type_transformable (G_VALUE_TYPE (&cen->value),
